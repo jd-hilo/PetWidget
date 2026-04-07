@@ -1,0 +1,80 @@
+name: Petmoji
+options:
+  bundleIdPrefix: com.petmoji
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  groupSortPosition: top
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    from: "2.0.0"
+
+targets:
+  Petmoji:
+    type: application
+    platform: iOS
+    sources:
+      - path: Petmoji
+    resources:
+      - path: Petmoji/Resources
+    info:
+      path: Petmoji/Info.plist
+      properties:
+        CFBundleDisplayName: Petmoji
+        CFBundleIdentifier: com.petmoji.app
+        UILaunchStoryboardName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Light
+        NSPhotoLibraryUsageDescription: "To upload photos of your pet for sprite generation"
+        NSCameraUsageDescription: "To take photos of your pet for sprite generation"
+        NSLocationAlwaysAndWhenInUseUsageDescription: "So your pet can react when you leave and come back home"
+        NSLocationWhenInUseUsageDescription: "To detect your home location for pet reactions"
+        UIBackgroundModes:
+          - fetch
+          - location
+          - remote-notification
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+    entitlements:
+      path: Petmoji/Petmoji.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app
+        INFOPLIST_FILE: Petmoji/Info.plist
+    dependencies:
+      - package: Supabase
+      - target: PetmojiWidget
+        embed: false
+
+  PetmojiWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: PetmojiWidget
+    info:
+      path: PetmojiWidget/Info.plist
+      properties:
+        CFBundleDisplayName: PetmojiWidget
+        CFBundleIdentifier: com.petmoji.app.widget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: PetmojiWidget/PetmojiWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app.widget
+        INFOPLIST_FILE: PetmojiWidget/Info.plist
+    dependencies:
+      - package: Supabase

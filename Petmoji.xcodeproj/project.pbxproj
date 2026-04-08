@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 54;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,6 +12,7 @@
 		292F7496F3240B0562708EBF /* PersonalityBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */; };
 		2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73DA20062A61BDF056EB316 /* PetmojiApp.swift */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
+		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
 		78A053739147FE7EDE5153B9 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAC105A00465289B0DF46CE /* Pet.swift */; };
 		7D312BA6B6A9B8BC85C1F901 /* PetWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669896C69E8CFCACFFF8B2E1 /* PetWidgetProvider.swift */; };
 		7DBB2DE5757F2983C69CE3ED /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 86C7DF1934A3B2403C541D2F /* Supabase */; };
@@ -20,14 +21,14 @@
 		9E547404C5B2A052DE973A3C /* PetMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61537A9A8A5859B5B4E18091 /* PetMessage.swift */; };
 		9F07B7062E4568E933AF2782 /* PetWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A15910A3F2DE89F9825DAF8 /* PetWidget.swift */; };
 		AB81F69F2C59C7BBBF520714 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C1681768AB9E46038876ECF /* SupabaseService.swift */; };
-		1D1E14D6590D4AD2BB6888BD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14180B735D85474085E46B0F /* SettingsView.swift */; };
 		C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26DB63C95E1A7663528035EC /* ClaudeService.swift */; };
+		DACC0F73BE1E01340A6A9DA3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9EFEE996E1C4B444F152178 /* ContentView.swift */; };
 		DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB74AD025C1FF75210D44E4 /* ChatView.swift */; };
 		E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E367B57172A90687CF9B9982 /* DesignSystem.swift */; };
 		EBCAA8C98D86B2BDF29F0DD7 /* MessageScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */; };
 		ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9844B5416F8DE38FCA025428 /* LocationService.swift */; };
 		EFF5B90AECAEC78FD9950367 /* PetWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B15C9F26B1590FEDD4031F /* PetWidgetEntryView.swift */; };
-		05CC65F25F2B492782B691D7 /* PetmojiWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 05D7681EDDDE782F2D2CA814 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,7 +42,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PetmojiWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		05D7681EDDDE782F2D2CA814 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = PetmojiWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalityBuilderView.swift; sourceTree = "<group>"; };
 		26DB63C95E1A7663528035EC /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
 		2BB74AD025C1FF75210D44E4 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
@@ -59,27 +61,14 @@
 		B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageScheduler.swift; sourceTree = "<group>"; };
 		BE4275124830FEE1D8B137A8 /* PetHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetHomeView.swift; sourceTree = "<group>"; };
 		C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpressionRevealView.swift; sourceTree = "<group>"; };
+		C9EFEE996E1C4B444F152178 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CEE58751CCD8E8C6589EE39C /* PetmojiWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetmojiWidget.entitlements; sourceTree = "<group>"; };
+		D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		D73DA20062A61BDF056EB316 /* PetmojiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetmojiApp.swift; sourceTree = "<group>"; };
-		E2C31EB3D182749A40DD6A1F /* Petmoji.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Petmoji.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E2C31EB3D182749A40DD6A1F /* Petmoji.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Petmoji.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E367B57172A90687CF9B9982 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
-		14180B735D85474085E46B0F /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		ECAC105A00465289B0DF46CE /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		D2864E2573784A599A58F35B /* Embed App Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				05CC65F25F2B492782B691D7 /* PetmojiWidget.appex in Embed App Extensions */,
-			);
-			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		24288802E9A2DEF04C8D734F /* Frameworks */ = {
@@ -148,10 +137,11 @@
 		588685D465B83BA971189708 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				C9EFEE996E1C4B444F152178 /* ContentView.swift */,
 				E367B57172A90687CF9B9982 /* DesignSystem.swift */,
 				BE4275124830FEE1D8B137A8 /* PetHomeView.swift */,
 				D73DA20062A61BDF056EB316 /* PetmojiApp.swift */,
-				14180B735D85474085E46B0F /* SettingsView.swift */,
+				D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -197,6 +187,7 @@
 		A82AA808A0B39377903C3298 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				05D7681EDDDE782F2D2CA814 /* Assets.xcassets */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -227,8 +218,8 @@
 			buildConfigurationList = EF3A726CE76384B1574BADFE /* Build configuration list for PBXNativeTarget "Petmoji" */;
 			buildPhases = (
 				84CB7B6A3FC006D061308A20 /* Sources */,
+				CCE87A1E3F6FBCA7DCF48C54 /* Resources */,
 				6680AF45504FF35D4C18BA1B /* Frameworks */,
-				D2864E2573784A599A58F35B /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
@@ -270,6 +261,14 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					09EBCBC11E0D1906429B1811 = {
+						DevelopmentTeam = "";
+					};
+					BB5C7035C352B62C40A61F3F = {
+						DevelopmentTeam = "";
+					};
+				};
 			};
 			buildConfigurationList = BD2BEB60E46BDB6E45B32046 /* Build configuration list for PBXProject "Petmoji" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -292,6 +291,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		CCE87A1E3F6FBCA7DCF48C54 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		1BAFE3907590D81D190D1C63 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -309,6 +319,7 @@
 			files = (
 				DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */,
 				C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */,
+				DACC0F73BE1E01340A6A9DA3 /* ContentView.swift in Sources */,
 				E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,
 				ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */,
@@ -320,8 +331,8 @@
 				9E547404C5B2A052DE973A3C /* PetMessage.swift in Sources */,
 				2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */,
 				8F5FFD67DE463FB07BBB57A1 /* PhotoPickerView.swift in Sources */,
+				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
 				AB81F69F2C59C7BBBF520714 /* SupabaseService.swift in Sources */,
-				1D1E14D6590D4AD2BB6888BD /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -340,14 +351,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PetmojiWidget/PetmojiWidget.entitlements;
-				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = PetmojiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = media.hilo.petmoji.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.petmoji.app.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -357,14 +367,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PetmojiWidget/PetmojiWidget.entitlements;
-				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = PetmojiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = media.hilo.petmoji.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.petmoji.app.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -376,13 +385,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = media.hilo.petmoji;
+				PRODUCT_BUNDLE_IDENTIFIER = com.petmoji.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -519,13 +527,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = media.hilo.petmoji;
+				PRODUCT_BUNDLE_IDENTIFIER = com.petmoji.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

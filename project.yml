@@ -7,6 +7,26 @@ options:
   groupSortPosition: top
   generateEmptyDirectories: true
 
+# Recreated when you run `xcodegen generate` (shared schemes are not merged by XcodeGen).
+schemes:
+  Petmoji:
+    build:
+      targets:
+        Petmoji: all
+  PetmojiWidget:
+    build:
+      targets:
+        PetmojiWidget: all
+        Petmoji: all
+    run:
+      askForAppToLaunch: true
+      launchAutomaticallySubstyle: "2"
+      executable: Petmoji
+      environmentVariables:
+        _XCWidgetKind: ""
+        _XCWidgetDefaultView: timeline
+        _XCWidgetFamily: systemMedium
+
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -32,7 +52,7 @@ targets:
       path: Petmoji/Info.plist
       properties:
         CFBundleDisplayName: Petmoji
-        CFBundleIdentifier: com.petmoji.app
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         UILaunchStoryboardName: ""
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -49,12 +69,17 @@ targets:
           NSAllowsArbitraryLoads: false
     entitlements:
       path: Petmoji/Petmoji.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.petmoji.app
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app
         INFOPLIST_FILE: Petmoji/Info.plist
     dependencies:
       - package: Supabase
+        product: Supabase
       - target: PetmojiWidget
         embed: false
 
@@ -67,14 +92,18 @@ targets:
       path: PetmojiWidget/Info.plist
       properties:
         CFBundleDisplayName: PetmojiWidget
-        CFBundleIdentifier: com.petmoji.app.widget
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: PetmojiWidget/PetmojiWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.petmoji.app
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app.widget
         INFOPLIST_FILE: PetmojiWidget/Info.plist
     dependencies:
       - package: Supabase
+        product: Supabase

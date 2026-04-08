@@ -1,6 +1,20 @@
 import WidgetKit
 import SwiftUI
 
+// WidgetKit passes non-`Sendable` completion handlers; `Task` requires a `@Sendable` closure.
+// These boxes opt out of static checking for that handoff only.
+private final class PetWidgetSnapshotCompletion: @unchecked Sendable {
+    private let handler: (PetWidgetEntry) -> Void
+    init(_ handler: @escaping (PetWidgetEntry) -> Void) { self.handler = handler }
+    func callAsFunction(_ entry: PetWidgetEntry) { handler(entry) }
+}
+
+private final class PetWidgetTimelineCompletion: @unchecked Sendable {
+    private let handler: (Timeline<PetWidgetEntry>) -> Void
+    init(_ handler: @escaping (Timeline<PetWidgetEntry>) -> Void) { self.handler = handler }
+    func callAsFunction(_ timeline: Timeline<PetWidgetEntry>) { handler(timeline) }
+}
+
 // MARK: - Widget Timeline Entry
 
 struct PetWidgetEntry: TimelineEntry {
@@ -55,38 +69,43 @@ enum WidgetExpression: String, Codable {
 
 // MARK: - Timeline Provider
 
-struct PetWidgetProvider: @preconcurrency TimelineProvider {
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.petmoji.app")
+struct PetWidgetProvider: TimelineProvider {
+    private static let appGroupSuiteName = "group.com.petmoji.app"
 
     func placeholder(in context: Context) -> PetWidgetEntry {
         .placeholder
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PetWidgetEntry) -> Void) {
+        let complete = PetWidgetSnapshotCompletion(completion)
         Task {
-            completion(await buildEntry())
+            let entry = await Self.loadEntry()
+            complete(entry)
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<PetWidgetEntry>) -> Void) {
+        let complete = PetWidgetTimelineCompletion(completion)
         Task {
-            let entry = await buildEntry()
+            let entry = await Self.loadEntry()
             let nextUpdate = Calendar.current.date(byAdding: .hour, value: 2, to: entry.date) ?? entry.date
-            completion(Timeline(entries: [entry], policy: .after(nextUpdate)))
+            complete(Timeline(entries: [entry], policy: .after(nextUpdate)))
         }
     }
 
     // MARK: - Build entry with pre-downloaded image data
 
-    private func buildEntry() async -> PetWidgetEntry {
-        guard let name    = sharedDefaults?.string(forKey: "pet_name"),
-              let message = sharedDefaults?.string(forKey: "widget_message") else {
+    /// Static helpers avoid capturing `self` in `Task`'s `@Sendable` closure (Swift 6).
+    private nonisolated static func loadEntry() async -> PetWidgetEntry {
+        let defaults = UserDefaults(suiteName: appGroupSuiteName)
+        guard let name    = defaults?.string(forKey: "pet_name"),
+              let message = defaults?.string(forKey: "widget_message") else {
             return .placeholder
         }
 
-        let expressionStr = sharedDefaults?.string(forKey: "widget_expression") ?? "happy"
-        let spriteURL     = sharedDefaults?.string(forKey: "widget_sprite_url")
-        let imageData     = await downloadImageData(from: spriteURL)
+        let expressionStr = defaults?.string(forKey: "widget_expression") ?? "happy"
+        let spriteURL     = defaults?.string(forKey: "widget_sprite_url")
+        let imageData     = await Self.downloadImageData(from: spriteURL)
 
         return PetWidgetEntry(
             date: .now,
@@ -98,7 +117,7 @@ struct PetWidgetProvider: @preconcurrency TimelineProvider {
         )
     }
 
-    private func downloadImageData(from urlString: String?) async -> Data? {
+    private nonisolated static func downloadImageData(from urlString: String?) async -> Data? {
         guard let urlString, let url = URL(string: urlString) else { return nil }
         return try? await URLSession.shared.data(from: url).0
     }

@@ -85,7 +85,7 @@ final class OnboardingDraft: ObservableObject {
     @Published var photos: [UIImage] = []
     @Published var photoData: [Data] = []
     @Published var name: String = ""
-    @Published var species: Species = .cat
+    @Published var species: Species = .dog
     @Published var gender: PetGender = .boy
     @Published var selectedTraits: Set<PersonalityTrait> = []
     @Published var energyLevel: Double = 5.0

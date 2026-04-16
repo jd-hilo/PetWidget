@@ -9,6 +9,7 @@ struct PhotoPickerView: View {
 
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var isLoadingPhotos = false
+    @State private var isPhotoPickerPresented = false
 
     var body: some View {
         ScrollView {
@@ -24,10 +25,12 @@ struct PhotoPickerView: View {
                 }
                 .padding(.horizontal, 24)
 
-                // Photo grid
-                PhotoGridView(photos: draft.photos, isLoading: isLoadingPhotos) {
-                    // Remove photo
-                }
+                // Photo grid (tap to open picker)
+                PhotoGridView(
+                    photos: draft.photos,
+                    isLoading: isLoadingPhotos,
+                    onTap: { isPhotoPickerPresented = true }
+                )
 
                 // Species picker
                 VStack(alignment: .leading, spacing: 12) {
@@ -55,11 +58,9 @@ struct PhotoPickerView: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 12) {
-                PhotosPicker(
-                    selection: $selectedItems,
-                    maxSelectionCount: 5,
-                    matching: .images
-                ) {
+                Button {
+                    isPhotoPickerPresented = true
+                } label: {
                     Text(draft.photos.isEmpty ? "add photos" : "add more photos")
                         .font(.buttonFont)
                         .foregroundStyle(Color.pmPrimary)
@@ -67,6 +68,7 @@ struct PhotoPickerView: View {
                         .frame(height: 58)
                         .background(Color.pmPrimaryLight, in: Capsule())
                 }
+                .buttonStyle(.plain)
                 .padding(.horizontal, 24)
 
                 PMPrimaryButton(
@@ -82,18 +84,29 @@ struct PhotoPickerView: View {
         .onChange(of: selectedItems) { _, newItems in
             Task {
                 isLoadingPhotos = true
+                var images: [UIImage] = []
+                var dataItems: [Data] = []
                 for item in newItems {
                     if let data = try? await item.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
-                        await MainActor.run {
-                            draft.photos.append(image)
-                            draft.photoData.append(data)
-                        }
+                        images.append(image)
+                        dataItems.append(data)
                     }
                 }
-                await MainActor.run { isLoadingPhotos = false }
+                await MainActor.run {
+                    // Treat each picker session as an edit of current photo set.
+                    draft.photos = images
+                    draft.photoData = dataItems
+                    isLoadingPhotos = false
+                }
             }
         }
+        .photosPicker(
+            isPresented: $isPhotoPickerPresented,
+            selection: $selectedItems,
+            maxSelectionCount: 5,
+            matching: .images
+        )
     }
 }
 
@@ -102,7 +115,7 @@ struct PhotoPickerView: View {
 struct PhotoGridView: View {
     let photos: [UIImage]
     let isLoading: Bool
-    let onRemove: () -> Void
+    let onTap: () -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -163,5 +176,7 @@ struct PhotoGridView: View {
             }
             .padding(.horizontal, 24)
         }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
     }
 }

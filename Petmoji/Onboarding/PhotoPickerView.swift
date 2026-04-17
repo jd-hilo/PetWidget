@@ -55,6 +55,7 @@ struct PhotoPickerView: View {
                         .foregroundStyle(LandingPalette.accentDark)
                     Text("add 3–5 clear face photos for the best results")
                         .font(.bodyM)
+                        .bold()
                         .foregroundStyle(LandingPalette.textSecondary)
                 }
                 .padding(.horizontal, 24)
@@ -111,7 +112,7 @@ struct PhotoPickerView: View {
                 } label: {
                     Text(draft.photos.isEmpty ? "add photos" : "add more")
                         .font(.bodyL)
-                        .foregroundStyle(LandingPalette.textPrimary)
+                        .foregroundStyle(PhotoPickerSpeciesStyle.iconTint)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
                         .background(
@@ -148,14 +149,17 @@ struct PhotoPickerView: View {
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 10)
-            .background(LandingPalette.background.opacity(0.96))
+            .background(Color.clear)
         }
         .background {
-            LinearGradient(
-                colors: [LandingPalette.background, LandingPalette.backgroundTint],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            ZStack {
+                LinearGradient(
+                    colors: [LandingPalette.background, LandingPalette.backgroundTint],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                OnboardingBackgroundPattern()
+            }
             .ignoresSafeArea()
         }
         .onChange(of: selectedItems) { _, newItems in
@@ -187,6 +191,101 @@ struct PhotoPickerView: View {
     }
 }
 
+private struct OnboardingBackgroundPattern: View {
+    private let symbolColor = Color(hex: "#8FA287")
+
+    private struct PatternSymbol {
+        let systemName: String
+        let point: CGPoint
+        let size: CGFloat
+        let opacity: Double
+        let rotation: Double
+    }
+
+    private var leftEdgeSymbols: [PatternSymbol] {
+        [
+            .init(systemName: "pawprint.fill", point: .init(x: 0.06, y: 0.04), size: 42, opacity: 0.46, rotation: -12),
+            .init(systemName: "pawprint", point: .init(x: 0.14, y: 0.09), size: 34, opacity: 0.38, rotation: 6),
+            .init(systemName: "leaf", point: .init(x: 0.05, y: 0.16), size: 40, opacity: 0.34, rotation: 22),
+            .init(systemName: "leaf.fill", point: .init(x: 0.15, y: 0.21), size: 30, opacity: 0.30, rotation: -18),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.05, y: 0.30), size: 38, opacity: 0.40, rotation: 10),
+            .init(systemName: "pawprint", point: .init(x: 0.13, y: 0.36), size: 30, opacity: 0.34, rotation: -16),
+            .init(systemName: "leaf", point: .init(x: 0.04, y: 0.45), size: 42, opacity: 0.32, rotation: 28),
+            .init(systemName: "leaf.fill", point: .init(x: 0.13, y: 0.54), size: 30, opacity: 0.30, rotation: -24),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.06, y: 0.63), size: 40, opacity: 0.42, rotation: 8),
+            .init(systemName: "pawprint", point: .init(x: 0.14, y: 0.70), size: 30, opacity: 0.34, rotation: -12),
+            .init(systemName: "leaf", point: .init(x: 0.04, y: 0.79), size: 40, opacity: 0.32, rotation: 20),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.06, y: 0.90), size: 38, opacity: 0.40, rotation: 14),
+            .init(systemName: "leaf.fill", point: .init(x: 0.15, y: 0.95), size: 30, opacity: 0.28, rotation: -18)
+        ]
+    }
+
+    private var rightEdgeSymbols: [PatternSymbol] {
+        [
+            .init(systemName: "pawprint.fill", point: .init(x: 0.94, y: 0.05), size: 40, opacity: 0.44, rotation: 14),
+            .init(systemName: "pawprint", point: .init(x: 0.86, y: 0.10), size: 32, opacity: 0.36, rotation: -8),
+            .init(systemName: "leaf", point: .init(x: 0.96, y: 0.18), size: 40, opacity: 0.32, rotation: -24),
+            .init(systemName: "leaf.fill", point: .init(x: 0.87, y: 0.23), size: 30, opacity: 0.30, rotation: 16),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.95, y: 0.32), size: 38, opacity: 0.40, rotation: -10),
+            .init(systemName: "pawprint", point: .init(x: 0.87, y: 0.39), size: 30, opacity: 0.34, rotation: 12),
+            .init(systemName: "leaf", point: .init(x: 0.96, y: 0.48), size: 42, opacity: 0.30, rotation: -18),
+            .init(systemName: "leaf.fill", point: .init(x: 0.87, y: 0.57), size: 30, opacity: 0.28, rotation: 26),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.94, y: 0.66), size: 38, opacity: 0.40, rotation: -8),
+            .init(systemName: "pawprint", point: .init(x: 0.86, y: 0.74), size: 30, opacity: 0.34, rotation: 10),
+            .init(systemName: "leaf", point: .init(x: 0.95, y: 0.83), size: 40, opacity: 0.32, rotation: -22),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.93, y: 0.92), size: 38, opacity: 0.40, rotation: 10),
+            .init(systemName: "leaf.fill", point: .init(x: 0.86, y: 0.97), size: 28, opacity: 0.26, rotation: 20)
+        ]
+    }
+
+    var body: some View {
+        let screenSize = UIScreen.main.bounds.size
+        ZStack {
+            ForEach(Array(leftEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
+                decorativeSymbol(
+                    symbol.systemName,
+                    at: symbol.point,
+                    in: screenSize,
+                    size: symbol.size,
+                    opacity: symbol.opacity,
+                    rotation: symbol.rotation
+                )
+            }
+
+            ForEach(Array(rightEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
+                decorativeSymbol(
+                    symbol.systemName,
+                    at: symbol.point,
+                    in: screenSize,
+                    size: symbol.size,
+                    opacity: symbol.opacity,
+                    rotation: symbol.rotation
+                )
+            }
+        }
+        .frame(width: screenSize.width, height: screenSize.height)
+        .allowsHitTesting(false)
+    }
+
+    private func decorativeSymbol(
+        _ systemName: String,
+        at relativePoint: CGPoint,
+        in size: CGSize,
+        size iconSize: CGFloat,
+        opacity: Double,
+        rotation: Double
+    ) -> some View {
+        let absoluteX = size.width * relativePoint.x
+        let absoluteY = size.height * relativePoint.y
+
+        return Image(systemName: systemName)
+            .font(.system(size: iconSize, weight: .medium))
+            .foregroundStyle(symbolColor.opacity(opacity))
+            .rotationEffect(.degrees(rotation))
+            .position(x: absoluteX, y: absoluteY)
+    }
+}
+
 struct SpeciesTileButton: View {
     let label: String
     let iconAssetName: String?
@@ -202,9 +301,17 @@ struct SpeciesTileButton: View {
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(isSelected ? Color(hex: "#7E9C78").opacity(0.38) : Color(hex: "#EFECE6"))
+                    .fill(isSelected ? Color(hex: "#7E9C78") : Color(hex: "#EFECE6"))
                     .frame(maxWidth: .infinity)
                     .frame(height: 132)
+                    // Match small photo placeholder: tight sage glow + border.
+                    .shadow(color: Color(hex: "#7E9C78").opacity(0.40), radius: 2, x: 0, y: 0)
+                    .shadow(color: Color(hex: "#7E9C78").opacity(0.20), radius: 4, x: 0, y: 0)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 2))
+                            .foregroundStyle(Color(hex: "#B8C7B2"))
+                    }
                     .modifier(SpeciesSelectedShadowModifier(isSelected: isSelected))
 
                 VStack(spacing: 10) {
@@ -256,9 +363,16 @@ struct SpeciesWideButton: View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(isSelected ? Color(hex: "#7E9C78").opacity(0.38) : Color(hex: "#EFECE6"))
+                    .fill(isSelected ? Color(hex: "#7E9C78") : Color(hex: "#EFECE6"))
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
+                    .shadow(color: Color(hex: "#7E9C78").opacity(0.40), radius: 2, x: 0, y: 0)
+                    .shadow(color: Color(hex: "#7E9C78").opacity(0.20), radius: 4, x: 0, y: 0)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 2))
+                            .foregroundStyle(Color(hex: "#B8C7B2"))
+                    }
                     .modifier(SpeciesSelectedShadowModifier(isSelected: isSelected))
 
                 Text(label)
@@ -292,10 +406,17 @@ struct PhotoGridView: View {
                         .scaledToFill()
                         .frame(width: 180, height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: Color(hex: "#7E9C78").opacity(0.60), radius: 2, x: 0, y: 0)
+                        .shadow(color: Color(hex: "#7E9C78").opacity(0.40), radius: 4, x: 0, y: 0)
+                        .shadow(color: Color(hex: "#7E9C78").opacity(0.20), radius: 6, x: 0, y: 0)
                 } else {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color(hex: "#F2F4ED"))
+                        .fill(Color(hex: "#EFECE6"))
                         .frame(width: 180, height: 180)
+                        // Tight border-hugging glow (small radii, no offset — dense near the edge).
+                        .shadow(color: Color(hex: "#7E9C78").opacity(0.60), radius: 2, x: 0, y: 0)
+                        .shadow(color: Color(hex: "#7E9C78").opacity(0.40), radius: 4, x: 0, y: 0)
+                        .shadow(color: Color(hex: "#7E9C78").opacity(0.20), radius: 6, x: 0, y: 0)
                         .overlay {
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(
@@ -310,10 +431,10 @@ struct PhotoGridView: View {
                                 VStack(spacing: 8) {
                                     Image(systemName: "camera")
                                         .font(.system(size: 32, weight: .light))
-                                        .foregroundStyle(Color(hex: "#5F7B5A"))
+                                        .foregroundStyle(PhotoPickerSpeciesStyle.iconTint)
                                     Text("add photo")
                                         .font(.bodyS)
-                                        .foregroundStyle(Color(hex: "#5F7B5A"))
+                                        .foregroundStyle(PhotoPickerSpeciesStyle.iconTint)
                                 }
                             }
                         }
@@ -327,23 +448,32 @@ struct PhotoGridView: View {
                             .scaledToFill()
                             .frame(width: 110, height: 110)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(color: Color(hex: "#7E9C78").opacity(0.40), radius: 2, x: 0, y: 0)
+                            .shadow(color: Color(hex: "#7E9C78").opacity(0.20), radius: 4, x: 0, y: 0)
                     } else {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color(hex: "#F2F4ED"))
+                            .fill(Color(hex: "#EFECE6"))
                             .frame(width: 110, height: 110)
+                            // Lighter, still tight to the border.
+                            .shadow(color: Color(hex: "#7E9C78").opacity(0.40), radius: 2, x: 0, y: 0)
+                            .shadow(color: Color(hex: "#7E9C78").opacity(0.20), radius: 4, x: 0, y: 0)
                             .overlay {
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .strokeBorder(Color(hex: "#B8C7B2").opacity(0.8), lineWidth: 1)
+                                    .strokeBorder(
+                                        style: StrokeStyle(lineWidth: 2)
+                                    )
+                                    .foregroundStyle(Color(hex: "#B8C7B2"))
                             }
                             .overlay {
                                 Image(systemName: "plus")
                                     .font(.system(size: 24, weight: .medium))
-                                    .foregroundStyle(Color(hex: "#5F7B5A"))
+                                    .foregroundStyle(PhotoPickerSpeciesStyle.iconTint)
                             }
                     }
                 }
             }
             .padding(.horizontal, 24)
+            .padding(.vertical, 10)
         }
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)

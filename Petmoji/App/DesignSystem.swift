@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Color Palette
 
@@ -317,6 +318,86 @@ struct PMProgressDots: View {
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: current)
+    }
+}
+
+// MARK: - Onboarding icon progress (icons + connectors)
+
+/// Icons with capsules between them; the segment for the current step is darkest, completed segments are mid sage, upcoming are light.
+struct PMOnboardingIconProgressBar: View {
+    let total: Int
+    let current: Int
+
+    /// First half of steps use bone icons, second half use fish-bone icons (matches 4-step onboarding: photo → personality → reveal → widget).
+    private let boneOutlineAsset = "boneIcon"
+    private let boneFillAsset = "bonefillIcon"
+    private let fishOutlineAsset = "fishBoneIcon"
+    private let fishFillAsset = "fishBoneFillIcon"
+
+    private let iconSide: CGFloat = 28
+    private let connectorWidth: CGFloat = 56
+    private let connectorHeight: CGFloat = 5
+    private let stackSpacing: CGFloat = 8
+
+    private let iconTint = Color(hex: "#5F7B5A")
+    private let segmentActive = Color(hex: "#5F7B5A")
+    private let segmentCompleted = Color(hex: "#7E9C78")
+    private let segmentUpcoming = Color(hex: "#CDD7C8")
+
+    var body: some View {
+        HStack(spacing: stackSpacing) {
+            ForEach(0..<total, id: \.self) { i in
+                progressIcon(at: i)
+
+                if i < total - 1 {
+                    Capsule(style: .continuous)
+                        .fill(segmentColor(forSegmentLeadingFromStep: i))
+                        .frame(width: connectorWidth, height: connectorHeight)
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: current)
+    }
+
+    private func iconAssetName(for index: Int) -> String {
+        let fishStartIndex = (total + 1) / 2
+        let useFish = index >= fishStartIndex
+        let useFill = index == current
+        if useFish {
+            return useFill ? fishFillAsset : fishOutlineAsset
+        }
+        return useFill ? boneFillAsset : boneOutlineAsset
+    }
+
+    @ViewBuilder
+    private func progressIcon(at index: Int) -> some View {
+        let name = iconAssetName(for: index)
+        if let uiImage = UIImage(named: name) {
+            Image(uiImage: uiImage)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: iconSide, height: iconSide)
+                .foregroundStyle(iconTint)
+        } else {
+            Image(systemName: index >= (total + 1) / 2 ? "fish.fill" : "dog.fill")
+                .font(.system(size: iconSide * 0.55, weight: .semibold))
+                .foregroundStyle(iconTint)
+        }
+    }
+
+    private func segmentColor(forSegmentLeadingFromStep index: Int) -> Color {
+        // Segment `index` connects step `index` → `index + 1`.
+        if current == total - 1 {
+            return segmentActive
+        }
+        if index < current {
+            return segmentCompleted
+        }
+        if index == current {
+            return segmentActive
+        }
+        return segmentUpcoming
     }
 }
 

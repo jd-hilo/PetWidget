@@ -22,11 +22,10 @@ struct OnboardingCoordinator: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    PMProgressDots(total: 4, current: 0)
+                    PMOnboardingIconProgressBar(total: 4, current: 0)
                 }
             }
-            .toolbarBackground(Color.pmBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: OnboardingStep.self) { step in
                 switch step {
                 case .personality:
@@ -37,7 +36,7 @@ struct OnboardingCoordinator: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .principal) {
-                            PMProgressDots(total: 4, current: 1)
+                            PMOnboardingIconProgressBar(total: 4, current: 1)
                         }
                     }
                     .toolbarBackground(Color.pmBackground, for: .navigationBar)
@@ -52,7 +51,7 @@ struct OnboardingCoordinator: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .principal) {
-                            PMProgressDots(total: 4, current: 2)
+                            PMOnboardingIconProgressBar(total: 4, current: 2)
                         }
                     }
                     .navigationBarBackButtonHidden(true)
@@ -67,7 +66,7 @@ struct OnboardingCoordinator: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .principal) {
-                            PMProgressDots(total: 4, current: 3)
+                            PMOnboardingIconProgressBar(total: 4, current: 3)
                         }
                     }
                     .navigationBarBackButtonHidden(true)

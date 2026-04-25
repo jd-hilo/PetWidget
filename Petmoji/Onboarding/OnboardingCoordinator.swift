@@ -20,11 +20,7 @@ struct OnboardingCoordinator: View {
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    PMOnboardingIconProgressBar(total: 4, current: 0)
-                }
-            }
+            .pmOnboardingToolbar(total: 4, current: 0, balancedBackButton: false)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: OnboardingStep.self) { step in
                 switch step {
@@ -34,13 +30,8 @@ struct OnboardingCoordinator: View {
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            PMOnboardingIconProgressBar(total: 4, current: 1)
-                        }
-                    }
-                    .toolbarBackground(Color.pmBackground, for: .navigationBar)
-                    .toolbarBackground(.visible, for: .navigationBar)
+                    .pmOnboardingToolbar(total: 4, current: 1, balancedBackButton: true)
+                    .toolbarBackground(.hidden, for: .navigationBar)
 
                 case .spriteReveal:
                     ExpressionRevealView(draft: draft) { pet in
@@ -49,11 +40,7 @@ struct OnboardingCoordinator: View {
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            PMOnboardingIconProgressBar(total: 4, current: 2)
-                        }
-                    }
+                    .pmOnboardingToolbar(total: 4, current: 2, balancedBackButton: false)
                     .navigationBarBackButtonHidden(true)
 
                 case .widgetSetup:
@@ -64,16 +51,12 @@ struct OnboardingCoordinator: View {
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .principal) {
-                            PMOnboardingIconProgressBar(total: 4, current: 3)
-                        }
-                    }
+                    .pmOnboardingToolbar(total: 4, current: 3, balancedBackButton: false)
                     .navigationBarBackButtonHidden(true)
                 }
             }
         }
-        .tint(Color.pmTextPrimary)
+        .tint(Color.pmSageAccentDark)
     }
 }
 
@@ -94,5 +77,5 @@ final class OnboardingDraft: ObservableObject {
     @Published var generatedExpressions: ExpressionMap = ExpressionMap()
 
     var isPhotoStepValid: Bool { !photos.isEmpty }
-    var isPersonalityStepValid: Bool { !selectedTraits.isEmpty }
+    var isPersonalityStepValid: Bool { selectedTraits.count == 3 }
 }

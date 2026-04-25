@@ -38,10 +38,24 @@ struct ClaudeMessageResponse: Codable {
 
 // MARK: - Chat message (in-memory, not persisted)
 
-struct ChatMessage: Identifiable {
-    let id = UUID()
+struct ChatMessage: Codable, Identifiable, Equatable {
+    let id: UUID
     let content: String
     let isFromPet: Bool
     let expression: PetExpression?
-    let timestamp = Date()
+    let timestamp: Date
+
+    init(
+        id: UUID = UUID(),
+        content: String,
+        isFromPet: Bool,
+        expression: PetExpression?,
+        timestamp: Date = Date()
+    ) {
+        self.id = id
+        self.content = content
+        self.isFromPet = isFromPet
+        self.expression = expression
+        self.timestamp = timestamp
+    }
 }

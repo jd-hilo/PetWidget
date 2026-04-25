@@ -70,10 +70,53 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @StateObject private var debugDraft = OnboardingDraft()
+
+    private var shouldSkipOnboardingToReveal: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipOnboardingToReveal")
+#else
+        false
+#endif
+    }
+
+    private var shouldUseMockSprites: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-mockSprites")
+#else
+        false
+#endif
+    }
+
+    private var shouldSkipOnboardingToWidgetSetup: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipOnboardingToWidgetSetup")
+#else
+        false
+#endif
+    }
 
     var body: some View {
         Group {
-            if appState.currentPet != nil {
+            if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
+                NavigationStack {
+                    WidgetSetupView {
+#if DEBUG
+                        appState.setPet(makeDebugRogerPet(useMockSprites: shouldUseMockSprites))
+#endif
+                    }
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .pmOnboardingToolbar(total: 4, current: 3, balancedBackButton: false)
+                    .navigationBarBackButtonHidden(true)
+                }
+            } else if shouldSkipOnboardingToReveal {
+                DebugRevealFlowView(
+                    draft: debugDraft,
+                    onSetPet: appState.setPet(_:),
+                    useMockSprites: shouldUseMockSprites
+                )
+            } else if appState.currentPet != nil {
                 NavigationStack {
                     PetHomeView()
                 }
@@ -82,7 +125,116 @@ struct RootView: View {
             }
         }
         .task {
-            await appState.loadCurrentPet()
+            if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
+                await appState.loadCurrentPet()
+            }
+        }
+    }
+
+#if DEBUG
+    private func makeDebugRogerPet(useMockSprites: Bool) -> Pet {
+        Pet(
+            id: UUID(),
+            userId: UUID(),
+            name: "Roger",
+            species: .dog,
+            gender: .boy,
+            expressions: useMockSprites ? debugTesterExpressions() : ExpressionMap(),
+            personalityTraits: [.dramatic, .mischievous, .sweet],
+            energyLevel: 7,
+            biggestEnemy: .vacuumCleaner,
+            baseMood: .mildlySuspicious,
+            homeLat: nil,
+            homeLng: nil,
+            timezone: TimeZone.current.identifier,
+            createdAt: Date()
+        )
+    }
+
+    private func debugTesterExpressions() -> ExpressionMap {
+        let bundled = ExpressionMap(
+            happy: debugBundleSpriteURL(named: "tester_happy"),
+            sleepy: debugBundleSpriteURL(named: "tester_sleepy"),
+            mad: debugBundleSpriteURL(named: "tester_mad"),
+            excited: debugBundleSpriteURL(named: "tester_excited"),
+            missesYou: debugBundleSpriteURL(named: "tester_misses_you"),
+            judging: debugBundleSpriteURL(named: "tester_judging")
+        )
+        let hasAllBundled = [
+            bundled.happy, bundled.sleepy, bundled.mad,
+            bundled.excited, bundled.missesYou, bundled.judging
+        ].allSatisfy { $0 != nil }
+        guard hasAllBundled else {
+            return ExpressionMap(
+                happy: "https://placehold.co/400x400/CDE6C8/2F5D46?text=happy",
+                sleepy: "https://placehold.co/400x400/DCE9D7/2F5D46?text=sleepy",
+                mad: "https://placehold.co/400x400/BBD8B3/2F5D46?text=mad",
+                excited: "https://placehold.co/400x400/CDE6C8/2F5D46?text=excited",
+                missesYou: "https://placehold.co/400x400/DCE9D7/2F5D46?text=misses+you",
+                judging: "https://placehold.co/400x400/BBD8B3/2F5D46?text=judging"
+            )
+        }
+        return bundled
+    }
+
+    private func debugBundleSpriteURL(named resourceName: String) -> String? {
+        if let pngURL = Bundle.main.url(forResource: resourceName, withExtension: "png") {
+            return pngURL.absoluteString
+        }
+        if let jpgURL = Bundle.main.url(forResource: resourceName, withExtension: "jpg") {
+            return jpgURL.absoluteString
+        }
+        if let jpegURL = Bundle.main.url(forResource: resourceName, withExtension: "jpeg") {
+            return jpegURL.absoluteString
+        }
+        if let webpURL = Bundle.main.url(forResource: resourceName, withExtension: "webp") {
+            return webpURL.absoluteString
+        }
+        return nil
+    }
+#endif
+}
+
+private struct DebugRevealFlowView: View {
+    @ObservedObject var draft: OnboardingDraft
+    let onSetPet: (Pet) -> Void
+    let useMockSprites: Bool
+
+    @State private var path: [Step] = []
+
+    private enum Step: Hashable {
+        case widgetSetup
+    }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            ExpressionRevealView(
+                draft: draft,
+                onComplete: { pet in
+                    onSetPet(pet)
+                    path.append(.widgetSetup)
+                },
+                skipGenerationForDebug: true,
+                useMockSpritesForDebug: useMockSprites
+            )
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .pmOnboardingToolbar(total: 4, current: 2, balancedBackButton: false)
+            .navigationBarBackButtonHidden(true)
+            .navigationDestination(for: Step.self) { step in
+                switch step {
+                case .widgetSetup:
+                    WidgetSetupView {
+                        if let pet = draft.completedPet {
+                            onSetPet(pet)
+                        }
+                    }
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .pmOnboardingToolbar(total: 4, current: 3, balancedBackButton: false)
+                    .navigationBarBackButtonHidden(true)
+                }
+            }
         }
     }
 }

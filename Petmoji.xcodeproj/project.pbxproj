@@ -29,6 +29,13 @@
 		ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9844B5416F8DE38FCA025428 /* LocationService.swift */; };
 		EFF5B90AECAEC78FD9950367 /* PetWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B15C9F26B1590FEDD4031F /* PetWidgetEntryView.swift */; };
 		F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 05D7681EDDDE782F2D2CA814 /* Assets.xcassets */; };
+		F7AEEFD22F9D451B006EDD07 /* tester_happy.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD12F9D451B006EDD07 /* tester_happy.png */; };
+		F7AEEFD42F9D4595006EDD07 /* tester_sleepy.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD32F9D4595006EDD07 /* tester_sleepy.png */; };
+		F7AEEFD62F9D459A006EDD07 /* tester_mad.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD52F9D459A006EDD07 /* tester_mad.png */; };
+		F7AEEFD82F9D459F006EDD07 /* tester_excited.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD72F9D459F006EDD07 /* tester_excited.png */; };
+		F7AEEFDA2F9D45A5006EDD07 /* tester_misses_you.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */; };
+		F7AEEFDC2F9D45A8006EDD07 /* tester_judging.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */; };
+		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +75,13 @@
 		E2C31EB3D182749A40DD6A1F /* Petmoji.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Petmoji.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E367B57172A90687CF9B9982 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		ECAC105A00465289B0DF46CE /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
+		F7AEEFD12F9D451B006EDD07 /* tester_happy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_happy.png; sourceTree = "<group>"; };
+		F7AEEFD32F9D4595006EDD07 /* tester_sleepy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_sleepy.png; sourceTree = "<group>"; };
+		F7AEEFD52F9D459A006EDD07 /* tester_mad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_mad.png; sourceTree = "<group>"; };
+		F7AEEFD72F9D459F006EDD07 /* tester_excited.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_excited.png; sourceTree = "<group>"; };
+		F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_misses_you.png; sourceTree = "<group>"; };
+		F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_judging.png; sourceTree = "<group>"; };
+		F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -165,6 +179,7 @@
 				9844B5416F8DE38FCA025428 /* LocationService.swift */,
 				B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */,
 				9C1681768AB9E46038876ECF /* SupabaseService.swift */,
+				F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -207,6 +222,12 @@
 				45DF90F334D64B93473BB379 /* Petmoji */,
 				736E176327920AC3F5FD8AD9 /* PetmojiWidget */,
 				B88E4E83CDFDFBBF177613F8 /* Products */,
+				F7AEEFD12F9D451B006EDD07 /* tester_happy.png */,
+				F7AEEFD32F9D4595006EDD07 /* tester_sleepy.png */,
+				F7AEEFD52F9D459A006EDD07 /* tester_mad.png */,
+				F7AEEFD72F9D459F006EDD07 /* tester_excited.png */,
+				F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */,
+				F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */,
 			);
 			sourceTree = "<group>";
 		};
@@ -288,7 +309,13 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F7AEEFDC2F9D45A8006EDD07 /* tester_judging.png in Resources */,
+				F7AEEFD42F9D4595006EDD07 /* tester_sleepy.png in Resources */,
+				F7AEEFDA2F9D45A5006EDD07 /* tester_misses_you.png in Resources */,
+				F7AEEFD82F9D459F006EDD07 /* tester_excited.png in Resources */,
+				F7AEEFD22F9D451B006EDD07 /* tester_happy.png in Resources */,
 				F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */,
+				F7AEEFD62F9D459A006EDD07 /* tester_mad.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -309,6 +336,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */,
 				DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */,
 				C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */,
 				DACC0F73BE1E01340A6A9DA3 /* ContentView.swift in Sources */,

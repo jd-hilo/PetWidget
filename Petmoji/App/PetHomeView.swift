@@ -1,5 +1,4 @@
 import SwiftUI
-import WidgetKit
 
 // MARK: - Pet Home View
 
@@ -207,6 +206,18 @@ struct PetHomeView: View {
         .task {
             await loadLatestMessage()
         }
+        .onAppear {
+            if appState.pendingWidgetDeepLink == .openChat {
+                showChat = true
+                appState.pendingWidgetDeepLink = .none
+            }
+        }
+        .onChange(of: appState.pendingWidgetDeepLink) { _, link in
+            if link == .openChat {
+                showChat = true
+                appState.pendingWidgetDeepLink = .none
+            }
+        }
     }
 
     private func loadLatestMessage() async {
@@ -244,16 +255,8 @@ struct PetHomeView: View {
                 recentMessages = mapped
             }
 
-            // Keep widget in sync: same message + correct expression sprite
             if let message = latestMessage {
-                let spriteURL = pet.expressions[message.expression]
-                               ?? pet.expressions[.happy]
-                let d = UserDefaults(suiteName: "group.com.petmoji.app")
-                d?.set(pet.name,                    forKey: "pet_name")
-                d?.set(message.content,             forKey: "widget_message")
-                d?.set(message.expression.rawValue, forKey: "widget_expression")
-                d?.set(spriteURL,                   forKey: "widget_sprite_url")
-                WidgetCenter.shared.reloadAllTimelines()
+                WidgetSnapshotSync.writeFromPet(pet, message: message)
             }
         } catch {
             // Silently fail — widget keeps showing cached data
@@ -266,7 +269,7 @@ struct PetHomeView: View {
         guard !localHistory.isEmpty else { return }
         recentMessages = Array(localHistory.suffix(8))
         if let latestPetChat = localHistory.last(where: { $0.isFromPet }) {
-            latestMessage = PetMessage(
+            let synced = PetMessage(
                 id: UUID(),
                 petId: pet.id,
                 content: latestPetChat.content,
@@ -275,6 +278,8 @@ struct PetHomeView: View {
                 scheduledFor: latestPetChat.timestamp,
                 sentAt: latestPetChat.timestamp
             )
+            latestMessage = synced
+            WidgetSnapshotSync.writeFromPet(pet, message: synced)
         }
     }
 

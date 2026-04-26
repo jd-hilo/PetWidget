@@ -11,6 +11,12 @@ struct PetmojiApp: App {
             RootView()
                 .environmentObject(appState)
                 .preferredColorScheme(.light)
+                .onOpenURL { url in
+                    guard url.scheme?.lowercased() == "petmoji" else { return }
+                    if url.host?.lowercased() == "chat" {
+                        appState.pendingWidgetDeepLink = .openChat
+                    }
+                }
         }
     }
 }
@@ -58,13 +64,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             return
         }
 
-        let sharedDefaults = UserDefaults(suiteName: "group.com.petmoji.app")
-        sharedDefaults?.set(pet.name, forKey: "pet_name")
-        sharedDefaults?.set(message.content, forKey: "widget_message")
-        sharedDefaults?.set(message.expression.rawValue, forKey: "widget_expression")
-        sharedDefaults?.set(pet.expressions[message.expression], forKey: "widget_sprite_url")
-
-        WidgetReloader.reload()
+        WidgetSnapshotSync.writeFromPet(pet, message: message)
     }
 }
 
@@ -239,10 +239,16 @@ private struct DebugRevealFlowView: View {
     }
 }
 
+enum PendingWidgetDeepLink: Equatable {
+    case none
+    case openChat
+}
+
 @MainActor
 final class AppState: ObservableObject {
     @Published var currentPet: Pet?
     @Published var isLoading = false
+    @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
 
     private let supabase = SupabaseService.shared
 

@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		1E4B9C810D7BF0E33A9BA04B /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */; };
-		28AED0CF5E37CCF9DE376EC2 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B0D7513D162947B5A98E2E36 /* Supabase */; };
 		292F7496F3240B0562708EBF /* PersonalityBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */; };
 		2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73DA20062A61BDF056EB316 /* PetmojiApp.swift */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
@@ -36,6 +35,8 @@
 		F7AEEFDA2F9D45A5006EDD07 /* tester_misses_you.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */; };
 		F7AEEFDC2F9D45A8006EDD07 /* tester_judging.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */; };
 		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
+		F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */; };
+		F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +48,20 @@
 			remoteInfo = PetmojiWidget;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F7E8D904234567890ABCDEF /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		05D7681EDDDE782F2D2CA814 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -82,6 +97,7 @@
 		F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_misses_you.png; sourceTree = "<group>"; };
 		F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_judging.png; sourceTree = "<group>"; };
 		F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
+		F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotSync.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,7 +105,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				28AED0CF5E37CCF9DE376EC2 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -180,6 +195,7 @@
 				B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */,
 				9C1681768AB9E46038876ECF /* SupabaseService.swift */,
 				F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */,
+				F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -241,6 +257,7 @@
 				84CB7B6A3FC006D061308A20 /* Sources */,
 				CCE87A1E3F6FBCA7DCF48C54 /* Resources */,
 				6680AF45504FF35D4C18BA1B /* Frameworks */,
+				F7E8D904234567890ABCDEF /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -268,7 +285,6 @@
 			);
 			name = PetmojiWidget;
 			packageProductDependencies = (
-				B0D7513D162947B5A98E2E36 /* Supabase */,
 			);
 			productName = PetmojiWidget;
 			productReference = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */;
@@ -353,6 +369,7 @@
 				8F5FFD67DE463FB07BBB57A1 /* PhotoPickerView.swift in Sources */,
 				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
 				AB81F69F2C59C7BBBF520714 /* SupabaseService.swift in Sources */,
+				F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -395,7 +412,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.petmoji.app.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hilollcpetmoji.app.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -607,11 +624,6 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		86C7DF1934A3B2403C541D2F /* Supabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A9FA533EDF0283438671DEA7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Supabase;
-		};
-		B0D7513D162947B5A98E2E36 /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A9FA533EDF0283438671DEA7 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;

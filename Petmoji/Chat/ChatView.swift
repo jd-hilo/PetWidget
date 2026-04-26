@@ -206,6 +206,7 @@ struct ChatView: View {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                     messages.append(petMsg)
                 }
+                syncWidget(petMessage: petMsg)
             }
         } catch {
             await MainActor.run {
@@ -214,6 +215,7 @@ struct ChatView: View {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                     messages.append(fallback)
                 }
+                syncWidget(petMessage: fallback)
             }
         }
     }
@@ -227,15 +229,32 @@ struct ChatView: View {
                 userMessage: "say a short, in-character greeting",
                 conversationHistory: []
             )
+            let opening = ChatMessage(content: response.message, isFromPet: true, expression: response.expression)
             await MainActor.run {
                 isTyping = false
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                    messages.append(ChatMessage(content: response.message, isFromPet: true, expression: response.expression))
+                    messages.append(opening)
                 }
+                syncWidget(petMessage: opening)
             }
         } catch {
             await MainActor.run { isTyping = false }
         }
+    }
+
+    private func syncWidget(petMessage: ChatMessage) {
+        guard petMessage.isFromPet else { return }
+        let expression = petMessage.expression ?? .happy
+        let synced = PetMessage(
+            id: UUID(),
+            petId: pet.id,
+            content: petMessage.content,
+            expression: expression,
+            triggerType: .chatReply,
+            scheduledFor: petMessage.timestamp,
+            sentAt: petMessage.timestamp
+        )
+        WidgetSnapshotSync.writeFromPet(pet, message: synced)
     }
 }
 

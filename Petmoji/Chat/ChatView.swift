@@ -23,10 +23,9 @@ struct ChatView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.pmBackground.ignoresSafeArea()
+                PMSageScreenBackdrop()
 
                 VStack(spacing: 0) {
-                    // Messages
                     ScrollViewReader { proxy in
                         ScrollView {
                             LazyVStack(spacing: 12) {
@@ -77,9 +76,8 @@ struct ChatView: View {
                     }
 
                     Divider()
-                        .overlay(Color.pmBorder)
+                        .overlay(Color.pmSageBorder.opacity(0.6))
 
-                    // Suggested replies
                     if messages.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
@@ -88,10 +86,15 @@ struct ChatView: View {
                                         sendMessage(reply)
                                     }
                                     .font(.bodyS)
-                                    .foregroundStyle(Color.pmTextPrimary)
+                                    .foregroundStyle(Color.pmSageTextPrimary)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(Color.pmCardAlt, in: Capsule())
+                                    .background(Color.white.opacity(0.9), in: Capsule())
+                                    .overlay(
+                                        Capsule()
+                                            .strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1)
+                                    )
+                                    .buttonStyle(.plain)
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -99,14 +102,18 @@ struct ChatView: View {
                         }
                     }
 
-                    // Input bar — frosted glass
                     HStack(spacing: 12) {
                         TextField("say something...", text: $inputText, axis: .vertical)
                             .font(.bodyM)
                             .lineLimit(1...4)
-                            .padding(.horizontal, 16)
+                            .foregroundStyle(Color.pmSageTextPrimary)
+                            .padding(.horizontal, 14)
                             .padding(.vertical, 10)
-                            .background(Color.pmCardAlt, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                            .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                    .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1)
+                            )
 
                         Button {
                             let text = inputText.trimmingCharacters(in: .whitespaces)
@@ -114,26 +121,31 @@ struct ChatView: View {
                             sendMessage(text)
                         } label: {
                             Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 32))
+                                .font(.system(size: 36))
                                 .foregroundStyle(
                                     inputText.trimmingCharacters(in: .whitespaces).isEmpty
-                                    ? Color.pmBorder : Color.black
+                                    ? Color.pmSageBorder : Color.pmSageAccentDark
                                 )
                         }
+                        .buttonStyle(.plain)
                         .disabled(inputText.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.regularMaterial)
+                    .padding(.vertical, 10)
+                    .background(.ultraThinMaterial)
+                    .overlay(alignment: .top) {
+                        Divider().overlay(Color.pmSageBorder.opacity(0.6))
+                    }
                 }
             }
             .navigationTitle(pet.name)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("done") { dismiss() }
                         .font(.bodyM)
-                        .foregroundStyle(Color.pmTextPrimary)
+                        .foregroundStyle(Color.pmSageAccentDark)
                 }
                 ToolbarItem(placement: .principal) {
                     // Pet avatar in nav
@@ -143,13 +155,20 @@ struct ChatView: View {
                             .clipShape(Circle())
                         Text(pet.name)
                             .font(.bodyL)
-                            .foregroundStyle(Color.pmTextPrimary)
+                            .foregroundStyle(Color.pmSageTextPrimary)
                     }
                 }
             }
         }
         .onAppear {
-            Task { await sendPetOpening() }
+            let loaded = ChatHistoryStore.loadHistory(for: pet.id)
+            messages = loaded
+            if loaded.isEmpty {
+                Task { await sendPetOpening() }
+            }
+        }
+        .onChange(of: messages) { _, newMessages in
+            ChatHistoryStore.saveHistory(newMessages, for: pet.id)
         }
         .sheet(isPresented: $showShareSheet) {
             if let msg = shareMessage {
@@ -236,13 +255,10 @@ struct ChatBubble: View {
 
                 Text(message.content)
                     .font(.bodyM)
-                    .foregroundStyle(Color.pmTextPrimary)
-                    .padding(14)
-                    .background(Color.pmCardSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .strokeBorder(Color.pmBorder, lineWidth: 1)
-                    )
+                    .foregroundStyle(Color.pmSageTextPrimary)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color.pmSageWashSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .frame(maxWidth: 260, alignment: .leading)
 
                 Spacer()
@@ -252,8 +268,9 @@ struct ChatBubble: View {
                 Text(message.content)
                     .font(.bodyM)
                     .foregroundStyle(.white)
-                    .padding(14)
-                    .background(Color.black, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(Color.pmSageAccentDark, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .frame(maxWidth: 260, alignment: .trailing)
             }
         }

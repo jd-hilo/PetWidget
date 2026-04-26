@@ -36,7 +36,7 @@ struct ClaudeMessageResponse: Codable {
     let expression: PetExpression
 }
 
-// MARK: - Chat message (in-memory, not persisted)
+// MARK: - Chat message (persisted via `ChatHistoryStore`)
 
 struct ChatMessage: Codable, Identifiable, Equatable {
     let id: UUID

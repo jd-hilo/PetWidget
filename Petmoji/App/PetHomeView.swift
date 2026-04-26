@@ -10,11 +10,9 @@ struct PetHomeView: View {
     @State private var breathe = false
     @State private var showChat = false
     @State private var isLoadingMessage = false
-    @State private var isSendingMessage = false
     @State private var showSettings = false
     @State private var showShareSheet = false
     @State private var shareImage: UIImage?
-    @State private var inlineComposerText = ""
 
     var pet: Pet? { appState.currentPet }
 
@@ -177,67 +175,12 @@ struct PetHomeView: View {
                             )
                         }
                         .padding(.horizontal, horizontalInset)
-                        .padding(.bottom, 8)
+                        .padding(.bottom, max(proxy.safeAreaInsets.bottom, 12) + 12)
                     }
                 }
             }
-            .safeAreaInset(edge: .bottom) {
-                if let pet {
-                    HStack(spacing: 10) {
-                        TextField("Talk to \(pet.name)...", text: $inlineComposerText, axis: .vertical)
-                            .font(.bodyM)
-                            .lineLimit(1...3)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1)
-                            )
-
-                        Button {
-                            showChat = true
-                        } label: {
-                            Image(systemName: "arrow.up.left.and.arrow.down.right")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(Color.pmSageIconTint)
-                                .frame(width: 42, height: 42)
-                                .background(Color.white, in: Circle())
-                                .overlay(Circle().strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Open full chat")
-
-                        Button {
-                            Task { await sendInlineMessage() }
-                        } label: {
-                            Image(systemName: isSendingMessage ? "ellipsis.circle.fill" : "arrow.up.circle.fill")
-                                .font(.system(size: 36))
-                                .foregroundStyle(
-                                    inlineComposerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? Color.pmSageBorder
-                                    : Color.pmSageAccentDark
-                                )
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(
-                            isSendingMessage ||
-                            inlineComposerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        )
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .overlay(alignment: .top) {
-                        Divider().overlay(Color.pmSageBorder.opacity(0.6))
-                    }
-                    .onTapGesture {
-                        if inlineComposerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            // Keep the "hybrid" feel: tapping bar opens full chat when empty.
-                            showChat = true
-                        }
-                    }
-                } else {
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if pet == nil {
                     PMSageCTAButton(title: "open settings") {
                         showSettings = true
                     }
@@ -332,51 +275,6 @@ struct PetHomeView: View {
                 scheduledFor: latestPetChat.timestamp,
                 sentAt: latestPetChat.timestamp
             )
-        }
-    }
-
-    private func sendInlineMessage() async {
-        guard let pet else { return }
-        let trimmedText = inlineComposerText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else { return }
-
-        await MainActor.run {
-            isSendingMessage = true
-            recentMessages.append(ChatMessage(content: trimmedText, isFromPet: false, expression: nil))
-            inlineComposerText = ""
-            ChatHistoryStore.saveHistory(recentMessages, for: pet.id)
-        }
-
-        do {
-            let response = try await ClaudeService.shared.chatReply(
-                petId: pet.id,
-                userMessage: trimmedText,
-                conversationHistory: recentMessages
-            )
-            await MainActor.run {
-                let reply = ChatMessage(
-                    content: response.message,
-                    isFromPet: true,
-                    expression: response.expression
-                )
-                recentMessages.append(reply)
-                recentMessages = Array(recentMessages.suffix(8))
-                ChatHistoryStore.saveHistory(recentMessages, for: pet.id)
-                isSendingMessage = false
-                latestMessage = PetMessage(
-                    id: UUID(),
-                    petId: pet.id,
-                    content: response.message,
-                    expression: response.expression,
-                    triggerType: .chatReply,
-                    scheduledFor: Date(),
-                    sentAt: Date()
-                )
-            }
-        } catch {
-            await MainActor.run {
-                isSendingMessage = false
-            }
         }
     }
 

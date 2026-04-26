@@ -134,7 +134,8 @@ struct PMSageSelectableTileShadowModifier: ViewModifier {
     }
 }
 
-/// Decorative paw and leaf symbols along the left and right screen edges.
+/// Decorative paw and leaf symbols along the left and right edges of the **parent** view.
+/// Uses `GeometryReader` so symbols stay proportional in sheets and nested layouts; avoid hard-coding `UIScreen` size (that forced full-screen height and broke bottom toolbars in `ChatView`).
 struct PMSageEdgePattern: View {
     private struct PatternSymbol {
         let systemName: String
@@ -181,31 +182,32 @@ struct PMSageEdgePattern: View {
     }
 
     var body: some View {
-        let screenSize = UIScreen.main.bounds.size
-        ZStack {
-            ForEach(Array(leftEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
-                decorativeSymbol(
-                    symbol.systemName,
-                    at: symbol.point,
-                    in: screenSize,
-                    size: symbol.size,
-                    opacity: symbol.opacity,
-                    rotation: symbol.rotation
-                )
-            }
+        GeometryReader { geo in
+            let size = geo.size
+            ZStack {
+                ForEach(Array(leftEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
+                    decorativeSymbol(
+                        symbol.systemName,
+                        at: symbol.point,
+                        in: size,
+                        size: symbol.size,
+                        opacity: symbol.opacity,
+                        rotation: symbol.rotation
+                    )
+                }
 
-            ForEach(Array(rightEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
-                decorativeSymbol(
-                    symbol.systemName,
-                    at: symbol.point,
-                    in: screenSize,
-                    size: symbol.size,
-                    opacity: symbol.opacity,
-                    rotation: symbol.rotation
-                )
+                ForEach(Array(rightEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
+                    decorativeSymbol(
+                        symbol.systemName,
+                        at: symbol.point,
+                        in: size,
+                        size: symbol.size,
+                        opacity: symbol.opacity,
+                        rotation: symbol.rotation
+                    )
+                }
             }
         }
-        .frame(width: screenSize.width, height: screenSize.height)
         .allowsHitTesting(false)
     }
 
@@ -239,6 +241,7 @@ struct PMSageScreenBackdrop: View {
             )
             PMSageEdgePattern()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
     }
 }

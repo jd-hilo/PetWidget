@@ -27,13 +27,12 @@ struct SmallWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
-                WidgetSpriteView(image: entry.spriteImage)
-                    .frame(width: 98, height: 98)
+                WidgetBoundSpriteCircle(image: entry.spriteImage, size: 60)
                 Spacer()
-                WidgetPawBadge(size: 27)
+                WidgetPawBadge(size: 35)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 12)
+            .padding(.horizontal, 2)
+            .padding(.top, 2)
 
             Spacer(minLength: 8)
 
@@ -41,10 +40,10 @@ struct SmallWidgetView: View {
                 petName: entry.petName,
                 expression: entry.expression,
                 nameFontSize: 12,
-                feelingFontSize: 11
+                feelingFontSize: 17
             )
-            .padding(.horizontal, 12)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 2)
+            .padding(.bottom, 2)
         }
         .containerBackground(for: .widget) {
             blurredBackground
@@ -78,10 +77,9 @@ struct MediumWidgetView: View {
     var body: some View {
         HStack(spacing: 6) {
             // Sprite left
-            WidgetSpriteView(image: entry.spriteImage)
-                .frame(width: 136, height: 136)
-                .padding(.leading, 10)
-                .padding(.vertical, 10)
+            WidgetBoundSpriteCircle(image: entry.spriteImage, size: 136)
+                .padding(.leading, 4)
+                .padding(.vertical, 4)
 
             // Right column
             VStack(alignment: .leading, spacing: 10) {
@@ -103,8 +101,8 @@ struct MediumWidgetView: View {
                     .lineLimit(4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .padding(.trailing, 12)
-            .padding(.vertical, 12)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
         }
         .containerBackground(for: .widget) {
             blurredBackground
@@ -142,7 +140,7 @@ struct WidgetPawBadge: View {
             .font(.system(size: size * 0.5, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(.black.opacity(0.25), in: Circle())
+            // .background(.black.opacity(0.25), in: Circle())
     }
 }
 
@@ -154,16 +152,44 @@ struct WidgetNameFeelingBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("• \(petName)")
-                .font(.system(size: nameFontSize, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 2){
+                Text("•")
+                    .font(.system(size: nameFontSize + 14, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .offset(y: 3)
+                Text(petName.uppercased())
+                    .font(.system(size: nameFontSize, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+            .lineLimit(1)
 
-            Text("Feeling \(expression.displayName)")
+            Text("Feeling \(expression.displayName)!")
                 .font(.system(size: feelingFontSize, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.96))
                 .lineLimit(1)
         }
+    }
+}
+
+struct WidgetBoundSpriteCircle: View {
+    let image: UIImage?
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(.white)
+
+            WidgetSpriteView(image: image, knockoutWhiteMatte: false)
+                .frame(width: size, height: size)
+                .scaleEffect(1.2)
+                .clipShape(Circle())
+        }
+        .frame(width: size, height: size)
+        .overlay(
+            Circle()
+                .strokeBorder(Color(hex: "#7FA687"), lineWidth: 1.6)
+        )
     }
 }
 

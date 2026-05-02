@@ -27,7 +27,15 @@ struct SmallWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
-                WidgetBoundSpriteCircle(image: entry.spriteImage, size: 60)
+                WidgetBoundSpriteCircle(
+                    image: entry.spriteImage,
+                    size: 72,
+                    diskFill: AnyShapeStyle(Color.clear),
+                    showsBorder: false,
+                    knockoutWhiteMatte: true,
+                    knockoutDarkMatte: true,
+                    spriteScale: 1.24
+                )
                 Spacer()
                 WidgetPawBadge(size: 35)
             }
@@ -40,32 +48,16 @@ struct SmallWidgetView: View {
                 petName: entry.petName,
                 expression: entry.expression,
                 nameFontSize: 12,
-                feelingFontSize: 17
+                feelingFontSize: 17,
+                dotColor: Color(hex: entry.expression.accentHex)
             )
             .padding(.horizontal, 2)
             .padding(.bottom, 2)
         }
         .containerBackground(for: .widget) {
-            blurredBackground
+            WidgetTranslucentBackground()
         }
         .widgetURL(URL(string: "petmoji://chat"))
-    }
-
-    private var blurredBackground: some View {
-        ZStack {
-            // Frosted glass — blurs the wallpaper behind the widget
-            Rectangle().fill(.ultraThinMaterial)
-
-            // Expression colour tint at 50% so wallpaper still reads through
-            Color(hex: entry.expression.accentHex).opacity(0.50)
-
-            // Blurred sprite glow for depth
-            WidgetSpriteView(image: entry.spriteImage, knockoutWhiteMatte: false)
-                .scaleEffect(2.0)
-                .blur(radius: 20)
-                .opacity(0.15)
-                .allowsHitTesting(false)
-        }
     }
 }
 
@@ -76,10 +68,17 @@ struct MediumWidgetView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            // Sprite left
-            WidgetBoundSpriteCircle(image: entry.spriteImage, size: 136)
-                .padding(.leading, 4)
-                .padding(.vertical, 4)
+            WidgetBoundSpriteCircle(
+                image: entry.spriteImage,
+                size: 136,
+                diskFill: AnyShapeStyle(Color.clear),
+                showsBorder: false,
+                knockoutWhiteMatte: true,
+                knockoutDarkMatte: true,
+                spriteScale: 1.24
+            )
+            .padding(.leading, 4)
+            .padding(.vertical, 4)
 
             // Right column
             VStack(alignment: .leading, spacing: 10) {
@@ -88,10 +87,11 @@ struct MediumWidgetView: View {
                         petName: entry.petName,
                         expression: entry.expression,
                         nameFontSize: 13,
-                        feelingFontSize: 12
+                        feelingFontSize: 12,
+                        dotColor: Color(hex: entry.expression.accentHex)
                     )
                     Spacer(minLength: 8)
-                    WidgetPawBadge(size: 28)
+                    WidgetPawBadge(size: 32)
                 }
 
                 Text(entry.message)
@@ -105,27 +105,21 @@ struct MediumWidgetView: View {
             .padding(.vertical, 6)
         }
         .containerBackground(for: .widget) {
-            blurredBackground
+            WidgetTranslucentBackground()
         }
         .widgetURL(URL(string: "petmoji://chat"))
     }
+}
 
-    private var blurredBackground: some View {
+// MARK: - Shared backgrounds
+
+/// Stock-style translucent widget surface + faint paw texture (small + medium).
+private struct WidgetTranslucentBackground: View {
+    var body: some View {
         ZStack {
-            Color(hex: entry.expression.accentHex)
-
-            RadialGradient(
-                colors: [.white.opacity(0.35), .clear],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 200
-            )
-
-            WidgetSpriteView(image: entry.spriteImage, knockoutWhiteMatte: false)
-                .scaleEffect(2.0)
-                .blur(radius: 20)
-                .opacity(0.3)
-                .allowsHitTesting(false)
+            Rectangle().fill(.ultraThinMaterial)
+            PawPatternOverlay(symbolPointSize: 10)
+                .opacity(0.032)
         }
     }
 }
@@ -144,18 +138,59 @@ struct WidgetPawBadge: View {
     }
 }
 
+// Faint, staggered grid of paw prints used as a decorative widget background.
+struct PawPatternOverlay: View {
+    /// Smaller symbols + slightly wider spacing keeps the pattern from competing with content.
+    var symbolPointSize: CGFloat = 10
+    private var tile: CGFloat { max(24, symbolPointSize * 2.2) }
+
+    var body: some View {
+        Canvas { context, size in
+            guard let symbol = context.resolveSymbol(id: 0) else { return }
+
+            let cols = Int(ceil(size.width / tile)) + 2
+            let rows = Int(ceil(size.height / tile)) + 2
+
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let xOffset = (row % 2 == 0) ? 0 : tile / 2
+                    let x = CGFloat(col) * tile + xOffset - tile / 2
+                    let y = CGFloat(row) * tile - tile / 2
+                    let rotation = Angle.degrees(row % 2 == 0 ? -10 : 12)
+
+                    var ctx = context
+                    ctx.translateBy(x: x, y: y)
+                    ctx.rotate(by: rotation)
+                    ctx.draw(symbol, at: .zero, anchor: .center)
+                }
+            }
+        } symbols: {
+            Image(systemName: "pawprint.fill")
+                .font(.system(size: symbolPointSize, weight: .light))
+                .foregroundStyle(.white)
+                .tag(0)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 struct WidgetNameFeelingBlock: View {
     let petName: String
     let expression: WidgetExpression
     let nameFontSize: CGFloat
     let feelingFontSize: CGFloat
+    var dotColor: Color = .white
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 2){
                 Text("•")
                     .font(.system(size: nameFontSize + 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(dotColor)
+                    .shadow(color: dotColor.opacity(0.45), radius: 1, x: 0, y: 0)
+                    .shadow(color: dotColor.opacity(0.28), radius: 3, x: 0, y: 0)
+                    .shadow(color: dotColor.opacity(0.16), radius: 6, x: 0, y: 0)
                     .offset(y: 3)
                 Text(petName.uppercased())
                     .font(.system(size: nameFontSize, weight: .semibold, design: .rounded))
@@ -163,7 +198,7 @@ struct WidgetNameFeelingBlock: View {
             }
             .lineLimit(1)
 
-            Text("Feeling \(expression.displayName)!")
+            Text("\(expression.displayName)!")
                 .font(.system(size: feelingFontSize, weight: .semibold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.96))
                 .lineLimit(1)
@@ -174,22 +209,39 @@ struct WidgetNameFeelingBlock: View {
 struct WidgetBoundSpriteCircle: View {
     let image: UIImage?
     let size: CGFloat
+    /// Avatar backing; accept any `ShapeStyle` so callers can pass `Color` or a `Material`.
+    var diskFill: AnyShapeStyle = AnyShapeStyle(Color.white)
+    var borderColor: Color = Color(hex: "#7FA687")
+    /// When false, no ring is drawn (sprite is still circularly clipped).
+    var showsBorder: Bool = true
+    /// When true, knocks out near-white matte/background pixels (typical for sprites on a white card).
+    var knockoutWhiteMatte: Bool = false
+    /// When true, knocks out near-black backdrop pixels in the sprite (for sprites that ship with a dark matte).
+    var knockoutDarkMatte: Bool = false
+    /// Zoom inside the circular clip before masking to the circle.
+    var spriteScale: CGFloat = 1.2
 
     var body: some View {
         ZStack {
             Circle()
-                .fill(.white)
+                .fill(diskFill)
 
-            WidgetSpriteView(image: image, knockoutWhiteMatte: false)
-                .frame(width: size, height: size)
-                .scaleEffect(1.2)
-                .clipShape(Circle())
+            WidgetSpriteView(
+                image: image,
+                knockoutWhiteMatte: knockoutWhiteMatte,
+                knockoutDarkMatte: knockoutDarkMatte
+            )
+            .frame(width: size, height: size)
+            .scaleEffect(spriteScale)
+            .clipShape(Circle())
         }
         .frame(width: size, height: size)
-        .overlay(
-            Circle()
-                .strokeBorder(Color(hex: "#7FA687"), lineWidth: 1.6)
-        )
+        .overlay {
+            if showsBorder {
+                Circle()
+                    .strokeBorder(borderColor, lineWidth: 1.6)
+            }
+        }
     }
 }
 
@@ -199,11 +251,13 @@ struct WidgetSpriteView: View {
     let image: UIImage?
     /// When true, near-white matte pixels are converted to transparency without darkening colors.
     var knockoutWhiteMatte: Bool = true
+    /// When true, near-black backdrop pixels are converted to transparency (for sprites with a dark matte).
+    var knockoutDarkMatte: Bool = false
 
     var body: some View {
         Group {
             if let image {
-                if knockoutWhiteMatte {
+                if knockoutWhiteMatte || knockoutDarkMatte {
                     spriteCore(processedImage(from: image))
                 } else {
                     spriteCore(image)
@@ -225,10 +279,20 @@ struct WidgetSpriteView: View {
     }
 
     private func processedImage(from image: UIImage) -> UIImage {
-        guard let knockedOut = image.knockingOutNearWhite(threshold: 0.93, softness: 0.08) else {
-            return image
+        var working = image
+        if knockoutWhiteMatte,
+           let knockedOut = working.knockingOutEdgeConnectedMatte(
+               matteThreshold: 0.93,
+               softness: 0.11,
+               maxChroma: 0.065
+           ) {
+            working = knockedOut
         }
-        return knockedOut
+        if knockoutDarkMatte,
+           let knockedOut = working.knockingOutNearBlack(threshold: 0.08, softness: 0.06) {
+            working = knockedOut
+        }
+        return working
     }
 }
 
@@ -246,8 +310,102 @@ private extension WidgetExpression {
 }
 
 private extension UIImage {
-    /// Converts near-white matte/background pixels to transparent alpha.
-    func knockingOutNearWhite(threshold: CGFloat, softness: CGFloat) -> UIImage? {
+    /// Removes **edge-connected** near-white matte: BFS from image borders through pixels that are
+    /// bright (`min(r,g,b) ≥ matteThreshold - softness`) **and** nearly achromatic
+    /// (`max(r,g,b) - min(r,g,b) ≤ maxChroma`). That stops the flood from walking into golden fur,
+    /// which shares high brightness but has real color separation across channels.
+    func knockingOutEdgeConnectedMatte(
+        matteThreshold: CGFloat,
+        softness: CGFloat,
+        maxChroma: CGFloat = 0.065
+    ) -> UIImage? {
+        guard let source = cgImage else { return nil }
+        let width = source.width
+        let height = source.height
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        let bitsPerComponent = 8
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: bitsPerComponent,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else { return nil }
+
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        context.draw(source, in: rect)
+        guard let data = context.data else { return nil }
+
+        let pixelBuffer = data.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
+        let matteFloor = max(0, matteThreshold - max(softness, 0.0001))
+        let cellCount = width * height
+
+        func pixelIndex(_ x: Int, _ y: Int) -> Int { (y * width + x) * bytesPerPixel }
+
+        func isMatteCandidate(_ x: Int, _ y: Int) -> Bool {
+            let o = pixelIndex(x, y)
+            let r = CGFloat(pixelBuffer[o]) / 255.0
+            let g = CGFloat(pixelBuffer[o + 1]) / 255.0
+            let b = CGFloat(pixelBuffer[o + 2]) / 255.0
+            let minC = min(r, g, b)
+            let maxC = max(r, g, b)
+            let chroma = maxC - minC
+            return minC >= matteFloor && chroma <= maxChroma
+        }
+
+        var visited = [Bool](repeating: false, count: cellCount)
+        var queue = [Int]()
+        queue.reserveCapacity(min(cellCount / 4, 4096))
+
+        func enqueue(_ x: Int, _ y: Int) {
+            guard x >= 0, x < width, y >= 0, y < height else { return }
+            let flat = y * width + x
+            guard !visited[flat], isMatteCandidate(x, y) else { return }
+            visited[flat] = true
+            queue.append(flat)
+        }
+
+        for x in 0..<width {
+            enqueue(x, 0)
+            enqueue(x, height - 1)
+        }
+        for y in 0..<height {
+            enqueue(0, y)
+            enqueue(width - 1, y)
+        }
+
+        var head = 0
+        while head < queue.count {
+            let flat = queue[head]
+            head += 1
+            let x = flat % width
+            let y = flat / width
+            enqueue(x + 1, y)
+            enqueue(x - 1, y)
+            enqueue(x, y + 1)
+            enqueue(x, y - 1)
+        }
+
+        for flat in 0..<cellCount where visited[flat] {
+            let o = flat * bytesPerPixel
+            pixelBuffer[o] = 0
+            pixelBuffer[o + 1] = 0
+            pixelBuffer[o + 2] = 0
+            pixelBuffer[o + 3] = 0
+        }
+
+        guard let outputCGImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: outputCGImage, scale: scale, orientation: imageOrientation)
+    }
+
+    /// Converts near-black backdrop pixels to transparent alpha.
+    func knockingOutNearBlack(threshold: CGFloat, softness: CGFloat) -> UIImage? {
         guard let source = cgImage else { return nil }
         let width = source.width
         let height = source.height
@@ -273,7 +431,7 @@ private extension UIImage {
 
         let pixelBuffer = data.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
         let effectiveSoftness = max(softness, 0.0001)
-        let lowerBound = max(0, threshold - effectiveSoftness)
+        let upperBound = min(1, threshold + effectiveSoftness)
 
         for index in stride(from: 0, to: width * height * bytesPerPixel, by: bytesPerPixel) {
             let red = CGFloat(pixelBuffer[index]) / 255.0
@@ -281,16 +439,16 @@ private extension UIImage {
             let blue = CGFloat(pixelBuffer[index + 2]) / 255.0
             let alpha = CGFloat(pixelBuffer[index + 3]) / 255.0
 
-            let minChannel = min(red, green, blue)
-            if minChannel <= lowerBound {
+            let maxChannel = max(red, green, blue)
+            if maxChannel >= upperBound {
                 continue
             }
 
             let fade: CGFloat
-            if minChannel >= threshold {
+            if maxChannel <= threshold {
                 fade = 0
             } else {
-                fade = (threshold - minChannel) / (threshold - lowerBound)
+                fade = (maxChannel - threshold) / (upperBound - threshold)
             }
 
             pixelBuffer[index + 3] = UInt8(max(0, min(1, alpha * fade)) * 255.0)

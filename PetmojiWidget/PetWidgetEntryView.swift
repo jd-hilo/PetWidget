@@ -25,7 +25,7 @@ struct SmallWidgetView: View {
     let entry: PetWidgetEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .center, spacing: 0) {
             Spacer(minLength: 0)
             HStack {
                 Spacer(minLength: 0)
@@ -45,13 +45,19 @@ struct SmallWidgetView: View {
                 petName: entry.petName,
                 expression: entry.expression,
                 nameFontSize: 12,
-                feelingFontSize: 17,
+                feelingFontSize: 19,
+                contentAlignment: .center,
+                nameForegroundOpacity: 0.85,
+                feelingFontWeight: .bold,
+                feelingKerning: 0.45,
+                feelingUsesAccentShadow: true,
                 dotColor: Color(hex: entry.expression.accentHex)
             )
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 2)
             .padding(.bottom, 15)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         .containerBackground(for: .widget) {
             WidgetTranslucentBackground()
         }
@@ -161,11 +167,16 @@ struct WidgetNameFeelingBlock: View {
     let expression: WidgetExpression
     let nameFontSize: CGFloat
     let feelingFontSize: CGFloat
+    var contentAlignment: HorizontalAlignment = .leading
+    var nameForegroundOpacity: CGFloat = 1
+    var feelingFontWeight: Font.Weight = .semibold
+    var feelingKerning: CGFloat = 0
+    var feelingUsesAccentShadow: Bool = false
     var dotColor: Color = .white
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 2){
+        VStack(alignment: contentAlignment, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text("•")
                     .font(.system(size: nameFontSize + 14, weight: .bold, design: .rounded))
                     .foregroundStyle(dotColor)
@@ -175,14 +186,34 @@ struct WidgetNameFeelingBlock: View {
                     .offset(y: 3)
                 Text(petName.uppercased())
                     .font(.system(size: nameFontSize, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.white.opacity(nameForegroundOpacity))
             }
             .lineLimit(1)
 
             Text("\(expression.displayName)!")
-                .font(.system(size: feelingFontSize, weight: .semibold, design: .rounded))
+                .font(.system(size: feelingFontSize, weight: feelingFontWeight, design: .rounded))
+                .kerning(feelingKerning)
                 .foregroundStyle(.white.opacity(0.96))
                 .lineLimit(1)
+                .multilineTextAlignment(contentAlignment == .center ? .center : .leading)
+                .modifier(FeelingAccentShadowModifier(color: dotColor, enabled: feelingUsesAccentShadow))
+        }
+    }
+}
+
+private struct FeelingAccentShadowModifier: ViewModifier {
+    let color: Color
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        Group {
+            if enabled {
+                content
+                    .shadow(color: color.opacity(0.38), radius: 1, x: 0, y: 0)
+                    .shadow(color: color.opacity(0.22), radius: 4, x: 0, y: 0)
+            } else {
+                content
+            }
         }
     }
 }

@@ -26,24 +26,21 @@ struct SmallWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
+            Spacer(minLength: 0)
+            HStack {
+                Spacer(minLength: 0)
                 WidgetBoundSpriteCircle(
                     image: entry.spriteImage,
-                    size: 72,
+                    size: 100,
                     diskFill: AnyShapeStyle(Color.clear),
                     showsBorder: false,
                     knockoutWhiteMatte: true,
                     knockoutDarkMatte: true,
-                    spriteScale: 1.24
+                    spriteScale: 1.28
                 )
-                Spacer()
-                WidgetPawBadge(size: 35)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 2)
-            .padding(.top, 2)
-
-            Spacer(minLength: 8)
-
+            Spacer(minLength: 0)
             WidgetNameFeelingBlock(
                 petName: entry.petName,
                 expression: entry.expression,
@@ -52,8 +49,9 @@ struct SmallWidgetView: View {
                 dotColor: Color(hex: entry.expression.accentHex)
             )
             .padding(.horizontal, 2)
-            .padding(.bottom, 2)
+            .padding(.bottom, 15)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .containerBackground(for: .widget) {
             WidgetTranslucentBackground()
         }
@@ -82,17 +80,13 @@ struct MediumWidgetView: View {
 
             // Right column
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top) {
-                    WidgetNameFeelingBlock(
-                        petName: entry.petName,
-                        expression: entry.expression,
-                        nameFontSize: 13,
-                        feelingFontSize: 12,
-                        dotColor: Color(hex: entry.expression.accentHex)
-                    )
-                    Spacer(minLength: 8)
-                    WidgetPawBadge(size: 32)
-                }
+                WidgetNameFeelingBlock(
+                    petName: entry.petName,
+                    expression: entry.expression,
+                    nameFontSize: 13,
+                    feelingFontSize: 12,
+                    dotColor: Color(hex: entry.expression.accentHex)
+                )
 
                 Text(entry.message)
                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
@@ -124,23 +118,8 @@ private struct WidgetTranslucentBackground: View {
     }
 }
 
-// MARK: - Shared Widget Blocks
-
-struct WidgetPawBadge: View {
-    let size: CGFloat
-
-    var body: some View {
-        Image(systemName: "pawprint.fill")
-            .font(.system(size: size * 0.5, weight: .semibold))
-            .foregroundStyle(.white)
-            .frame(width: size, height: size)
-            // .background(.black.opacity(0.25), in: Circle())
-    }
-}
-
-// Faint, staggered grid of paw prints used as a decorative widget background.
-struct PawPatternOverlay: View {
-    /// Smaller symbols + slightly wider spacing keeps the pattern from competing with content.
+// Faint, staggered grid of paw prints behind the glass (no corner badge).
+private struct PawPatternOverlay: View {
     var symbolPointSize: CGFloat = 10
     private var tile: CGFloat { max(24, symbolPointSize * 2.2) }
 
@@ -174,6 +153,8 @@ struct PawPatternOverlay: View {
         .accessibilityHidden(true)
     }
 }
+
+// MARK: - Shared Widget Blocks
 
 struct WidgetNameFeelingBlock: View {
     let petName: String

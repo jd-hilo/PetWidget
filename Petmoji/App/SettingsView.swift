@@ -89,7 +89,7 @@ struct SettingsView: View {
                     showResetConfirm = true
                 }
             } header: {
-                Text("danger zone")
+                Text("account")
             }
 
             // MARK: App Version Footer
@@ -176,7 +176,7 @@ struct RegeneratingModal: View {
                         .font(.titleL)
                         .foregroundStyle(Color.pmTextPrimary)
 
-                    Text("keep the app open — this takes about 10 seconds")
+                    Text("keep the app open — this takes about 30 seconds")
                         .font(.bodyM)
                         .foregroundStyle(Color.pmTextSecondary)
                         .multilineTextAlignment(.center)
@@ -188,9 +188,15 @@ struct RegeneratingModal: View {
                     Text("🎉")
                         .font(.system(size: 72))
 
-                    Text("new sprites ready!")
+                    Text("new sprite ready!")
                         .font(.titleL)
                         .foregroundStyle(Color.pmTextPrimary)
+
+                    Text("the rest will fill in over the next minute — you can close this.")
+                        .font(.bodyM)
+                        .foregroundStyle(Color.pmTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
                 }
 
             case .failed(let msg):
@@ -246,17 +252,22 @@ struct RegeneratingModal: View {
                 phase = .failed("no photos found for this pet")
                 return
             }
-            let newExpressions = try await SupabaseService.shared.generateSprites(
+            // Stage A returns synchronously with the `happy` base. Stages B
+            // for the remaining 5 expressions land in `pets.expressions` over
+            // the following minute or so; we hand polling off to AppState so
+            // the home screen keeps updating after this modal is dismissed.
+            let initialExpressions = try await SupabaseService.shared.generateSprites(
                 petId: pet.id,
                 photoURLs: photoURLs,
-                species: pet.species,
-                gender: pet.gender
+                petName: pet.name == "unnamed" ? "" : pet.name,
+                species: pet.species
             )
             await MainActor.run {
                 if var updated = appState.currentPet {
-                    updated.expressions = newExpressions
+                    updated.expressions = initialExpressions
                     appState.currentPet = updated
                 }
+                appState.startSyncingExpressions(petId: pet.id)
                 success = true
                 phase = .done
             }

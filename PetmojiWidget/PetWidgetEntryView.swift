@@ -84,19 +84,23 @@ struct MediumWidgetView: View {
             .padding(.leading, 4)
             .padding(.vertical, 4)
 
-            // Right column
-            VStack(alignment: .leading, spacing: 10) {
+            // Right column: emotion-forward (matches small widget hierarchy), message secondary.
+            VStack(alignment: .leading, spacing: 12) {
                 WidgetNameFeelingBlock(
                     petName: entry.petName,
                     expression: entry.expression,
-                    nameFontSize: 13,
-                    feelingFontSize: 12,
+                    nameFontSize: 12,
+                    feelingFontSize: 18,
+                    nameForegroundOpacity: 0.85,
+                    feelingFontWeight: .bold,
+                    feelingKerning: 0.4,
+                    feelingUsesAccentShadow: true,
                     dotColor: Color(hex: entry.expression.accentHex)
                 )
 
                 Text(entry.message)
-                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.82))
                     .multilineTextAlignment(.leading)
                     .lineLimit(4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

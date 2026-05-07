@@ -1,21 +1,24 @@
 import SwiftUI
-
-// MARK: - Pet Home View
+import UIKit
 
 struct PetHomeView: View {
     @EnvironmentObject var appState: AppState
-    @State private var latestMessage: PetMessage?
-    @State private var recentMessages: [ChatMessage] = []
-    @State private var breathe = false
-    @State private var showChat = false
-    @State private var isLoadingMessage = false
+    @State private var latestMessageByPet: [UUID: PetMessage] = [:]
+    @State private var recentMessagesByPet: [UUID: [ChatMessage]] = [:]
+    @State private var isLoadingByPet: [UUID: Bool] = [:]
+    @State private var isChatPanelExpandedByPet: [UUID: Bool] = [:]
+    @State private var breatheByPet: [UUID: Bool] = [:]
     @State private var showSettings = false
-    @State private var showShareSheet = false
-    @State private var shareImage: UIImage?
+    @State private var selectedPetForChatRoom: Pet?
+    @State private var showChatRoom = false
+    @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
-    var pet: Pet? { appState.currentPet }
+    private var pets: [Pet] { appState.availablePets }
+    private var expandedPetIDs: Set<UUID> {
+        Set(expandedPetIDsRaw.split(separator: ",").compactMap { UUID(uuidString: String($0)) })
+    }
 
-    var greeting: String {
+    private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
         case 5..<12: return "good morning"
@@ -27,93 +30,25 @@ struct PetHomeView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let topPadding = max(proxy.safeAreaInsets.top - 6, 0)
             let horizontalInset: CGFloat = 16
             let contentWidth = max(220, proxy.size.width - (horizontalInset * 2))
-            let spriteWidth = max(170, contentWidth - 56)
+            let chatPanelHeight = min(proxy.size.height * 0.55, 520)
             let recentPreviewLimit = proxy.size.height < 760 ? 2 : 3
 
             ZStack {
                 PMSageScreenBackdrop()
 
                 VStack(spacing: 12) {
-                    HStack(alignment: .top, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            if let pet {
-                                Text("\(greeting), \(pet.name)")
-                                    .font(.titleL)
-                                    .foregroundStyle(Color.pmSageTextPrimary)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.72)
-                            } else {
-                                Text(greeting)
-                                    .font(.titleL)
-                                    .foregroundStyle(Color.pmSageTextPrimary)
-                            }
-                            Text("your pet is checking in")
-                                .font(.bodyS)
-                                .foregroundStyle(Color.pmSageTextSecondary)
-                        }
-                        Spacer(minLength: 8)
-                        Button {
-                            showSettings = true
-                        } label: {
-                            Image(systemName: "gearshape.fill")
-                                .font(.system(size: 22, weight: .semibold))
-                                .foregroundStyle(Color.pmSageIconTint)
-                                .frame(width: 56, height: 56)
-                                .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                        .strokeBorder(Color.pmSageBorder.opacity(0.9), lineWidth: 1.25)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    HomeHeader(
+                        greeting: greeting,
+                        petCount: pets.count,
+                        onShowSettings: { showSettings = true }
+                    )
                     .padding(.horizontal, horizontalInset)
-                    // .padding(.top, topPadding)
 
                     ScrollView(showsIndicators: false) {
-                        VStack(spacing: 16) {
-                            if let pet {
-                                let activeExpression = latestMessage?.expression ?? .happy
-                                let spriteURL = pet.expressions[activeExpression] ?? pet.expressions[.happy]
-                                Button {
-                                    showChat = true
-                                } label: {
-                                    VStack(spacing: 14) {
-                                        SpriteImageView(urlString: spriteURL, contentMode: .fill)
-                                            .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                                            .frame(width: spriteWidth, height: spriteWidth * 0.9)
-                                            .mask(
-                                                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                            )
-                                            .clipped()
-                                            .scaleEffect(breathe ? 1.02 : 1.0)
-                                            .animation(
-                                                .easeInOut(duration: 2.5).repeatForever(autoreverses: true),
-                                                value: breathe
-                                            )
-                                            .onAppear { breathe = true }
-
-                                        HStack(spacing: 10) {
-                                            HomeStatusChip(icon: "heart.fill", title: activeExpression.displayName)
-                                            HomeStatusChip(icon: "bolt.fill", title: "Active")
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 18)
-                                    .background(Color.pmSageWashDeep.opacity(0.75), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                            .strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1.4)
-                                    )
-                                }
-                                .frame(width: contentWidth)
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Open chat with \(pet.name)")
-                            } else {
+                        VStack(spacing: 14) {
+                            if pets.isEmpty {
                                 RoundedRectangle(cornerRadius: 30, style: .continuous)
                                     .fill(Color.white.opacity(0.9))
                                     .overlay(
@@ -122,56 +57,65 @@ struct PetHomeView: View {
                                             .foregroundStyle(Color.pmSageTextSecondary)
                                     )
                                     .frame(height: 260)
-                                    .padding(.horizontal, 16)
+                            } else {
+                                ForEach(pets) { pet in
+                                    let isExpanded = expandedPetIDs.contains(pet.id)
+
+                                    Group {
+                                        if isExpanded {
+                                            ExpandedPetCardContent(
+                                                pet: pet,
+                                                latestMessage: latestMessageByPet[pet.id],
+                                                recentMessages: recentMessagesByPet[pet.id] ?? [],
+                                                isLoadingMessage: isLoadingByPet[pet.id] ?? false,
+                                                isChatPanelExpanded: isChatPanelExpandedByPet[pet.id] ?? false,
+                                                isBreathing: breatheByPet[pet.id] ?? false,
+                                                contentWidth: contentWidth,
+                                                chatPanelHeight: chatPanelHeight,
+                                                recentPreviewLimit: recentPreviewLimit,
+                                                onToggleCardExpansion: {
+                                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                                        toggleExpanded(for: pet.id)
+                                                    }
+                                                },
+                                                onToggleChatPanel: {
+                                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                                        setChatPanelExpanded(!(isChatPanelExpandedByPet[pet.id] ?? false), for: pet.id)
+                                                    }
+                                                },
+                                                onOpenChatPanel: {
+                                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                                        setChatPanelExpanded(true, for: pet.id)
+                                                    }
+                                                },
+                                                onOpenChatRoom: {
+                                                    appState.selectPet(pet)
+                                                    selectedPetForChatRoom = pet
+                                                    showChatRoom = true
+                                                },
+                                                onSpriteAppeared: { breatheByPet[pet.id] = true }
+                                            )
+                                        } else {
+                                            CollapsedPetCardContent(
+                                                pet: pet,
+                                                latestMessage: latestMessageByPet[pet.id],
+                                                isLoadingMessage: isLoadingByPet[pet.id] ?? false
+                                            ) {
+                                                appState.selectPet(pet)
+                                                withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                                    toggleExpanded(for: pet.id)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                            .strokeBorder(Color.pmSageBorder.opacity(0.75), lineWidth: 1.2)
+                                    )
+                                }
                             }
-
-                            VStack(spacing: 10) {
-                                HStack {
-                                    Text("Recent messages")
-                                        .font(.bodyL)
-                                        .foregroundStyle(Color.pmSageTextPrimary)
-                                    Spacer()
-                                    Button("See all") {
-                                        showChat = true
-                                    }
-                                    .font(.bodyL)
-                                    .foregroundStyle(Color.pmSageAccentDark)
-                                }
-                                .padding(.horizontal, 6)
-
-                                if recentMessages.isEmpty && isLoadingMessage {
-                                    TypingIndicator()
-                                } else if recentMessages.isEmpty {
-                                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                        .fill(Color.white.opacity(0.84))
-                                        .overlay(
-                                            Text("start chatting with your pet")
-                                                .font(.bodyM)
-                                                .foregroundStyle(Color.pmSageTextSecondary)
-                                                .padding(.horizontal, 14)
-                                        )
-                                        .frame(height: 64)
-                                } else {
-                                    ForEach(recentMessages.suffix(recentPreviewLimit)) { message in
-                                        HomePreviewBubble(message: message)
-                                    }
-                                }
-
-                                if let pet {
-                                    PMSageCTAButton(title: "talk with \(pet.name.lowercased())") {
-                                        showChat = true
-                                    }
-                                    .padding(.top, 4)
-                                    .accessibilityLabel("Talk with \(pet.name)")
-                                }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(14)
-                            .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1.2)
-                            )
                         }
                         .padding(.horizontal, horizontalInset)
                         .padding(.bottom, max(proxy.safeAreaInsets.bottom, 12) + 12)
@@ -179,60 +123,100 @@ struct PetHomeView: View {
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if pet == nil {
-                    PMSageCTAButton(title: "open settings") {
-                        showSettings = true
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, max(proxy.safeAreaInsets.bottom, 8) + 8)
+                if pets.isEmpty {
+                    PMSageCTAButton(title: "open settings") { showSettings = true }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, max(proxy.safeAreaInsets.bottom, 8) + 8)
                 }
             }
         }
-        .navigationDestination(isPresented: $showSettings) {
-            SettingsView()
-        }
-        .sheet(isPresented: $showChat, onDismiss: {
-            refreshRecentMessagesFromLocalHistory()
-        }) {
-            if let pet {
-                ChatView(pet: pet)
+        .navigationDestination(isPresented: $showSettings) { SettingsView() }
+        .navigationDestination(isPresented: $showChatRoom) {
+            if let pet = selectedPetForChatRoom {
+                PetChatRoomView(pet: pet)
             }
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let image = shareImage {
-                ActivityView(activityItems: [image])
-            }
+        .task(id: pets.map(\.id)) {
+            await loadMessagesForAllPets()
+            reconcilePerPetState()
+            reconcilePersistedExpansionWithAvailablePets()
         }
-        .task {
-            await loadLatestMessage()
+        .onChange(of: appState.pendingWidgetDeepLink) { _, link in
+            guard link == .openChat else { return }
+            openDeepLinkedChat()
         }
         .onAppear {
             if appState.pendingWidgetDeepLink == .openChat {
-                showChat = true
-                appState.pendingWidgetDeepLink = .none
-            }
-        }
-        .onChange(of: appState.pendingWidgetDeepLink) { _, link in
-            if link == .openChat {
-                showChat = true
-                appState.pendingWidgetDeepLink = .none
+                openDeepLinkedChat()
             }
         }
     }
 
-    private func loadLatestMessage() async {
-        isLoadingMessage = true
-        defer { isLoadingMessage = false }
-        do {
-            // Always re-fetch the pet so expressions are fresh
-            await appState.loadCurrentPet()
-            guard let pet = appState.currentPet else { return }
+    private func openDeepLinkedChat() {
+        if let selected = appState.currentPet ?? pets.first {
+            appState.selectPet(selected)
+            setExpanded(true, for: selected.id)
+            setChatPanelExpanded(true, for: selected.id)
+        }
+        appState.pendingWidgetDeepLink = .none
+    }
 
+    private func reconcilePerPetState() {
+        let validIDs = Set(pets.map(\.id))
+        latestMessageByPet = latestMessageByPet.filter { validIDs.contains($0.key) }
+        recentMessagesByPet = recentMessagesByPet.filter { validIDs.contains($0.key) }
+        isLoadingByPet = isLoadingByPet.filter { validIDs.contains($0.key) }
+        isChatPanelExpandedByPet = isChatPanelExpandedByPet.filter { validIDs.contains($0.key) }
+        breatheByPet = breatheByPet.filter { validIDs.contains($0.key) }
+    }
+
+    private func reconcilePersistedExpansionWithAvailablePets() {
+        let validIDs = Set(pets.map(\.id))
+        persistExpandedIDs(expandedPetIDs.intersection(validIDs))
+    }
+
+    private func toggleExpanded(for petID: UUID) {
+        setExpanded(!expandedPetIDs.contains(petID), for: petID)
+    }
+
+    private func setExpanded(_ expanded: Bool, for petID: UUID) {
+        var next = expandedPetIDs
+        if expanded {
+            next.insert(petID)
+        } else {
+            next.remove(petID)
+            setChatPanelExpanded(false, for: petID)
+            refreshRecentMessagesFromLocalHistory(for: petID)
+        }
+        persistExpandedIDs(next)
+    }
+
+    private func persistExpandedIDs(_ ids: Set<UUID>) {
+        expandedPetIDsRaw = ids.map(\.uuidString).sorted().joined(separator: ",")
+    }
+
+    private func setChatPanelExpanded(_ expanded: Bool, for petID: UUID) {
+        isChatPanelExpandedByPet[petID] = expanded
+        if !expanded {
+            refreshRecentMessagesFromLocalHistory(for: petID)
+        }
+    }
+
+    private func loadMessagesForAllPets() async {
+        for pet in pets {
+            await loadMessageData(for: pet)
+        }
+    }
+
+    private func loadMessageData(for pet: Pet) async {
+        isLoadingByPet[pet.id] = true
+        defer { isLoadingByPet[pet.id] = false }
+        do {
             let localHistory = ChatHistoryStore.loadHistory(for: pet.id)
             if !localHistory.isEmpty {
-                recentMessages = Array(localHistory.suffix(8))
+                recentMessagesByPet[pet.id] = Array(localHistory.suffix(8))
                 if let latestPetChat = localHistory.last(where: { $0.isFromPet }) {
-                    latestMessage = PetMessage(
+                    latestMessageByPet[pet.id] = PetMessage(
                         id: UUID(),
                         petId: pet.id,
                         content: latestPetChat.content,
@@ -245,29 +229,25 @@ struct PetHomeView: View {
             }
 
             if let fetchedLatest = try await SupabaseService.shared.fetchLatestMessage(for: pet.id) {
-                latestMessage = fetchedLatest
+                latestMessageByPet[pet.id] = fetchedLatest
             }
             let recent = try await SupabaseService.shared.fetchRecentMessages(for: pet.id, limit: 4)
-            let mapped = recent.reversed().map {
-                ChatMessage(content: $0.content, isFromPet: true, expression: $0.expression)
-            }
+            let mapped = recent.reversed().map { ChatMessage(content: $0.content, isFromPet: true, expression: $0.expression) }
             if localHistory.isEmpty {
-                recentMessages = mapped
+                recentMessagesByPet[pet.id] = mapped
             }
 
-            if let message = latestMessage {
+            if let message = latestMessageByPet[pet.id], pet.id == appState.currentPet?.id {
                 WidgetSnapshotSync.writeFromPet(pet, message: message)
             }
-        } catch {
-            // Silently fail — widget keeps showing cached data
-        }
+        } catch {}
     }
 
-    private func refreshRecentMessagesFromLocalHistory() {
-        guard let pet else { return }
+    private func refreshRecentMessagesFromLocalHistory(for petID: UUID) {
+        guard let pet = pets.first(where: { $0.id == petID }) else { return }
         let localHistory = ChatHistoryStore.loadHistory(for: pet.id)
         guard !localHistory.isEmpty else { return }
-        recentMessages = Array(localHistory.suffix(8))
+        recentMessagesByPet[pet.id] = Array(localHistory.suffix(8))
         if let latestPetChat = localHistory.last(where: { $0.isFromPet }) {
             let synced = PetMessage(
                 id: UUID(),
@@ -278,64 +258,239 @@ struct PetHomeView: View {
                 scheduledFor: latestPetChat.timestamp,
                 sentAt: latestPetChat.timestamp
             )
-            latestMessage = synced
-            WidgetSnapshotSync.writeFromPet(pet, message: synced)
+            latestMessageByPet[pet.id] = synced
+            if pet.id == appState.currentPet?.id {
+                WidgetSnapshotSync.writeFromPet(pet, message: synced)
+            }
         }
     }
+}
 
-    private func prepareShare() async {
-        guard let pet = appState.currentPet,
-              let urlString = pet.expressions[.happy],
-              let url = URL(string: urlString) else { return }
+private struct HomeHeader: View {
+    let greeting: String
+    let petCount: Int
+    let onShowSettings: () -> Void
 
-        guard let (data, _) = try? await URLSession.shared.data(from: url),
-              let spriteImage = UIImage(data: data) else { return }
-
-        let messageText = latestMessage?.content ?? pet.name
-        let rendered = renderShareCard(petName: pet.name, spriteImage: spriteImage, message: messageText)
-
-        await MainActor.run {
-            shareImage = rendered
-            showShareSheet = true
+    private var checkInText: String {
+        if petCount == 1 {
+            return "your pet is checking in"
         }
+        return "your pets are checking in"
     }
 
-    private func renderShareCard(petName: String, spriteImage: UIImage, message: String) -> UIImage {
-        let size = CGSize(width: 390, height: 390)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { ctx in
-            // Background
-            UIColor.white.setFill()
-            ctx.fill(CGRect(origin: .zero, size: size))
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(greeting)
+                    .font(.titleL.weight(.bold))
+                    .foregroundStyle(Color.pmSageTextPrimary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text(checkInText)
+                    .font(.bodyM)
+                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.9)
+            }
+            Spacer(minLength: 8)
+            Button(action: onShowSettings) {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(Color.pmSageIconTint)
+                    .frame(width: 56, height: 56)
+                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .strokeBorder(Color.pmSageBorder.opacity(0.9), lineWidth: 1.25)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
 
-            // Sprite centered in upper portion
-            let spriteSize: CGFloat = 200
-            let spriteRect = CGRect(
-                x: (size.width - spriteSize) / 2,
-                y: 48,
-                width: spriteSize,
-                height: spriteSize
+private struct CollapsedPetCardContent: View {
+    let pet: Pet
+    let latestMessage: PetMessage?
+    let isLoadingMessage: Bool
+    let onTap: () -> Void
+
+    private var expression: PetExpression { latestMessage?.expression ?? .happy }
+    private var spriteURL: String? { pet.expressions[expression] ?? pet.expressions[.happy] }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                SpriteImageView(urlString: spriteURL, contentMode: .fill)
+                    .frame(width: 84, height: 84)
+                    .clipShape(Circle())
+                    .overlay(Circle().strokeBorder(Color.pmSageBorder.opacity(0.85), lineWidth: 1.25))
+                    .padding(2)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text(pet.name).font(.bodyL).foregroundStyle(Color.pmSageTextPrimary).lineLimit(1)
+                        HomeStatusChip(icon: "heart.fill", title: expression.displayName)
+                    }
+
+                    if isLoadingMessage && latestMessage == nil {
+                        Text("checking in...").font(.bodyM).foregroundStyle(Color.pmSageTextSecondary).lineLimit(1)
+                    } else {
+                        Text(latestMessage?.content ?? "tap to open \(pet.name)'s full view")
+                            .font(.bodyM)
+                            .foregroundStyle(Color.pmSageTextSecondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+
+                Spacer(minLength: 6)
+                Image(systemName: "chevron.down.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundStyle(Color.pmSageAccentDark)
+            }
+            .padding(14)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Expand \(pet.name)")
+    }
+}
+
+private struct ExpandedPetCardContent: View {
+    let pet: Pet
+    let latestMessage: PetMessage?
+    let recentMessages: [ChatMessage]
+    let isLoadingMessage: Bool
+    let isChatPanelExpanded: Bool
+    let isBreathing: Bool
+    let contentWidth: CGFloat
+    let chatPanelHeight: CGFloat
+    let recentPreviewLimit: Int
+    let onToggleCardExpansion: () -> Void
+    let onToggleChatPanel: () -> Void
+    let onOpenChatPanel: () -> Void
+    let onOpenChatRoom: () -> Void
+    let onSpriteAppeared: () -> Void
+
+    private var expression: PetExpression { latestMessage?.expression ?? .happy }
+    private var spriteURL: String? { pet.expressions[expression] ?? pet.expressions[.happy] }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            HStack {
+                Text(pet.name).font(.titleL).foregroundStyle(Color.pmSageTextPrimary).lineLimit(1)
+                Spacer()
+                Button(action: onToggleCardExpansion) {
+                    Label("Collapse", systemImage: "chevron.up").font(.bodyS).foregroundStyle(Color.pmSageAccentDark)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button(action: onOpenChatPanel) {
+                VStack(spacing: 14) {
+                    let spriteWidth = max(170, contentWidth - 56)
+                    let spriteHeight = spriteWidth * 0.9
+                    let breatheScale: CGFloat = 1.02
+
+                    SpriteImageView(urlString: spriteURL, contentMode: .fill)
+                        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .frame(width: spriteWidth / breatheScale, height: spriteHeight / breatheScale)
+                        .scaleEffect(isBreathing ? breatheScale : 1.0)
+                        .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: isBreathing)
+                        .onAppear(perform: onSpriteAppeared)
+                        .frame(width: spriteWidth, height: spriteHeight)
+                        .mask(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                        .clipped()
+
+                    HStack(spacing: 10) {
+                        HomeStatusChip(icon: "heart.fill", title: expression.displayName)
+                        HomeStatusChip(icon: "bolt.fill", title: "Active")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(Color.pmSageWashDeep.opacity(0.75), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1.4)
+                )
+            }
+            .buttonStyle(.plain)
+
+            VStack(spacing: 10) {
+                Button(action: onToggleChatPanel) {
+                    HStack {
+                        Text(isChatPanelExpanded ? "Chat with \(pet.name.lowercased())" : "Recent messages")
+                            .font(.bodyL)
+                            .foregroundStyle(Color.pmSageTextPrimary)
+                        Spacer()
+                        Image(systemName: isChatPanelExpanded ? "chevron.down" : "chevron.up")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.pmSageAccentDark)
+                    }
+                    .padding(.horizontal, 6)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if isChatPanelExpanded {
+                    ChatPanel(pet: pet)
+                        .id(pet.id)
+                        .frame(height: chatPanelHeight)
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                } else if recentMessages.isEmpty && isLoadingMessage {
+                    TypingIndicator()
+                } else if recentMessages.isEmpty {
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.white.opacity(0.84))
+                        .overlay(
+                            Text("start chatting with your pet")
+                                .font(.bodyM)
+                                .foregroundStyle(Color.pmSageTextSecondary)
+                                .padding(.horizontal, 14)
+                        )
+                        .frame(height: 64)
+                } else {
+                    ForEach(recentMessages.suffix(recentPreviewLimit)) { message in
+                        HomePreviewBubble(message: message)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1.2)
             )
-            spriteImage.draw(in: spriteRect)
 
-            // Message text
-            let paragraphStyle = NSMutableParagraphStyle()
-            paragraphStyle.alignment = .center
-            let textAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 17, weight: .semibold),
-                .foregroundColor: UIColor(red: 0.1, green: 0.07, blue: 0.03, alpha: 1),
-                .paragraphStyle: paragraphStyle
-            ]
-            let textRect = CGRect(x: 24, y: 268, width: 342, height: 90)
-            (message as NSString).draw(in: textRect, withAttributes: textAttrs)
-
-            // Watermark
-            let wmAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 12),
-                .foregroundColor: UIColor.gray
-            ]
-            ("petmoji" as NSString).draw(at: CGPoint(x: 318, y: 365), withAttributes: wmAttrs)
+            Button(action: onOpenChatRoom) {
+                Text("chat with \(pet.name.lowercased())")
+                    .font(.buttonFont)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color.pmSageAccentDark, in: Capsule(style: .continuous))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .strokeBorder(Color.pmSageBorder.opacity(0.6), lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
         }
+        .padding(14)
+    }
+}
+
+private struct PetChatRoomView: View {
+    let pet: Pet
+
+    var body: some View {
+        ChatPanel(pet: pet)
+            .navigationTitle("Chat with \(pet.name)")
+            .navigationBarTitleDisplayMode(.inline)
+            .pmSageScreenBackground()
     }
 }
 
@@ -345,20 +500,14 @@ struct HomeStatusChip: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12, weight: .semibold))
-            Text(title.lowercased())
-                .font(.bodyS)
-                .lineLimit(1)
+            Image(systemName: icon).font(.system(size: 12, weight: .semibold))
+            Text(title.lowercased()).font(.bodyS).lineLimit(1)
         }
         .foregroundStyle(Color.pmSageTextPrimary)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color.white.opacity(0.9), in: Capsule())
-        .overlay(
-            Capsule()
-                .strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1)
-        )
+        .overlay(Capsule().strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1))
     }
 }
 
@@ -392,23 +541,14 @@ struct HomePreviewBubble: View {
     }
 }
 
-// MARK: - Activity View (Share Sheet)
-
 struct ActivityView: UIViewControllerRepresentable {
     let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
-    }
-
+    func makeUIViewController(context: Context) -> UIActivityViewController { UIActivityViewController(activityItems: activityItems, applicationActivities: nil) }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
-// MARK: - Typing Indicator
-
 struct TypingIndicator: View {
     @State private var animating = false
-
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<3, id: \.self) { i in
@@ -416,20 +556,12 @@ struct TypingIndicator: View {
                     .fill(Color.pmSageTextSecondary)
                     .frame(width: 8, height: 8)
                     .opacity(animating ? 1 : 0.3)
-                    .animation(
-                        .easeInOut(duration: 0.5)
-                        .repeatForever()
-                        .delay(Double(i) * 0.18),
-                        value: animating
-                    )
+                    .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.18), value: animating)
             }
         }
         .padding(16)
         .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .strokeBorder(Color.pmSageBorder, lineWidth: 1.5)
-        )
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.pmSageBorder, lineWidth: 1.5))
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { animating = true }
     }

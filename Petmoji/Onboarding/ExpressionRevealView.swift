@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ExpressionRevealView: View {
     @ObservedObject var draft: OnboardingDraft
+    @EnvironmentObject var appState: AppState
     let onComplete: (Pet) -> Void
     var skipGenerationForDebug: Bool = false
     var useMockSpritesForDebug: Bool = false
@@ -18,6 +19,7 @@ struct ExpressionRevealView: View {
     @State private var thumbnailsVisible = [Bool](repeating: false, count: 6)
     @State private var createdPetId: UUID?
     @State private var nameDebounceTask: Task<Void, Never>?
+    @State private var expressionSyncTask: Task<Void, Never>?
     @FocusState private var isNameFieldFocused: Bool
 
     enum GenerationState {
@@ -29,6 +31,17 @@ struct ExpressionRevealView: View {
         case .loading, .uploading, .generating: return true
         default: return false
         }
+    }
+
+    /// True while Stage B is still filling in expressions on the server.
+    /// Drives the "still generating" caption and the loading spinners on
+    /// thumbnails that don't have a URL yet.
+    private var isFillingRemainingExpressions: Bool {
+        let filled = [
+            expressions.happy, expressions.sleepy, expressions.mad,
+            expressions.excited, expressions.missesYou, expressions.judging
+        ].compactMap { $0 }.count
+        return filled < 6
     }
 
     var body: some View {
@@ -71,6 +84,9 @@ struct ExpressionRevealView: View {
                 try? await SupabaseService.shared.updatePetName(petId: petId, name: newName)
             }
         }
+        .onDisappear {
+            expressionSyncTask?.cancel()
+        }
     }
 
     // MARK: - Sprite Reveal UI
@@ -101,6 +117,14 @@ struct ExpressionRevealView: View {
                     )
                     .onAppear { spriteVisible = true }
 
+                if isFillingRemainingExpressions {
+                    Text("other emotions are still generating...")
+                        .font(.bodyM)
+                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .multilineTextAlignment(.center)
+                        .transition(.opacity)
+                }
+
                 // Expression thumbnails
                 GeometryReader { geo in
                     let spacing: CGFloat = 10
@@ -112,8 +136,10 @@ struct ExpressionRevealView: View {
                                 expression: expression,
                                 urlString: expressions[expression],
                                 isSelected: selectedExpression == expression,
-                                size: thumbSize
+                                size: thumbSize,
+                                isLoading: expressions[expression] == nil && isFillingRemainingExpressions
                             ) {
+                                guard expressions[expression] != nil else { return }
                                 withAnimation(.spring(response: 0.3)) {
                                     selectedExpression = expression
                                 }
@@ -231,32 +257,58 @@ struct ExpressionRevealView: View {
             }
             uploadedPhotoURLs = photoURLs
 
-            // 4. Generate sprites
+            // 4. Generate sprites — Stage A (the `happy` base) returns sync,
+            //    Stages B (the other 5) write to the DB row in the background.
             generationState = .generating
-            let generatedExpressions = try await SupabaseService.shared.generateSprites(
+            let initialExpressions = try await SupabaseService.shared.generateSprites(
                 petId: pet.id,
                 photoURLs: photoURLs,
-                species: draft.species,
-                gender: draft.gender
+                petName: "", // no user-typed name yet at this point in onboarding
+                species: draft.species
             )
 
-            // Verify all 6 expressions came back — fail loudly if none, warn if partial
-            let generatedCount = [
-                generatedExpressions.happy, generatedExpressions.sleepy,
-                generatedExpressions.mad, generatedExpressions.excited,
-                generatedExpressions.missesYou, generatedExpressions.judging
-            ].compactMap { $0 }.count
-
-            if generatedCount == 0 {
+            // Stage A failure surfaces as a 500 (so it would have thrown).
+            // Anything else means at least `happy` is back.
+            guard initialExpressions.happy != nil else {
                 throw NSError(domain: "Petmoji", code: 0,
                     userInfo: [NSLocalizedDescriptionKey: "No expressions were generated. Please try again."])
             }
 
-            expressions = generatedExpressions
-            draft.generatedExpressions = generatedExpressions
+            expressions = initialExpressions
+            draft.generatedExpressions = initialExpressions
+            if var snapshot = draft.completedPet {
+                snapshot.expressions = initialExpressions
+                draft.completedPet = snapshot
+            }
             generationState = .done
+
+            // Start polling for the remaining 5 expressions written by Stage B.
+            startExpressionSync(petId: pet.id)
         } catch {
             generationState = .error(error.localizedDescription)
+        }
+    }
+
+    /// Polls the pet row and merges newly-written expressions into local state
+    /// so the UI fills in thumbnails as Stage B completes.
+    private func startExpressionSync(petId: UUID) {
+        expressionSyncTask?.cancel()
+        expressionSyncTask = Task {
+            do {
+                for try await partial in SupabaseService.shared.observePetExpressions(petId: petId) {
+                    if Task.isCancelled { return }
+                    await MainActor.run {
+                        expressions = partial
+                        draft.generatedExpressions = partial
+                        if var snapshot = draft.completedPet {
+                            snapshot.expressions = partial
+                            draft.completedPet = snapshot
+                        }
+                    }
+                }
+            } catch {
+                print("[ExpressionReveal] sync error: \(error)")
+            }
         }
     }
 
@@ -292,10 +344,29 @@ struct ExpressionRevealView: View {
             return
         }
 
+        // Stop the view-local poller — AppState picks it up below so the
+        // remaining expressions keep syncing into `appState.currentPet`
+        // after this view is dismissed.
+        expressionSyncTask?.cancel()
+        expressionSyncTask = nil
+
         Task {
-            let saved = try await SupabaseService.shared.savePet(pet)
-            MessageScheduler.shared.savePetMetadata(name: saved.name, petId: saved.id.uuidString)
-            onComplete(saved)
+            // Persist only user-edited fields. We deliberately avoid a full
+            // upsert here because the edge function's Stage B is concurrently
+            // writing `expressions` — a full upsert would clobber any
+            // expression that landed after Stage A.
+            try? await SupabaseService.shared.updatePetName(petId: pet.id, name: finalName)
+
+            // Re-fetch so we hand off the latest server-side expressions.
+            let latest = (try? await SupabaseService.shared.fetchPet(by: pet.id)) ?? pet
+            MessageScheduler.shared.savePetMetadata(name: latest.name, petId: latest.id.uuidString)
+
+            // Continue polling at the app level so the home screen keeps
+            // updating as the remaining expressions land.
+            await MainActor.run {
+                appState.startSyncingExpressions(petId: latest.id)
+                onComplete(latest)
+            }
         }
     }
 
@@ -472,6 +543,7 @@ struct ExpressionThumbnail: View {
     let urlString: String?
     let isSelected: Bool
     let size: CGFloat
+    var isLoading: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -480,7 +552,15 @@ struct ExpressionThumbnail: View {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(isSelected ? Color.pmSageSurface : Color.pmSageSurface.opacity(0.78))
 
-                SpriteImageView(urlString: urlString, cornerRadius: 12)
+                if let urlString {
+                    SpriteImageView(urlString: urlString, cornerRadius: 12)
+                } else if isLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Color.pmSageTextSecondary)
+                } else {
+                    SpriteImageView(urlString: nil, cornerRadius: 12)
+                }
             }
             .frame(width: size, height: size)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -497,8 +577,10 @@ struct ExpressionThumbnail: View {
                 x: 0,
                 y: 0
             )
+            .opacity(isLoading ? 0.85 : 1)
         }
         .buttonStyle(SpringButtonStyle())
+        .disabled(isLoading)
     }
 }
 

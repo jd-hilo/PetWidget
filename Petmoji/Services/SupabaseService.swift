@@ -147,17 +147,24 @@ final class SupabaseService: @unchecked Sendable {
 
     // MARK: - Sprite Generation (calls edge function)
 
-    func generateSprites(petId: UUID, photoURLs: [String], species: Species, gender: PetGender) async throws -> ExpressionMap {
+    /// Calls the `generate-sprites` edge function. The deployed function
+    /// returns synchronously after Stage A (the `happy` base sprite) and then
+    /// fills in the remaining 5 expressions in the background, writing them
+    /// directly to the `pets.expressions` row.
+    ///
+    /// Use `observePetExpressions(petId:)` afterwards to pick up Stage B
+    /// updates as they land.
+    func generateSprites(petId: UUID, photoURLs: [String], petName: String, species: Species) async throws -> ExpressionMap {
         struct GenerateRequest: Encodable {
             let petId: String
             let photoURLs: [String]
+            let petName: String
             let species: String
-            let gender: String
             enum CodingKeys: String, CodingKey {
                 case petId = "pet_id"
                 case photoURLs = "photo_urls"
+                case petName = "pet_name"
                 case species
-                case gender
             }
         }
         let response: ExpressionMap = try await client.functions
@@ -167,12 +174,68 @@ final class SupabaseService: @unchecked Sendable {
                     body: GenerateRequest(
                         petId: petId.uuidString,
                         photoURLs: photoURLs,
-                        species: species.rawValue,
-                        gender: gender.rawValue
+                        petName: petName,
+                        species: species.rawValue
                     )
                 )
             )
         return response
+    }
+
+    /// Fetches a single pet row by id. Subject to RLS — caller must own the row.
+    func fetchPet(by petId: UUID) async throws -> Pet? {
+        let pets: [Pet] = try await client
+            .from("pets")
+            .select()
+            .eq("id", value: petId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        return pets.first
+    }
+
+    /// Polls the `pets` row for expression updates and yields a fresh
+    /// `ExpressionMap` whenever a new expression is written by the edge
+    /// function's Stage B. Finishes when all 6 expressions are present or
+    /// the timeout elapses.
+    func observePetExpressions(
+        petId: UUID,
+        timeout: TimeInterval = 300,
+        pollInterval: TimeInterval = 3
+    ) -> AsyncThrowingStream<ExpressionMap, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let deadline = Date().addingTimeInterval(timeout)
+                var lastCount = -1
+                while Date() < deadline {
+                    if Task.isCancelled { break }
+                    do {
+                        if let pet = try await self.fetchPet(by: petId) {
+                            let count = Self.filledExpressionCount(pet.expressions)
+                            if count != lastCount {
+                                continuation.yield(pet.expressions)
+                                lastCount = count
+                            }
+                            if count >= 6 {
+                                continuation.finish()
+                                return
+                            }
+                        }
+                    } catch {
+                        continuation.finish(throwing: error)
+                        return
+                    }
+                    try? await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private static func filledExpressionCount(_ map: ExpressionMap) -> Int {
+        [map.happy, map.sleepy, map.mad, map.excited, map.missesYou, map.judging]
+            .compactMap { $0 }.count
     }
 
     // MARK: - Device token registration (APNs)

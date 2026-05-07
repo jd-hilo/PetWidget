@@ -251,6 +251,7 @@ final class AppState: ObservableObject {
     @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
 
     private let supabase = SupabaseService.shared
+    private var expressionSyncTask: Task<Void, Never>?
 
     func loadCurrentPet() async {
         isLoading = true
@@ -266,8 +267,46 @@ final class AppState: ObservableObject {
         currentPet = pet
     }
 
+    /// Pets the user can switch between (stub: single pet until multi-pet backend exists).
+    var availablePets: [Pet] {
+        [currentPet].compactMap { $0 }
+    }
+
+    func selectPet(_ pet: Pet) {
+        currentPet = pet
+    }
+
     func resetForOnboarding() async {
+        stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
         currentPet = nil
+    }
+
+    /// After kicking off `generate-sprites`, the edge function returns once
+    /// the `happy` base sprite is ready and continues to fill in the other 5
+    /// expressions in the background (writing each to `pets.expressions`).
+    /// This polls the row and merges new expressions into `currentPet` as they
+    /// arrive, so the UI updates without a manual refresh.
+    func startSyncingExpressions(petId: UUID) {
+        expressionSyncTask?.cancel()
+        expressionSyncTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                for try await partial in self.supabase.observePetExpressions(petId: petId) {
+                    if Task.isCancelled { return }
+                    if var pet = self.currentPet, pet.id == petId {
+                        pet.expressions = partial
+                        self.currentPet = pet
+                    }
+                }
+            } catch {
+                print("[AppState] expression sync ended with error: \(error)")
+            }
+        }
+    }
+
+    func stopSyncingExpressions() {
+        expressionSyncTask?.cancel()
+        expressionSyncTask = nil
     }
 }

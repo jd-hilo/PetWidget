@@ -545,43 +545,57 @@ struct ExpressionThumbnail: View {
     let isSelected: Bool
     let size: CGFloat
     var isLoading: Bool = false
+    /// When `false`, renders as a static preview (e.g. settings) instead of a tappable control.
+    var interactive: Bool = true
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(isSelected ? Color.pmSageSurface : Color.pmSageSurface.opacity(0.78))
-
-                if let urlString {
-                    SpriteImageView(urlString: urlString, cornerRadius: 12)
-                } else if isLoading {
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(Color.pmSageTextSecondary)
-                } else {
-                    SpriteImageView(urlString: nil, cornerRadius: 12)
+        Group {
+            if interactive {
+                Button(action: action) {
+                    tile
                 }
+                .buttonStyle(SpringButtonStyle())
+                .disabled(isLoading)
+            } else {
+                tile
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(expression.displayName)
             }
-            .frame(width: size, height: size)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(
-                        isSelected ? Color.pmSageAccent : Color.pmSageBorder.opacity(0.55),
-                        lineWidth: isSelected ? 2.5 : 1
-                    )
-            )
-            .shadow(
-                color: isSelected ? Color.pmSageAccent.opacity(0.45) : .clear,
-                radius: isSelected ? 12 : 0,
-                x: 0,
-                y: 0
-            )
-            .opacity(isLoading ? 0.85 : 1)
         }
-        .buttonStyle(SpringButtonStyle())
-        .disabled(isLoading)
+    }
+
+    private var tile: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(isSelected ? Color.pmSageSurface : Color.pmSageSurface.opacity(0.78))
+
+            if let urlString {
+                SpriteImageView(urlString: urlString, cornerRadius: 12)
+            } else if isLoading {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .tint(Color.pmSageTextSecondary)
+            } else {
+                SpriteImageView(urlString: nil, cornerRadius: 12)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(
+                    isSelected ? Color.pmSageAccent : Color.pmSageBorder.opacity(0.55),
+                    lineWidth: isSelected ? 2.5 : 1
+                )
+        )
+        .shadow(
+            color: isSelected ? Color.pmSageAccent.opacity(0.45) : .clear,
+            radius: isSelected ? 12 : 0,
+            x: 0,
+            y: 0
+        )
+        .opacity(isLoading ? 0.85 : 1)
     }
 }
 

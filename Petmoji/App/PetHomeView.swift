@@ -1,12 +1,17 @@
 import SwiftUI
 import UIKit
 
+private enum PetCardToggleAnimation {
+    /// Slower, low-bounce spring so the card height and hero art ease in instead of snapping.
+    static let main = Animation.spring(duration: 0.58, bounce: 0.12)
+}
+
 struct PetHomeView: View {
     @EnvironmentObject var appState: AppState
+    @Namespace private var petCardHeroNamespace
     @State private var latestMessageByPet: [UUID: PetMessage] = [:]
     @State private var recentMessagesByPet: [UUID: [ChatMessage]] = [:]
     @State private var isLoadingByPet: [UUID: Bool] = [:]
-    @State private var isChatPanelExpandedByPet: [UUID: Bool] = [:]
     @State private var breatheByPet: [UUID: Bool] = [:]
     @State private var showSettings = false
     @State private var selectedPetForChatRoom: Pet?
@@ -32,7 +37,6 @@ struct PetHomeView: View {
         GeometryReader { proxy in
             let horizontalInset: CGFloat = 16
             let contentWidth = max(220, proxy.size.width - (horizontalInset * 2))
-            let chatPanelHeight = min(proxy.size.height * 0.55, 520)
             let recentPreviewLimit = proxy.size.height < 760 ? 2 : 3
 
             ZStack {
@@ -68,43 +72,29 @@ struct PetHomeView: View {
                                                 latestMessage: latestMessageByPet[pet.id],
                                                 recentMessages: recentMessagesByPet[pet.id] ?? [],
                                                 isLoadingMessage: isLoadingByPet[pet.id] ?? false,
-                                                isChatPanelExpanded: isChatPanelExpandedByPet[pet.id] ?? false,
                                                 isBreathing: breatheByPet[pet.id] ?? false,
                                                 contentWidth: contentWidth,
-                                                chatPanelHeight: chatPanelHeight,
                                                 recentPreviewLimit: recentPreviewLimit,
+                                                heroNamespace: petCardHeroNamespace,
                                                 onToggleCardExpansion: {
-                                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                                        toggleExpanded(for: pet.id)
-                                                    }
-                                                },
-                                                onToggleChatPanel: {
-                                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                                        setChatPanelExpanded(!(isChatPanelExpandedByPet[pet.id] ?? false), for: pet.id)
-                                                    }
-                                                },
-                                                onOpenChatPanel: {
-                                                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                                        setChatPanelExpanded(true, for: pet.id)
-                                                    }
+                                                    toggleExpanded(for: pet.id)
                                                 },
                                                 onOpenChatRoom: {
                                                     appState.selectPet(pet)
                                                     selectedPetForChatRoom = pet
                                                     showChatRoom = true
                                                 },
-                                                onSpriteAppeared: { breatheByPet[pet.id] = true }
+                                                onSpriteAppeared: { scheduleHeroBreathe(for: pet.id) }
                                             )
                                         } else {
                                             CollapsedPetCardContent(
                                                 pet: pet,
                                                 latestMessage: latestMessageByPet[pet.id],
-                                                isLoadingMessage: isLoadingByPet[pet.id] ?? false
+                                                isLoadingMessage: isLoadingByPet[pet.id] ?? false,
+                                                heroNamespace: petCardHeroNamespace
                                             ) {
                                                 appState.selectPet(pet)
-                                                withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                                    toggleExpanded(for: pet.id)
-                                                }
+                                                toggleExpanded(for: pet.id)
                                             }
                                         }
                                     }
@@ -156,7 +146,8 @@ struct PetHomeView: View {
         if let selected = appState.currentPet ?? pets.first {
             appState.selectPet(selected)
             setExpanded(true, for: selected.id)
-            setChatPanelExpanded(true, for: selected.id)
+            selectedPetForChatRoom = selected
+            showChatRoom = true
         }
         appState.pendingWidgetDeepLink = .none
     }
@@ -166,7 +157,6 @@ struct PetHomeView: View {
         latestMessageByPet = latestMessageByPet.filter { validIDs.contains($0.key) }
         recentMessagesByPet = recentMessagesByPet.filter { validIDs.contains($0.key) }
         isLoadingByPet = isLoadingByPet.filter { validIDs.contains($0.key) }
-        isChatPanelExpandedByPet = isChatPanelExpandedByPet.filter { validIDs.contains($0.key) }
         breatheByPet = breatheByPet.filter { validIDs.contains($0.key) }
     }
 
@@ -179,27 +169,37 @@ struct PetHomeView: View {
         setExpanded(!expandedPetIDs.contains(petID), for: petID)
     }
 
-    private func setExpanded(_ expanded: Bool, for petID: UUID) {
-        var next = expandedPetIDs
-        if expanded {
-            next.insert(petID)
-        } else {
-            next.remove(petID)
-            setChatPanelExpanded(false, for: petID)
-            refreshRecentMessagesFromLocalHistory(for: petID)
+    /// One animation curve for both expand and collapse so the hero `matchedGeometryEffect` and layout stay symmetric.
+    private func setExpanded(_ expanded: Bool, for petID: UUID, animated: Bool = true) {
+        let apply = {
+            var next = expandedPetIDs
+            if expanded {
+                next.insert(petID)
+            } else {
+                next.remove(petID)
+                breatheByPet[petID] = false
+                refreshRecentMessagesFromLocalHistory(for: petID)
+            }
+            persistExpandedIDs(next)
         }
-        persistExpandedIDs(next)
+        if animated {
+            withAnimation(PetCardToggleAnimation.main, apply)
+        } else {
+            apply()
+        }
+    }
+
+    /// Waits for the expand spring to mostly settle before starting breathe so expand matches the calmer collapse motion.
+    private func scheduleHeroBreathe(for petID: UUID) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(0.45))
+            guard expandedPetIDs.contains(petID) else { return }
+            breatheByPet[petID] = true
+        }
     }
 
     private func persistExpandedIDs(_ ids: Set<UUID>) {
         expandedPetIDsRaw = ids.map(\.uuidString).sorted().joined(separator: ",")
-    }
-
-    private func setChatPanelExpanded(_ expanded: Bool, for petID: UUID) {
-        isChatPanelExpandedByPet[petID] = expanded
-        if !expanded {
-            refreshRecentMessagesFromLocalHistory(for: petID)
-        }
     }
 
     private func loadMessagesForAllPets() async {
@@ -313,16 +313,19 @@ private struct CollapsedPetCardContent: View {
     let pet: Pet
     let latestMessage: PetMessage?
     let isLoadingMessage: Bool
+    let heroNamespace: Namespace.ID
     let onTap: () -> Void
 
     private var expression: PetExpression { latestMessage?.expression ?? .happy }
     private var spriteURL: String? { pet.expressions[expression] ?? pet.expressions[.happy] }
+    private var heroGeometryID: String { "petCardHero-\(pet.id.uuidString)" }
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
                 SpriteImageView(urlString: spriteURL, contentMode: .fill)
                     .frame(width: 84, height: 84)
+                    .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace)
                     .clipShape(Circle())
                     .overlay(Circle().strokeBorder(Color.pmSageBorder.opacity(0.85), lineWidth: 1.25))
                     .padding(2)
@@ -336,11 +339,20 @@ private struct CollapsedPetCardContent: View {
                     if isLoadingMessage && latestMessage == nil {
                         Text("checking in...").font(.bodyM).foregroundStyle(Color.pmSageTextSecondary).lineLimit(1)
                     } else {
-                        Text(latestMessage?.content ?? "tap to open \(pet.name)'s full view")
-                            .font(.bodyM)
-                            .foregroundStyle(Color.pmSageTextSecondary)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
+                        HStack(alignment: .top, spacing: 8) {
+                            if latestMessage != nil {
+                                Image(systemName: "pawprint.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Color.pmSageIconTint)
+                                    .frame(width: 24, height: 24)
+                                    .padding(.top, 2)
+                            }
+                            Text(latestMessage?.content ?? "tap to open \(pet.name)'s full view")
+                                .font(.bodyM)
+                                .foregroundStyle(Color.pmSageTextSecondary)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                        }
                     }
                 }
 
@@ -362,19 +374,17 @@ private struct ExpandedPetCardContent: View {
     let latestMessage: PetMessage?
     let recentMessages: [ChatMessage]
     let isLoadingMessage: Bool
-    let isChatPanelExpanded: Bool
     let isBreathing: Bool
     let contentWidth: CGFloat
-    let chatPanelHeight: CGFloat
     let recentPreviewLimit: Int
+    let heroNamespace: Namespace.ID
     let onToggleCardExpansion: () -> Void
-    let onToggleChatPanel: () -> Void
-    let onOpenChatPanel: () -> Void
     let onOpenChatRoom: () -> Void
     let onSpriteAppeared: () -> Void
 
     private var expression: PetExpression { latestMessage?.expression ?? .happy }
     private var spriteURL: String? { pet.expressions[expression] ?? pet.expressions[.happy] }
+    private var heroGeometryID: String { "petCardHero-\(pet.id.uuidString)" }
 
     var body: some View {
         VStack(spacing: 14) {
@@ -387,7 +397,7 @@ private struct ExpandedPetCardContent: View {
                 .buttonStyle(.plain)
             }
 
-            Button(action: onOpenChatPanel) {
+            Button(action: onOpenChatRoom) {
                 VStack(spacing: 14) {
                     let spriteWidth = max(170, contentWidth - 56)
                     let spriteHeight = spriteWidth * 0.9
@@ -400,6 +410,7 @@ private struct ExpandedPetCardContent: View {
                         .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: isBreathing)
                         .onAppear(perform: onSpriteAppeared)
                         .frame(width: spriteWidth, height: spriteHeight)
+                        .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace)
                         .mask(RoundedRectangle(cornerRadius: 28, style: .continuous))
                         .clipped()
 
@@ -418,52 +429,47 @@ private struct ExpandedPetCardContent: View {
             }
             .buttonStyle(.plain)
 
-            VStack(spacing: 10) {
-                Button(action: onToggleChatPanel) {
+            Button(action: onOpenChatRoom) {
+                VStack(alignment: .leading, spacing: 10) {
                     HStack {
-                        Text(isChatPanelExpanded ? "Chat with \(pet.name.lowercased())" : "Recent messages")
+                        Text("Recent messages")
                             .font(.bodyL)
                             .foregroundStyle(Color.pmSageTextPrimary)
                         Spacer()
-                        Image(systemName: isChatPanelExpanded ? "chevron.down" : "chevron.up")
+                        Image(systemName: "chevron.right")
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(Color.pmSageAccentDark)
                     }
                     .padding(.horizontal, 6)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
 
-                if isChatPanelExpanded {
-                    ChatPanel(pet: pet)
-                        .id(pet.id)
-                        .frame(height: chatPanelHeight)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                } else if recentMessages.isEmpty && isLoadingMessage {
-                    TypingIndicator()
-                } else if recentMessages.isEmpty {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .fill(Color.white.opacity(0.84))
-                        .overlay(
-                            Text("start chatting with your pet")
-                                .font(.bodyM)
-                                .foregroundStyle(Color.pmSageTextSecondary)
-                                .padding(.horizontal, 14)
-                        )
-                        .frame(height: 64)
-                } else {
-                    ForEach(recentMessages.suffix(recentPreviewLimit)) { message in
-                        HomePreviewBubble(message: message)
+                    if recentMessages.isEmpty && isLoadingMessage {
+                        TypingIndicator()
+                    } else if recentMessages.isEmpty {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color.white.opacity(0.84))
+                            .overlay(
+                                Text("start chatting with your pet")
+                                    .font(.bodyM)
+                                    .foregroundStyle(Color.pmSageTextSecondary)
+                                    .padding(.horizontal, 14)
+                            )
+                            .frame(height: 64)
+                    } else {
+                        ForEach(recentMessages.suffix(recentPreviewLimit)) { message in
+                            HomePreviewBubble(message: message)
+                        }
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(14)
+                .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1.2)
+                )
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1.2)
-            )
+            .buttonStyle(.plain)
 
             Button(action: onOpenChatRoom) {
                 Text("chat with \(pet.name.lowercased())")

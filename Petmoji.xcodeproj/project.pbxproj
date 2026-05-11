@@ -12,6 +12,7 @@
 		2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73DA20062A61BDF056EB316 /* PetmojiApp.swift */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
 		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
+		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
 		78A053739147FE7EDE5153B9 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAC105A00465289B0DF46CE /* Pet.swift */; };
 		7D312BA6B6A9B8BC85C1F901 /* PetWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669896C69E8CFCACFFF8B2E1 /* PetWidgetProvider.swift */; };
 		7DBB2DE5757F2983C69CE3ED /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 86C7DF1934A3B2403C541D2F /* Supabase */; };
@@ -86,6 +87,7 @@
 		C9EFEE996E1C4B444F152178 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CEE58751CCD8E8C6589EE39C /* PetmojiWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetmojiWidget.entitlements; sourceTree = "<group>"; };
 		D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUserSettings.swift; sourceTree = "<group>"; };
 		D73DA20062A61BDF056EB316 /* PetmojiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetmojiApp.swift; sourceTree = "<group>"; };
 		E2C31EB3D182749A40DD6A1F /* Petmoji.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Petmoji.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E367B57172A90687CF9B9982 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 			children = (
 				C9EFEE996E1C4B444F152178 /* ContentView.swift */,
 				E367B57172A90687CF9B9982 /* DesignSystem.swift */,
+				F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */,
 				BE4275124830FEE1D8B137A8 /* PetHomeView.swift */,
 				D73DA20062A61BDF056EB316 /* PetmojiApp.swift */,
 				D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */,
@@ -357,6 +360,7 @@
 				C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */,
 				DACC0F73BE1E01340A6A9DA3 /* ContentView.swift in Sources */,
 				E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */,
+				F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,
 				ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */,
 				EBCAA8C98D86B2BDF29F0DD7 /* MessageScheduler.swift in Sources */,

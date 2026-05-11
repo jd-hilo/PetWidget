@@ -83,6 +83,7 @@ struct RootView: View {
     private var shouldUseMockSprites: Bool {
 #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-mockSprites")
+            || MockUserSettings.isDebugSpritesUserDefaultEnabled
 #else
         false
 #endif
@@ -250,8 +251,59 @@ final class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
 
+    // MARK: - Mock user / developer preview (DEBUG Settings UI)
+
+    @Published var settingsPersona: SettingsPersona = .pet
+    @Published var mockUserDisplayName: String = ""
+    @Published var mockUserEmail: String = ""
+    @Published var mockUserVerboseLogs: Bool = false
+    @Published var mockUserDebugSprites: Bool = false
+
     private let supabase = SupabaseService.shared
     private var expressionSyncTask: Task<Void, Never>?
+
+    init() {
+        loadMockUserSettingsFromUserDefaults()
+    }
+
+    private func loadMockUserSettingsFromUserDefaults() {
+        let d = UserDefaults.standard
+        if let raw = d.string(forKey: MockUserSettings.Keys.persona),
+           let p = SettingsPersona(rawValue: raw) {
+            settingsPersona = p
+        } else {
+            settingsPersona = .pet
+        }
+        mockUserDisplayName = d.string(forKey: MockUserSettings.Keys.displayName) ?? ""
+        mockUserEmail = d.string(forKey: MockUserSettings.Keys.email) ?? ""
+        mockUserVerboseLogs = d.bool(forKey: MockUserSettings.Keys.verboseLogs)
+        mockUserDebugSprites = d.bool(forKey: MockUserSettings.Keys.debugSprites)
+    }
+
+    func setSettingsPersona(_ value: SettingsPersona) {
+        settingsPersona = value
+        UserDefaults.standard.set(value.rawValue, forKey: MockUserSettings.Keys.persona)
+    }
+
+    func setMockUserDisplayName(_ value: String) {
+        mockUserDisplayName = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.displayName)
+    }
+
+    func setMockUserEmail(_ value: String) {
+        mockUserEmail = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.email)
+    }
+
+    func setMockUserVerboseLogs(_ value: Bool) {
+        mockUserVerboseLogs = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.verboseLogs)
+    }
+
+    func setMockUserDebugSprites(_ value: Bool) {
+        mockUserDebugSprites = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.debugSprites)
+    }
 
     func loadCurrentPet() async {
         isLoading = true

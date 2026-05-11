@@ -20,12 +20,93 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
+    /// In DEBUG mock-user mode, only mock account fields are shown; pet sections are hidden.
+    private var showsPetCentricSettings: Bool {
+        #if DEBUG
+        appState.settingsPersona == .pet
+        #else
+        true
+        #endif
+    }
+
     var body: some View {
         ZStack {
             PMSageScreenBackdrop()
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 14) {
+#if DEBUG
+                    VStack(alignment: .leading, spacing: 12) {
+                        Picker("Settings mode", selection: Binding(
+                            get: { appState.settingsPersona },
+                            set: { appState.setSettingsPersona($0) }
+                        )) {
+                            ForEach(SettingsPersona.allCases) { persona in
+                                Text(persona.segmentTitle).tag(persona)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity)
+                        .accessibilityLabel("Settings mode")
+
+                        if appState.settingsPersona == .mockUser {
+                            SettingsSageSection(
+                                title: "mock user (preview)",
+                                footer: "Preview only until account sign-in ships."
+                            ) {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("display name")
+                                            .font(.bodyS)
+                                            .foregroundStyle(Color.pmSageTextSecondary)
+                                        TextField("Alex", text: Binding(
+                                            get: { appState.mockUserDisplayName },
+                                            set: { appState.setMockUserDisplayName($0) }
+                                        ))
+                                        .font(.bodyL)
+                                        .foregroundStyle(Color.pmSageTextPrimary)
+                                        .textContentType(.name)
+                                        .textInputAutocapitalization(.words)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("email (preview)")
+                                            .font(.bodyS)
+                                            .foregroundStyle(Color.pmSageTextSecondary)
+                                        TextField("alex@example.com", text: Binding(
+                                            get: { appState.mockUserEmail },
+                                            set: { appState.setMockUserEmail($0) }
+                                        ))
+                                        .font(.bodyL)
+                                        .foregroundStyle(Color.pmSageTextPrimary)
+                                        .textContentType(.emailAddress)
+                                        .keyboardType(.emailAddress)
+                                        .textInputAutocapitalization(.never)
+                                    }
+
+                                    Toggle("verbose logging", isOn: Binding(
+                                        get: { appState.mockUserVerboseLogs },
+                                        set: { appState.setMockUserVerboseLogs($0) }
+                                    ))
+                                    .font(.bodyM)
+                                    .foregroundStyle(Color.pmSageTextPrimary)
+                                    .tint(Color.pmSageAccent)
+
+                                    Toggle("bundled debug sprites", isOn: Binding(
+                                        get: { appState.mockUserDebugSprites },
+                                        set: { appState.setMockUserDebugSprites($0) }
+                                    ))
+                                    .font(.bodyM)
+                                    .foregroundStyle(Color.pmSageTextPrimary)
+                                    .tint(Color.pmSageAccent)
+                                }
+                            }
+                        }
+                    }
+#endif
+
+                    if showsPetCentricSettings {
                     SettingsSageSection(title: "pet profile") {
                         HStack(spacing: 16) {
                             SpriteImageView(urlString: pet?.expressions[.happy])
@@ -157,6 +238,8 @@ struct SettingsView: View {
                                 }
                             )
                         }
+                    }
+
                     }
 
                     Text("petmoji \(appVersion)")

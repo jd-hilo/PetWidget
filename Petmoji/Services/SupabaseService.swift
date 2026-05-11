@@ -31,6 +31,7 @@ final class SupabaseService: @unchecked Sendable {
     // MARK: - Pet CRUD
 
     func fetchCurrentPet() async throws -> Pet? {
+        MockUserSettings.logVerbose("fetchCurrentPet()")
         let userId = try await currentUserId()
         let pets: [Pet] = try await client
             .from("pets")

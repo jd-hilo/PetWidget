@@ -183,11 +183,12 @@ struct ExpressionRevealView: View {
                                 .strokeBorder(Color.pmSageBorder, lineWidth: 1.5)
                         )
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 8)
             }
-            .padding(.top, 112)
+            .padding(.top, 8)
             .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            // Room to scroll the name field above the pinned CTA (56pt) + inset padding.
+            .padding(.bottom, 96)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
@@ -203,7 +204,7 @@ struct ExpressionRevealView: View {
                 isEnabled: !name.trimmingCharacters(in: .whitespaces).isEmpty
             )
             .padding(.horizontal, 24)
-            .padding(.bottom, 75)
+            .padding(.bottom, 10)
         }
     }
 

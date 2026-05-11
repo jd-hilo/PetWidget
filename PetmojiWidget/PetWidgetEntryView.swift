@@ -24,9 +24,12 @@ struct PetWidgetEntryView: View {
 struct SmallWidgetView: View {
     let entry: PetWidgetEntry
 
+    private var emotionDotColor: Color {
+        Color(hex: entry.expression.accentHex)
+    }
+
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
-            Spacer(minLength: 0)
             HStack {
                 Spacer(minLength: 0)
                 WidgetBoundSpriteCircle(
@@ -40,24 +43,28 @@ struct SmallWidgetView: View {
                 )
                 Spacer(minLength: 0)
             }
+            .padding(.top, 2)
+
+            HStack(alignment: .center, spacing: 6) {
+                WidgetEmotionStatusBullet(dotColor: emotionDotColor)
+
+                Text(entry.message)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.93))
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(2)
+                    .lineLimit(14)
+                    .minimumScaleFactor(0.72)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.leading, 6)
+            .padding(.trailing, 8)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+
             Spacer(minLength: 0)
-            WidgetNameFeelingBlock(
-                petName: entry.petName,
-                expression: entry.expression,
-                nameFontSize: 12,
-                feelingFontSize: 19,
-                contentAlignment: .center,
-                nameForegroundOpacity: 0.85,
-                feelingFontWeight: .bold,
-                feelingKerning: 0.45,
-                feelingUsesAccentShadow: true,
-                dotColor: Color(hex: entry.expression.accentHex)
-            )
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 2)
-            .padding(.bottom, 15)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .containerBackground(for: .widget) {
             WidgetTranslucentBackground()
         }
@@ -84,27 +91,22 @@ struct MediumWidgetView: View {
             .padding(.leading, 4)
             .padding(.vertical, 4)
 
-            // Right column: emotion-forward (matches small widget hierarchy), message secondary.
-            VStack(alignment: .leading, spacing: 12) {
-                WidgetNameFeelingBlock(
-                    petName: entry.petName,
+            VStack(alignment: .leading, spacing: 6) {
+                WidgetBulletEmotionRow(
                     expression: entry.expression,
-                    nameFontSize: 12,
-                    feelingFontSize: 18,
-                    nameForegroundOpacity: 0.85,
-                    feelingFontWeight: .bold,
-                    feelingKerning: 0.4,
-                    feelingUsesAccentShadow: true,
                     dotColor: Color(hex: entry.expression.accentHex)
                 )
 
                 Text(entry.message)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.82))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
                     .multilineTextAlignment(.leading)
-                    .lineLimit(4)
+                    .lineSpacing(4)
+                    .lineLimit(18)
+                    .minimumScaleFactor(0.74)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
+            .frame(maxHeight: .infinity, alignment: .top)
             .padding(.trailing, 6)
             .padding(.vertical, 6)
         }
@@ -166,42 +168,43 @@ private struct PawPatternOverlay: View {
 
 // MARK: - Shared Widget Blocks
 
-struct WidgetNameFeelingBlock: View {
-    let petName: String
+/// Medium widget: colored bullet + emotion label on one line (no pet name).
+private struct WidgetBulletEmotionRow: View {
     let expression: WidgetExpression
-    let nameFontSize: CGFloat
-    let feelingFontSize: CGFloat
-    var contentAlignment: HorizontalAlignment = .leading
-    var nameForegroundOpacity: CGFloat = 1
-    var feelingFontWeight: Font.Weight = .semibold
-    var feelingKerning: CGFloat = 0
-    var feelingUsesAccentShadow: Bool = false
-    var dotColor: Color = .white
+    let dotColor: Color
 
     var body: some View {
-        VStack(alignment: contentAlignment, spacing: 4) {
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text("•")
-                    .font(.system(size: nameFontSize + 14, weight: .bold, design: .rounded))
-                    .foregroundStyle(dotColor)
-                    .shadow(color: dotColor.opacity(0.45), radius: 1, x: 0, y: 0)
-                    .shadow(color: dotColor.opacity(0.28), radius: 3, x: 0, y: 0)
-                    .shadow(color: dotColor.opacity(0.16), radius: 6, x: 0, y: 0)
-                    .offset(y: 3)
-                Text(petName.uppercased())
-                    .font(.system(size: nameFontSize, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(nameForegroundOpacity))
-            }
-            .lineLimit(1)
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("•")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(dotColor)
+                .shadow(color: dotColor.opacity(0.45), radius: 1, x: 0, y: 0)
+                .shadow(color: dotColor.opacity(0.28), radius: 3, x: 0, y: 0)
+                .shadow(color: dotColor.opacity(0.16), radius: 6, x: 0, y: 0)
+                .offset(y: 3)
 
             Text("\(expression.displayName)!")
-                .font(.system(size: feelingFontSize, weight: feelingFontWeight, design: .rounded))
-                .kerning(feelingKerning)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .kerning(0.4)
                 .foregroundStyle(.white.opacity(0.96))
                 .lineLimit(1)
-                .multilineTextAlignment(contentAlignment == .center ? .center : .leading)
-                .modifier(FeelingAccentShadowModifier(color: dotColor, enabled: feelingUsesAccentShadow))
+                .modifier(FeelingAccentShadowModifier(color: dotColor, enabled: true))
         }
+    }
+}
+
+/// Emotion accent bullet only (small widget); styling aligned with `WidgetBulletEmotionRow` bullet.
+private struct WidgetEmotionStatusBullet: View {
+    let dotColor: Color
+
+    var body: some View {
+        Text("•")
+            .font(.system(size: 26, weight: .bold, design: .rounded))
+            .foregroundStyle(dotColor)
+            .shadow(color: dotColor.opacity(0.45), radius: 1, x: 0, y: 0)
+            .shadow(color: dotColor.opacity(0.28), radius: 3, x: 0, y: 0)
+            .shadow(color: dotColor.opacity(0.16), radius: 6, x: 0, y: 0)
+            .accessibilityLabel("Mood indicator")
     }
 }
 

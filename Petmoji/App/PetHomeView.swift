@@ -8,6 +8,7 @@ private enum PetCardToggleAnimation {
 
 struct PetHomeView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.petmojiPalette) private var palette
     @Namespace private var petCardHeroNamespace
     @State private var latestMessageByPet: [UUID: PetMessage] = [:]
     @State private var recentMessagesByPet: [UUID: [ChatMessage]] = [:]
@@ -54,11 +55,11 @@ struct PetHomeView: View {
                         VStack(spacing: 14) {
                             if pets.isEmpty {
                                 RoundedRectangle(cornerRadius: 30, style: .continuous)
-                                    .fill(Color.white.opacity(0.9))
+                                    .fill(palette.elevatedCardFill)
                                     .overlay(
                                         Text("no pet yet")
                                             .font(.bodyL)
-                                            .foregroundStyle(Color.pmSageTextSecondary)
+                                            .foregroundStyle(palette.textSecondary)
                                     )
                                     .frame(height: 260)
                             } else {
@@ -99,10 +100,10 @@ struct PetHomeView: View {
                                         }
                                     }
                                     .frame(maxWidth: .infinity)
-                                    .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                                    .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                            .strokeBorder(Color.pmSageBorder.opacity(0.75), lineWidth: 1.2)
+                                            .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
                                     )
                                 }
                             }
@@ -267,6 +268,8 @@ struct PetHomeView: View {
 }
 
 private struct HomeHeader: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let greeting: String
     let petCount: Int
     let onShowSettings: () -> Void
@@ -283,12 +286,12 @@ private struct HomeHeader: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(greeting)
                     .font(.titleL.weight(.bold))
-                    .foregroundStyle(Color.pmSageTextPrimary)
+                    .foregroundStyle(palette.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 Text(checkInText)
                     .font(.bodyM)
-                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .foregroundStyle(palette.textSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.9)
             }
@@ -296,12 +299,12 @@ private struct HomeHeader: View {
             Button(action: onShowSettings) {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(Color.pmSageIconTint)
+                    .foregroundStyle(palette.iconTint)
                     .frame(width: 56, height: 56)
-                    .background(Color.white, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(Color.pmSageBorder.opacity(0.9), lineWidth: 1.25)
+                            .strokeBorder(palette.chromeButtonStroke, lineWidth: 1.25)
                     )
             }
             .buttonStyle(.plain)
@@ -310,6 +313,8 @@ private struct HomeHeader: View {
 }
 
 private struct CollapsedPetCardContent: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let pet: Pet
     let latestMessage: PetMessage?
     let isLoadingMessage: Bool
@@ -327,29 +332,29 @@ private struct CollapsedPetCardContent: View {
                     .frame(width: 84, height: 84)
                     .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace)
                     .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(Color.pmSageBorder.opacity(0.85), lineWidth: 1.25))
+                    .overlay(Circle().strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25))
                     .padding(2)
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(pet.name).font(.bodyL).foregroundStyle(Color.pmSageTextPrimary).lineLimit(1)
+                        Text(pet.name).font(.bodyL).foregroundStyle(palette.textPrimary).lineLimit(1)
                         HomeStatusChip(icon: "heart.fill", title: expression.displayName)
                     }
 
                     if isLoadingMessage && latestMessage == nil {
-                        Text("checking in...").font(.bodyM).foregroundStyle(Color.pmSageTextSecondary).lineLimit(1)
+                        Text("checking in...").font(.bodyM).foregroundStyle(palette.textSecondary).lineLimit(1)
                     } else {
                         HStack(alignment: .top, spacing: 8) {
                             if latestMessage != nil {
                                 Image(systemName: "pawprint.fill")
                                     .font(.system(size: 13))
-                                    .foregroundStyle(Color.pmSageIconTint)
+                                    .foregroundStyle(palette.iconTint)
                                     .frame(width: 24, height: 24)
                                     .padding(.top, 2)
                             }
                             Text(latestMessage?.content ?? "tap to open \(pet.name)'s full view")
                                 .font(.bodyM)
-                                .foregroundStyle(Color.pmSageTextSecondary)
+                                .foregroundStyle(palette.textSecondary)
                                 .lineLimit(2)
                                 .multilineTextAlignment(.leading)
                         }
@@ -359,7 +364,7 @@ private struct CollapsedPetCardContent: View {
                 Spacer(minLength: 6)
                 Image(systemName: "chevron.down.circle.fill")
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.pmSageAccentDark)
+                    .foregroundStyle(palette.accentDark)
             }
             .padding(14)
             .contentShape(Rectangle())
@@ -370,6 +375,8 @@ private struct CollapsedPetCardContent: View {
 }
 
 private struct ExpandedPetCardContent: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let pet: Pet
     let latestMessage: PetMessage?
     let recentMessages: [ChatMessage]
@@ -389,10 +396,10 @@ private struct ExpandedPetCardContent: View {
     var body: some View {
         VStack(spacing: 14) {
             HStack {
-                Text(pet.name).font(.titleL).foregroundStyle(Color.pmSageTextPrimary).lineLimit(1)
+                Text(pet.name).font(.titleL).foregroundStyle(palette.textPrimary).lineLimit(1)
                 Spacer()
                 Button(action: onToggleCardExpansion) {
-                    Label("Collapse", systemImage: "chevron.up").font(.bodyS).foregroundStyle(Color.pmSageAccentDark)
+                    Label("Collapse", systemImage: "chevron.up").font(.bodyS).foregroundStyle(palette.accentDark)
                 }
                 .buttonStyle(.plain)
             }
@@ -421,10 +428,10 @@ private struct ExpandedPetCardContent: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
-                .background(Color.pmSageWashDeep.opacity(0.75), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .background(palette.washDeep.opacity(0.75), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1.4)
+                        .strokeBorder(palette.border.opacity(0.8), lineWidth: 1.4)
                 )
             }
             .buttonStyle(.plain)
@@ -434,11 +441,11 @@ private struct ExpandedPetCardContent: View {
                     HStack {
                         Text("Recent messages")
                             .font(.bodyL)
-                            .foregroundStyle(Color.pmSageTextPrimary)
+                            .foregroundStyle(palette.textPrimary)
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Color.pmSageAccentDark)
+                            .foregroundStyle(palette.accentDark)
                     }
                     .padding(.horizontal, 6)
 
@@ -446,11 +453,11 @@ private struct ExpandedPetCardContent: View {
                         TypingIndicator()
                     } else if recentMessages.isEmpty {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(Color.white.opacity(0.84))
+                            .fill(palette.elevatedCardFill)
                             .overlay(
                                 Text("start chatting with your pet")
                                     .font(.bodyM)
-                                    .foregroundStyle(Color.pmSageTextSecondary)
+                                    .foregroundStyle(palette.textSecondary)
                                     .padding(.horizontal, 14)
                             )
                             .frame(height: 64)
@@ -462,10 +469,10 @@ private struct ExpandedPetCardContent: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
-                .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1.2)
+                        .strokeBorder(palette.border.opacity(0.7), lineWidth: 1.2)
                 )
                 .contentShape(Rectangle())
             }
@@ -480,7 +487,7 @@ private struct ExpandedPetCardContent: View {
                     .background(Color.pmSageAccentDark, in: Capsule(style: .continuous))
                     .overlay(
                         Capsule(style: .continuous)
-                            .strokeBorder(Color.pmSageBorder.opacity(0.6), lineWidth: 1)
+                            .strokeBorder(palette.border.opacity(0.6), lineWidth: 1)
                     )
             }
             .buttonStyle(.plain)
@@ -501,6 +508,8 @@ private struct PetChatRoomView: View {
 }
 
 struct HomeStatusChip: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let icon: String
     let title: String
 
@@ -509,15 +518,17 @@ struct HomeStatusChip: View {
             Image(systemName: icon).font(.system(size: 12, weight: .semibold))
             Text(title.lowercased()).font(.bodyS).lineLimit(1)
         }
-        .foregroundStyle(Color.pmSageTextPrimary)
+        .foregroundStyle(palette.textPrimary)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.9), in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.pmSageBorder.opacity(0.8), lineWidth: 1))
+        .background(palette.visualStyle == .classic ? Color.white.opacity(0.9) : palette.elevatedCardFill, in: Capsule())
+        .overlay(Capsule().strokeBorder(palette.border.opacity(0.8), lineWidth: 1))
     }
 }
 
 struct HomePreviewBubble: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let message: ChatMessage
 
     var body: some View {
@@ -525,14 +536,14 @@ struct HomePreviewBubble: View {
             if message.isFromPet {
                 Image(systemName: "pawprint.fill")
                     .font(.system(size: 13))
-                    .foregroundStyle(Color.pmSageIconTint)
+                    .foregroundStyle(palette.iconTint)
                     .frame(width: 24, height: 24)
                 Text(message.content)
                     .font(.bodyM)
-                    .foregroundStyle(Color.pmSageTextPrimary)
+                    .foregroundStyle(palette.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    .background(Color.pmSageWashSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(palette.bubblePetBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 Spacer(minLength: 0)
             } else {
                 Spacer(minLength: 0)
@@ -554,20 +565,22 @@ struct ActivityView: UIViewControllerRepresentable {
 }
 
 struct TypingIndicator: View {
+    @Environment(\.petmojiPalette) private var palette
+
     @State private var animating = false
     var body: some View {
         HStack(spacing: 6) {
             ForEach(0..<3, id: \.self) { i in
                 Circle()
-                    .fill(Color.pmSageTextSecondary)
+                    .fill(palette.typingDot)
                     .frame(width: 8, height: 8)
                     .opacity(animating ? 1 : 0.3)
                     .animation(.easeInOut(duration: 0.5).repeatForever().delay(Double(i) * 0.18), value: animating)
             }
         }
         .padding(16)
-        .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(Color.pmSageBorder, lineWidth: 1.5))
+        .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(palette.border, lineWidth: 1.5))
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { animating = true }
     }

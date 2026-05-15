@@ -13,6 +13,7 @@
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
 		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
 		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
+		A1B2C3D52F9E8D7C006EDD01 /* AppearanceSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D32F9E8D7C006EDD01 /* AppearanceSettings.swift */; };
 		78A053739147FE7EDE5153B9 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAC105A00465289B0DF46CE /* Pet.swift */; };
 		7D312BA6B6A9B8BC85C1F901 /* PetWidgetProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 669896C69E8CFCACFFF8B2E1 /* PetWidgetProvider.swift */; };
 		7DBB2DE5757F2983C69CE3ED /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 86C7DF1934A3B2403C541D2F /* Supabase */; };
@@ -77,6 +78,7 @@
 		61537A9A8A5859B5B4E18091 /* PetMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetMessage.swift; sourceTree = "<group>"; };
 		669896C69E8CFCACFFF8B2E1 /* PetWidgetProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetWidgetProvider.swift; sourceTree = "<group>"; };
 		75B15C9F26B1590FEDD4031F /* PetWidgetEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetWidgetEntryView.swift; sourceTree = "<group>"; };
+		A1B2C3D32F9E8D7C006EDD01 /* AppearanceSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearanceSettings.swift; sourceTree = "<group>"; };
 		9844B5416F8DE38FCA025428 /* LocationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationService.swift; sourceTree = "<group>"; };
 		9C1681768AB9E46038876ECF /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
 		A0EE906FD9A6976FFE99CD77 /* Petmoji.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Petmoji.entitlements; sourceTree = "<group>"; };
@@ -168,6 +170,7 @@
 		588685D465B83BA971189708 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D32F9E8D7C006EDD01 /* AppearanceSettings.swift */,
 				C9EFEE996E1C4B444F152178 /* ContentView.swift */,
 				E367B57172A90687CF9B9982 /* DesignSystem.swift */,
 				F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */,
@@ -356,6 +359,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */,
+				A1B2C3D52F9E8D7C006EDD01 /* AppearanceSettings.swift in Sources */,
 				DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */,
 				C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */,
 				DACC0F73BE1E01340A6A9DA3 /* ContentView.swift in Sources */,

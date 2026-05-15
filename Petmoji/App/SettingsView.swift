@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.petmojiPalette) private var palette
 
     @State private var petName: String = ""
     @State private var notificationsEnabled = UserDefaults.standard.bool(forKey: "notifications_enabled")
@@ -15,6 +16,10 @@ struct SettingsView: View {
     @State private var nameUpdateTask: Task<Void, Never>?
 
     private var pet: Pet? { appState.currentPet }
+
+    private func spriteThumbLoading(_ expression: PetExpression, pet: Pet) -> Bool {
+        pet.expressions[expression] == nil && appState.expressionSyncPetId == pet.id
+    }
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -56,16 +61,18 @@ struct SettingsView: View {
                                 footer: "Preview only until account sign-in ships."
                             ) {
                                 VStack(alignment: .leading, spacing: 16) {
+                                    ClassicDarkModeToggleRow()
+
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("display name")
                                             .font(.bodyS)
-                                            .foregroundStyle(Color.pmSageTextSecondary)
+                                            .foregroundStyle(palette.textSecondary)
                                         TextField("Alex", text: Binding(
                                             get: { appState.mockUserDisplayName },
                                             set: { appState.setMockUserDisplayName($0) }
                                         ))
                                         .font(.bodyL)
-                                        .foregroundStyle(Color.pmSageTextPrimary)
+                                        .foregroundStyle(palette.textPrimary)
                                         .textContentType(.name)
                                         .textInputAutocapitalization(.words)
                                     }
@@ -73,13 +80,13 @@ struct SettingsView: View {
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("email (preview)")
                                             .font(.bodyS)
-                                            .foregroundStyle(Color.pmSageTextSecondary)
+                                            .foregroundStyle(palette.textSecondary)
                                         TextField("alex@example.com", text: Binding(
                                             get: { appState.mockUserEmail },
                                             set: { appState.setMockUserEmail($0) }
                                         ))
                                         .font(.bodyL)
-                                        .foregroundStyle(Color.pmSageTextPrimary)
+                                        .foregroundStyle(palette.textPrimary)
                                         .textContentType(.emailAddress)
                                         .keyboardType(.emailAddress)
                                         .textInputAutocapitalization(.never)
@@ -90,19 +97,31 @@ struct SettingsView: View {
                                         set: { appState.setMockUserVerboseLogs($0) }
                                     ))
                                     .font(.bodyM)
-                                    .foregroundStyle(Color.pmSageTextPrimary)
-                                    .tint(Color.pmSageAccent)
+                                    .foregroundStyle(palette.textPrimary)
 
                                     Toggle("bundled debug sprites", isOn: Binding(
                                         get: { appState.mockUserDebugSprites },
                                         set: { appState.setMockUserDebugSprites($0) }
                                     ))
                                     .font(.bodyM)
-                                    .foregroundStyle(Color.pmSageTextPrimary)
-                                    .tint(Color.pmSageAccent)
+                                    .foregroundStyle(palette.textPrimary)
                                 }
                             }
+                        } else {
+                            SettingsSageSection(
+                                title: "display",
+                                footer: "Dark Mode uses the same dark glass look as your home screen widgets."
+                            ) {
+                                ClassicDarkModeToggleRow()
+                            }
                         }
+                    }
+#else
+                    SettingsSageSection(
+                        title: "display",
+                        footer: "Dark Mode uses the same dark glass look as your home screen widgets."
+                    ) {
+                        ClassicDarkModeToggleRow()
                     }
 #endif
 
@@ -113,18 +132,18 @@ struct SettingsView: View {
                                 .frame(width: 52, height: 52)
                                 .clipShape(Circle())
                                 .overlay(
-                                    Circle().strokeBorder(Color.pmSageBorder.opacity(0.85), lineWidth: 1.25)
+                                    Circle().strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25)
                                 )
 
                             VStack(alignment: .leading, spacing: 4) {
                                 TextField("pet name", text: $petName)
                                     .font(.bodyL)
-                                    .foregroundStyle(Color.pmSageTextPrimary)
+                                    .foregroundStyle(palette.textPrimary)
 
                                 if let pet {
                                     Text(pet.species.displayName)
                                         .font(.bodyS)
-                                        .foregroundStyle(Color.pmSageTextSecondary)
+                                        .foregroundStyle(palette.textSecondary)
                                 }
                             }
                         }
@@ -133,8 +152,8 @@ struct SettingsView: View {
                     SettingsSageSection(title: "notifications") {
                         Toggle("scheduled messages", isOn: $notificationsEnabled)
                             .font(.bodyM)
-                            .foregroundStyle(Color.pmSageTextPrimary)
-                            .tint(Color.pmSageAccent)
+                            .foregroundStyle(palette.textPrimary)
+                            .tint(palette.accent)
                             .onChange(of: notificationsEnabled) { _, enabled in
                                 UserDefaults.standard.set(enabled, forKey: "notifications_enabled")
                             }
@@ -143,7 +162,7 @@ struct SettingsView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("sprites")
                             .font(.titleL)
-                            .foregroundStyle(Color.pmSageAccentDark)
+                            .foregroundStyle(palette.accentDark)
 
                         VStack(spacing: 12) {
                             Group {
@@ -163,7 +182,7 @@ struct SettingsView: View {
                                                 urlString: pet.expressions[expression],
                                                 isSelected: false,
                                                 size: 52,
-                                                isLoading: false,
+                                                isLoading: spriteThumbLoading(expression, pet: pet),
                                                 interactive: false,
                                                 action: {}
                                             )
@@ -173,7 +192,7 @@ struct SettingsView: View {
                                 } else {
                                     Text("no pet loaded")
                                         .font(.bodyM)
-                                        .foregroundStyle(Color.pmSageTextSecondary)
+                                        .foregroundStyle(palette.textSecondary)
                                 }
                             }
                             .settingsSageInsetCard()
@@ -183,7 +202,7 @@ struct SettingsView: View {
                                     showRegenerateConfirm = true
                                 }
                                 .font(.bodyL)
-                                .foregroundStyle(Color.pmSageAccentDark)
+                                .foregroundStyle(palette.accentDark)
                                 .popover(
                                     isPresented: $showRegenerateConfirm,
                                     attachmentAnchor: .rect(.bounds),
@@ -207,7 +226,7 @@ struct SettingsView: View {
                                 if regenerateSuccess {
                                     Label("sprites regenerated!", systemImage: "checkmark.circle.fill")
                                         .font(.bodyM)
-                                        .foregroundStyle(Color.pmSageAccentDark)
+                                        .foregroundStyle(palette.accentDark)
                                 }
                             }
                             .settingsSageInsetCard()
@@ -215,7 +234,7 @@ struct SettingsView: View {
 
                         Text("re-runs AI sprite generation from your original photos.")
                             .font(.bodyS)
-                            .foregroundStyle(Color.pmSageTextSecondary)
+                            .foregroundStyle(palette.textSecondary)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 16)
@@ -244,7 +263,7 @@ struct SettingsView: View {
 
                     Text("petmoji \(appVersion)")
                         .font(.bodyS)
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
                 }
@@ -256,7 +275,7 @@ struct SettingsView: View {
         .navigationTitle("settings")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .tint(Color.pmSageAccentDark)
+        .tint(palette.accentDark)
         .onAppear {
             petName = pet?.name ?? ""
         }
@@ -287,9 +306,36 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Dark Mode (system-style switch)
+
+private struct ClassicDarkModeToggleRow: View {
+    @EnvironmentObject private var appState: AppState
+    @Environment(\.petmojiPalette) private var palette
+
+    var body: some View {
+        HStack(alignment: .center) {
+            Text("Dark Mode")
+                .font(.bodyM)
+                .foregroundStyle(palette.textPrimary)
+            Spacer(minLength: 12)
+            Toggle("", isOn: Binding(
+                get: { appState.isDarkModeEnabled },
+                set: { appState.setDarkModeEnabled($0) }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Dark Mode")
+        .accessibilityValue(appState.isDarkModeEnabled ? "On" : "Off")
+    }
+}
+
 // MARK: - Anchored confirm popovers (near the triggering button)
 
 private struct RegenerateSpritesConfirmPopover: View {
+    @Environment(\.petmojiPalette) private var palette
+
     @Binding var isPresented: Bool
     let onConfirm: () -> Void
 
@@ -297,21 +343,21 @@ private struct RegenerateSpritesConfirmPopover: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Regenerate sprites?")
                 .font(.titleL)
-                .foregroundStyle(Color.pmSageAccentDark)
+                .foregroundStyle(palette.accentDark)
             Text("This re-runs AI on your saved photos (about 30 seconds). Your current sprites will be replaced.")
                 .font(.bodyM)
-                .foregroundStyle(Color.pmSageTextSecondary)
+                .foregroundStyle(palette.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 Button("Cancel") { isPresented = false }
                     .buttonStyle(.bordered)
-                    .tint(Color.pmSageAccentDark)
+                    .tint(palette.accentDark)
                 Button("Regenerate") {
                     isPresented = false
                     onConfirm()
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Color.pmSageAccent)
+                .tint(palette.accent)
             }
         }
         .padding(20)
@@ -321,6 +367,8 @@ private struct RegenerateSpritesConfirmPopover: View {
 }
 
 private struct ResetOnboardingConfirmPopover: View {
+    @Environment(\.petmojiPalette) private var palette
+
     @Binding var isPresented: Bool
     let onReset: () -> Void
 
@@ -328,15 +376,15 @@ private struct ResetOnboardingConfirmPopover: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Reset onboarding")
                 .font(.titleL)
-                .foregroundStyle(Color.pmSageAccentDark)
+                .foregroundStyle(palette.accentDark)
             Text("This will sign you out and delete your current pet setup.")
                 .font(.bodyM)
-                .foregroundStyle(Color.pmSageTextSecondary)
+                .foregroundStyle(palette.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 Button("Cancel") { isPresented = false }
                     .buttonStyle(.bordered)
-                    .tint(Color.pmSageAccentDark)
+                    .tint(palette.accentDark)
                 Button("Reset & Start Over", role: .destructive) {
                     isPresented = false
                     onReset()
@@ -353,53 +401,67 @@ private struct ResetOnboardingConfirmPopover: View {
 
 // MARK: - Settings inset card (matches `SettingsSageSection` inner chrome)
 
-private extension View {
-    /// Frosted rounded card used inside the sprites section (separate from thumbnails).
-    func settingsSageInsetCard() -> some View {
-        frame(maxWidth: .infinity, alignment: .leading)
+private struct SettingsSageInsetCardModifier: ViewModifier {
+    @Environment(\.petmojiPalette) private var palette
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(Color.pmSageBorder.opacity(0.75), lineWidth: 1.2)
+                    .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
             )
+    }
+}
+
+private extension View {
+    func settingsSageInsetCard() -> some View {
+        modifier(SettingsSageInsetCardModifier())
     }
 }
 
 // MARK: - Sage section (matches home pet cards)
 
 private struct SettingsSageSection<Content: View>: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let title: String
     var footer: String?
-    var titleColor: Color
+    var titleColor: Color?
     @ViewBuilder var content: () -> Content
 
-    init(title: String, footer: String? = nil, titleColor: Color = Color.pmSageAccentDark, @ViewBuilder content: @escaping () -> Content) {
+    init(title: String, footer: String? = nil, titleColor: Color? = nil, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
         self.footer = footer
         self.titleColor = titleColor
         self.content = content
     }
 
+    private var resolvedTitleColor: Color {
+        titleColor ?? palette.accentDark
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(.titleL)
-                .foregroundStyle(titleColor)
+                .foregroundStyle(resolvedTitleColor)
 
             content()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
-                .background(Color.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .strokeBorder(Color.pmSageBorder.opacity(0.75), lineWidth: 1.2)
+                        .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
                 )
 
             if let footer, !footer.isEmpty {
                 Text(footer)
                     .font(.bodyS)
-                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .foregroundStyle(palette.textSecondary)
             }
         }
     }
@@ -408,6 +470,8 @@ private struct SettingsSageSection<Content: View>: View {
 // MARK: - Regenerating Modal
 
 struct RegeneratingModal: View {
+    @Environment(\.petmojiPalette) private var palette
+
     @Binding var isPresented: Bool
     @Binding var error: String?
     @Binding var success: Bool
@@ -440,11 +504,11 @@ struct RegeneratingModal: View {
 
                         Text("regenerating sprites...")
                             .font(.titleL)
-                            .foregroundStyle(Color.pmSageTextPrimary)
+                            .foregroundStyle(palette.textPrimary)
 
                         Text("keep the app open — this takes about 30 seconds")
                             .font(.bodyM)
-                            .foregroundStyle(Color.pmSageTextSecondary)
+                            .foregroundStyle(palette.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                     }
@@ -456,11 +520,11 @@ struct RegeneratingModal: View {
 
                         Text("new sprite ready!")
                             .font(.titleL)
-                            .foregroundStyle(Color.pmSageTextPrimary)
+                            .foregroundStyle(palette.textPrimary)
 
                         Text("the rest will fill in over the next minute — you can close this.")
                             .font(.bodyM)
-                            .foregroundStyle(Color.pmSageTextSecondary)
+                            .foregroundStyle(palette.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                     }
@@ -472,11 +536,11 @@ struct RegeneratingModal: View {
 
                         Text("something went wrong")
                             .font(.titleL)
-                            .foregroundStyle(Color.pmSageTextPrimary)
+                            .foregroundStyle(palette.textPrimary)
 
                         Text(msg)
                             .font(.bodyM)
-                            .foregroundStyle(Color.pmSageTextSecondary)
+                            .foregroundStyle(palette.textSecondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 32)
                     }

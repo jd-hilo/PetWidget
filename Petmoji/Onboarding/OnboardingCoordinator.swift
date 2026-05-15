@@ -4,6 +4,7 @@ import SwiftUI
 
 struct OnboardingCoordinator: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.petmojiPalette) private var palette
     @StateObject private var draft = OnboardingDraft()
     @State private var path: [OnboardingStep] = []
 
@@ -45,8 +46,11 @@ struct OnboardingCoordinator: View {
 
                 case .widgetSetup:
                     WidgetSetupView {
-                        if let pet = draft.completedPet {
+                        // Handoff already set `currentPet` + expression sync on the reveal screen;
+                        // avoid replacing with `draft.completedPet` (can be stale vs. live server row).
+                        if appState.currentPet == nil, let pet = draft.completedPet {
                             appState.setPet(pet)
+                            appState.startSyncingExpressions(petId: pet.id)
                         }
                     }
                     .navigationTitle("")
@@ -56,7 +60,7 @@ struct OnboardingCoordinator: View {
                 }
             }
         }
-        .tint(Color.pmSageAccentDark)
+        .tint(palette.toolbarTint)
     }
 }
 

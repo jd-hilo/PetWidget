@@ -65,6 +65,218 @@ extension Color {
     }
 }
 
+// MARK: - Appearance palette (Classic vs widget glass)
+
+struct PetmojiPalette: Equatable {
+    let visualStyle: AppVisualStyle
+
+    let textPrimary: Color
+    let textSecondary: Color
+    let accent: Color
+    let accentDark: Color
+    let border: Color
+    let iconTint: Color
+    let cardNeutral: Color
+    let segmentMuted: Color
+    let surface: Color
+    let washSoft: Color
+    let washMid: Color
+    let washDeep: Color
+    let washAltSoft: Color
+    let washAltDeep: Color
+    let patternSymbol: Color
+
+    let elevatedCardFill: Color
+    let elevatedCardStroke: Color
+    let sageCardFill: Color
+    let sageCardStroke: Color
+
+    let toolbarTint: Color
+    let progressActive: Color
+    let progressInactive: Color
+
+    let onboardingIconTint: Color
+    let onboardingSegmentActive: Color
+    let onboardingSegmentCompleted: Color
+    let onboardingSegmentUpcoming: Color
+
+    let chipUnselectedBg: Color
+    let chipUnselectedStroke: Color
+    let chipSelectedStroke: Color
+
+    let traitSelectedFg: Color
+    let traitUnselectedFg: Color
+    let traitSelectedBg: Color
+    let traitUnselectedBg: Color
+    let traitSelectedBorder: Color
+    let traitUnselectedBorder: Color
+
+    let chromeButtonFill: Color
+    let chromeButtonStroke: Color
+
+    let typingDot: Color
+    let bubblePetBackground: Color
+    let primaryButtonLabel: Color
+    let cardShadowOpacity: Double
+
+    static func palette(for style: AppVisualStyle) -> PetmojiPalette {
+        switch style {
+        case .classic: return classic
+        case .widgetGlass: return widgetGlass
+        }
+    }
+
+    private static let classic = PetmojiPalette(
+        visualStyle: .classic,
+        textPrimary: .pmSageTextPrimary,
+        textSecondary: .pmSageTextSecondary,
+        accent: .pmSageAccent,
+        accentDark: .pmSageAccentDark,
+        border: .pmSageBorder,
+        iconTint: .pmSageIconTint,
+        cardNeutral: .pmSageCardNeutral,
+        segmentMuted: .pmSageSegmentMuted,
+        surface: .pmSageSurface,
+        washSoft: .pmSageWashSoft,
+        washMid: .pmSageWashMid,
+        washDeep: .pmSageWashDeep,
+        washAltSoft: .pmSageWashAltSoft,
+        washAltDeep: .pmSageWashAltDeep,
+        patternSymbol: .pmSagePatternSymbol,
+        elevatedCardFill: Color.white.opacity(0.84),
+        elevatedCardStroke: Color.pmSageBorder.opacity(0.75),
+        sageCardFill: .white,
+        sageCardStroke: .pmSageBorder,
+        toolbarTint: .pmSageAccentDark,
+        progressActive: .black,
+        progressInactive: .pmBorder,
+        onboardingIconTint: .pmSageAccentDark,
+        onboardingSegmentActive: .pmSageAccentDark,
+        onboardingSegmentCompleted: .pmSageAccent,
+        onboardingSegmentUpcoming: .pmSageSegmentMuted,
+        chipUnselectedBg: .pmSageCardNeutral,
+        chipUnselectedStroke: Color.pmSageBorder.opacity(0.7),
+        chipSelectedStroke: Color.pmSageAccentDark.opacity(0.35),
+        traitSelectedFg: .pmSageAccentDark,
+        traitUnselectedFg: .pmSageTextPrimary,
+        traitSelectedBg: Color.pmSageAccent.opacity(0.22),
+        traitUnselectedBg: .pmSageSurface,
+        traitSelectedBorder: .pmSageAccent,
+        traitUnselectedBorder: Color.pmSageBorder.opacity(0.65),
+        chromeButtonFill: .white,
+        chromeButtonStroke: Color.pmSageBorder.opacity(0.9),
+        typingDot: .pmSageTextSecondary,
+        bubblePetBackground: .pmSageWashSoft,
+        primaryButtonLabel: .black,
+        cardShadowOpacity: 0.06
+    )
+
+    private static let widgetGlass = PetmojiPalette(
+        visualStyle: .widgetGlass,
+        textPrimary: Color.white.opacity(0.92),
+        textSecondary: Color.white.opacity(0.64),
+        accent: .pmSageAccent,
+        accentDark: Color.white.opacity(0.94),
+        border: Color.white.opacity(0.28),
+        iconTint: Color(hex: "#C5DCC0"),
+        cardNeutral: Color.white.opacity(0.16),
+        segmentMuted: Color.white.opacity(0.24),
+        surface: Color.white.opacity(0.12),
+        washSoft: Color.white.opacity(0.14),
+        washMid: Color.white.opacity(0.10),
+        washDeep: Color.white.opacity(0.07),
+        washAltSoft: Color.white.opacity(0.13),
+        washAltDeep: Color.white.opacity(0.06),
+        patternSymbol: Color.white.opacity(0.22),
+        elevatedCardFill: Color.white.opacity(0.14),
+        elevatedCardStroke: Color.white.opacity(0.24),
+        sageCardFill: Color.white.opacity(0.12),
+        sageCardStroke: Color.white.opacity(0.22),
+        toolbarTint: Color.white.opacity(0.92),
+        progressActive: Color.white.opacity(0.95),
+        progressInactive: Color.white.opacity(0.32),
+        onboardingIconTint: Color.white.opacity(0.92),
+        onboardingSegmentActive: Color.white.opacity(0.92),
+        onboardingSegmentCompleted: Color(hex: "#9DB896"),
+        onboardingSegmentUpcoming: Color.white.opacity(0.28),
+        chipUnselectedBg: Color.white.opacity(0.14),
+        chipUnselectedStroke: Color.white.opacity(0.28),
+        chipSelectedStroke: Color.pmSageAccent.opacity(0.55),
+        traitSelectedFg: .white,
+        traitUnselectedFg: Color.white.opacity(0.9),
+        traitSelectedBg: Color.pmSageAccent.opacity(0.42),
+        traitUnselectedBg: Color.white.opacity(0.10),
+        traitSelectedBorder: Color.pmSageAccent,
+        traitUnselectedBorder: Color.white.opacity(0.28),
+        chromeButtonFill: Color.white.opacity(0.14),
+        chromeButtonStroke: Color.white.opacity(0.28),
+        typingDot: Color.white.opacity(0.55),
+        bubblePetBackground: Color.white.opacity(0.14),
+        primaryButtonLabel: Color.white.opacity(0.94),
+        cardShadowOpacity: 0.22
+    )
+}
+
+private struct PetmojiPaletteKey: EnvironmentKey {
+    static let defaultValue = PetmojiPalette.palette(for: .classic)
+}
+
+extension EnvironmentValues {
+    var petmojiPalette: PetmojiPalette {
+        get { self[PetmojiPaletteKey.self] }
+        set { self[PetmojiPaletteKey.self] = newValue }
+    }
+}
+
+/// Faint paw grid over material (aligned with small/medium `PetWidgetEntryView`).
+private struct PMPawPatternScreenOverlay: View {
+    var symbolPointSize: CGFloat = 10
+    private var tile: CGFloat { max(24, symbolPointSize * 2.2) }
+
+    var body: some View {
+        Canvas { context, size in
+            guard let symbol = context.resolveSymbol(id: 0) else { return }
+
+            let cols = Int(ceil(size.width / tile)) + 2
+            let rows = Int(ceil(size.height / tile)) + 2
+
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let xOffset = (row % 2 == 0) ? 0 : tile / 2
+                    let x = CGFloat(col) * tile + xOffset - tile / 2
+                    let y = CGFloat(row) * tile - tile / 2
+                    let rotation = Angle.degrees(row % 2 == 0 ? -10 : 12)
+
+                    var ctx = context
+                    ctx.translateBy(x: x, y: y)
+                    ctx.rotate(by: rotation)
+                    ctx.draw(symbol, at: .zero, anchor: .center)
+                }
+            }
+        } symbols: {
+            Image(systemName: "pawprint.fill")
+                .font(.system(size: symbolPointSize, weight: .light))
+                .foregroundStyle(.white)
+                .tag(0)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Translucent material + paw texture (home screen widget style).
+struct PMWidgetGlassScreenBackdrop: View {
+    var body: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial)
+            PMPawPatternScreenOverlay(symbolPointSize: 10)
+                .opacity(0.032)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+    }
+}
+
 // MARK: - Expression Colors
 
 extension PetExpression {
@@ -137,6 +349,8 @@ struct PMSageSelectableTileShadowModifier: ViewModifier {
 /// Decorative paw and leaf symbols along the left and right edges of the **parent** view.
 /// Uses `GeometryReader` so symbols stay proportional in sheets and nested layouts; avoid hard-coding `UIScreen` size (that forced full-screen height and broke bottom toolbars in `ChatView`).
 struct PMSageEdgePattern: View {
+    @Environment(\.petmojiPalette) private var palette
+
     private struct PatternSymbol {
         let systemName: String
         let point: CGPoint
@@ -224,22 +438,30 @@ struct PMSageEdgePattern: View {
 
         return Image(systemName: systemName)
             .font(.system(size: iconSize, weight: .medium))
-            .foregroundStyle(Color.pmSagePatternSymbol.opacity(opacity))
+            .foregroundStyle(palette.patternSymbol.opacity(opacity))
             .rotationEffect(.degrees(rotation))
             .position(x: absoluteX, y: absoluteY)
     }
 }
 
-/// Full-screen sage gradient plus edge decoration (paws / leaves).
+/// Full-screen sage gradient plus edge decoration (paws / leaves), or widget-style glass.
 struct PMSageScreenBackdrop: View {
+    @Environment(\.petmojiPalette) private var palette
+
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Color.pmSageBackground, Color.pmSageBackgroundTint],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            PMSageEdgePattern()
+        Group {
+            if palette.visualStyle == .classic {
+                ZStack {
+                    LinearGradient(
+                        colors: [Color.pmSageBackground, Color.pmSageBackgroundTint],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    PMSageEdgePattern()
+                }
+            } else {
+                PMWidgetGlassScreenBackdrop()
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
@@ -260,17 +482,18 @@ extension View {
 }
 
 struct PMSageCard: ViewModifier {
+    @Environment(\.petmojiPalette) private var palette
     var cornerRadius: CGFloat = 24
 
     func body(content: Content) -> some View {
         content
-            .background(Color.white)
+            .background(palette.sageCardFill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(Color.pmSageBorder, lineWidth: 1.5)
+                    .strokeBorder(palette.sageCardStroke, lineWidth: 1.5)
             )
-            .shadow(color: Color.black.opacity(0.06), radius: 16, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(palette.cardShadowOpacity), radius: 16, x: 0, y: 4)
     }
 }
 
@@ -281,6 +504,8 @@ extension View {
 }
 
 struct PMSageCTAButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let title: String
     let action: () -> Void
     var isEnabled: Bool = true
@@ -294,10 +519,10 @@ struct PMSageCTAButton: View {
                 .frame(height: 56)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(isEnabled ? Color.pmSageAccent : Color.pmSageAccent.opacity(0.45))
+                        .fill(isEnabled ? palette.accent : palette.accent.opacity(0.45))
                 )
                 .shadow(
-                    color: isEnabled ? Color.pmSageAccentDark.opacity(0.28) : .clear,
+                    color: isEnabled ? palette.accentDark.opacity(palette.visualStyle == .widgetGlass ? 0.45 : 0.28) : .clear,
                     radius: 10,
                     x: 0,
                     y: 6
@@ -311,6 +536,8 @@ struct PMSageCTAButton: View {
 // MARK: - Primary Button (Liquid Glass)
 
 struct PMPrimaryButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let title: String
     let action: () -> Void
     var isEnabled: Bool = true
@@ -319,7 +546,7 @@ struct PMPrimaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(.buttonFont)
-                .foregroundStyle(isEnabled ? Color.black : Color.pmTextSecondary)
+                .foregroundStyle(isEnabled ? palette.primaryButtonLabel : palette.textSecondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 58)
                 .background {
@@ -355,6 +582,8 @@ struct PMPrimaryButton: View {
 // MARK: - Trait Pill
 
 struct PMTraitPill: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let trait: PersonalityTrait
     let isSelected: Bool
     let action: () -> Void
@@ -367,16 +596,16 @@ struct PMTraitPill: View {
         }) {
             Text(trait.displayName)
                 .font(.bodyM)
-                .foregroundStyle(isSelected ? Color.pmSageAccentDark : Color.pmSageTextPrimary)
+                .foregroundStyle(isSelected ? palette.traitSelectedFg : palette.traitUnselectedFg)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(
-                    isSelected ? Color.pmSageAccent.opacity(0.22) : Color.pmSageSurface,
+                    isSelected ? palette.traitSelectedBg : palette.traitUnselectedBg,
                     in: Capsule()
                 )
                 .overlay(
                     Capsule()
-                        .strokeBorder(isSelected ? Color.pmSageAccent : Color.pmSageBorder.opacity(0.65), lineWidth: 1.5)
+                        .strokeBorder(isSelected ? palette.traitSelectedBorder : palette.traitUnselectedBorder, lineWidth: 1.5)
                 )
         }
         .buttonStyle(SpringButtonStyle())
@@ -386,6 +615,8 @@ struct PMTraitPill: View {
 // MARK: - Enemy / Mood Chip
 
 struct PMChip: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let label: String
     let isSelected: Bool
     let action: () -> Void
@@ -399,7 +630,7 @@ struct PMChip: View {
             HStack {
                 Text(label)
                     .font(.bodyM)
-                    .foregroundStyle(isSelected ? .white : Color.pmSageTextPrimary)
+                    .foregroundStyle(isSelected ? .white : palette.textPrimary)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -410,12 +641,12 @@ struct PMChip: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .background(
-                isSelected ? Color.pmSageAccent : Color.pmSageCardNeutral,
+                isSelected ? palette.accent : palette.chipUnselectedBg,
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(isSelected ? Color.pmSageAccentDark.opacity(0.35) : Color.pmSageBorder.opacity(0.7), lineWidth: 1)
+                    .strokeBorder(isSelected ? palette.chipSelectedStroke : palette.chipUnselectedStroke, lineWidth: 1)
             )
         }
         .buttonStyle(SpringButtonStyle())
@@ -525,6 +756,8 @@ struct SpeechBubble: View {
 // MARK: - Progress Dots
 
 struct PMProgressDots: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let total: Int
     let current: Int
 
@@ -533,11 +766,11 @@ struct PMProgressDots: View {
             ForEach(0..<total, id: \.self) { i in
                 if i == current {
                     Capsule()
-                        .fill(Color.black)
+                        .fill(palette.progressActive)
                         .frame(width: 24, height: 8)
                 } else {
                     Circle()
-                        .fill(Color.pmBorder)
+                        .fill(palette.progressInactive)
                         .frame(width: 8, height: 8)
                 }
             }
@@ -550,6 +783,8 @@ struct PMProgressDots: View {
 
 /// Icons with capsules between them; the segment for the current step is darkest, completed segments are mid sage, upcoming are light.
 struct PMOnboardingIconProgressBar: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let total: Int
     let current: Int
 
@@ -564,10 +799,10 @@ struct PMOnboardingIconProgressBar: View {
     private let connectorHeight: CGFloat = 5
     private let stackSpacing: CGFloat = 8
 
-    private let iconTint = Color.pmSageAccentDark
-    private let segmentActive = Color.pmSageAccentDark
-    private let segmentCompleted = Color.pmSageAccent
-    private let segmentUpcoming = Color.pmSageSegmentMuted
+    private var iconTint: Color { palette.onboardingIconTint }
+    private var segmentActive: Color { palette.onboardingSegmentActive }
+    private var segmentCompleted: Color { palette.onboardingSegmentCompleted }
+    private var segmentUpcoming: Color { palette.onboardingSegmentUpcoming }
 
     var body: some View {
         HStack(spacing: stackSpacing) {
@@ -631,6 +866,7 @@ struct PMOnboardingIconProgressBar: View {
 /// Hides the system back chevron (which shrinks the principal area and shifts the progress bar) and replaces it with a custom leading control plus a same-width trailing placeholder so `ToolbarItem(.principal)` stays visually centered.
 struct PMOnboardingToolbarModifier: ViewModifier {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.petmojiPalette) private var palette
 
     let total: Int
     let current: Int
@@ -651,7 +887,7 @@ struct PMOnboardingToolbarModifier: ViewModifier {
                                 .font(.system(size: 17, weight: .semibold))
                         }
                         .buttonStyle(.plain)
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.toolbarTint)
                         .frame(minWidth: Self.barButtonSlot, minHeight: Self.barButtonSlot)
                         .contentShape(Rectangle())
                     }

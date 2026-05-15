@@ -10,7 +10,6 @@ struct PetmojiApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
-                .preferredColorScheme(.light)
                 .onOpenURL { url in
                     guard url.scheme?.lowercased() == "petmoji" else { return }
                     if url.host?.lowercased() == "chat" {
@@ -125,6 +124,8 @@ struct RootView: View {
                 OnboardingCoordinator()
             }
         }
+        .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
+        .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
             if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
                 await appState.loadCurrentPet()
@@ -259,11 +260,46 @@ final class AppState: ObservableObject {
     @Published var mockUserVerboseLogs: Bool = false
     @Published var mockUserDebugSprites: Bool = false
 
+    @Published var visualStyle: AppVisualStyle = .classic
+
     private let supabase = SupabaseService.shared
     private var expressionSyncTask: Task<Void, Never>?
 
+    /// While set, Stage B may still be writing expressions for this pet — used for Settings thumbnails.
+    @Published private(set) var expressionSyncPetId: UUID?
+
     init() {
         loadMockUserSettingsFromUserDefaults()
+        loadAppearanceFromUserDefaults()
+    }
+
+    private func loadAppearanceFromUserDefaults() {
+        let d = UserDefaults.standard
+        if d.object(forKey: MockUserSettings.Keys.darkMode) != nil {
+            visualStyle = d.bool(forKey: MockUserSettings.Keys.darkMode) ? .widgetGlass : .classic
+            return
+        }
+        if let raw = d.string(forKey: MockUserSettings.legacyVisualStyleKey),
+           let style = AppVisualStyle(rawValue: raw) {
+            visualStyle = style
+            d.set(style == .widgetGlass, forKey: MockUserSettings.Keys.darkMode)
+            d.removeObject(forKey: MockUserSettings.legacyVisualStyleKey)
+            return
+        }
+        visualStyle = .classic
+    }
+
+    func setVisualStyle(_ value: AppVisualStyle) {
+        visualStyle = value
+        UserDefaults.standard.set(value == .widgetGlass, forKey: MockUserSettings.Keys.darkMode)
+    }
+
+    var isDarkModeEnabled: Bool {
+        visualStyle == .widgetGlass
+    }
+
+    func setDarkModeEnabled(_ enabled: Bool) {
+        setVisualStyle(enabled ? .widgetGlass : .classic)
     }
 
     private func loadMockUserSettingsFromUserDefaults() {
@@ -341,8 +377,10 @@ final class AppState: ObservableObject {
     /// arrive, so the UI updates without a manual refresh.
     func startSyncingExpressions(petId: UUID) {
         expressionSyncTask?.cancel()
-        expressionSyncTask = Task { [weak self] in
+        expressionSyncPetId = petId
+        expressionSyncTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            defer { self.expressionSyncPetId = nil }
             do {
                 for try await partial in self.supabase.observePetExpressions(petId: petId) {
                     if Task.isCancelled { return }
@@ -360,5 +398,6 @@ final class AppState: ObservableObject {
     func stopSyncingExpressions() {
         expressionSyncTask?.cancel()
         expressionSyncTask = nil
+        expressionSyncPetId = nil
     }
 }

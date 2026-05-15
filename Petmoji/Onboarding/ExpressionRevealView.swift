@@ -5,6 +5,7 @@ import SwiftUI
 struct ExpressionRevealView: View {
     @ObservedObject var draft: OnboardingDraft
     @EnvironmentObject var appState: AppState
+    @Environment(\.petmojiPalette) private var palette
     let onComplete: (Pet) -> Void
     var skipGenerationForDebug: Bool = false
     var useMockSpritesForDebug: Bool = false
@@ -97,14 +98,14 @@ struct ExpressionRevealView: View {
             VStack(spacing: 24) {
                 Text("say hi to...")
                     .font(.titleL)
-                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .foregroundStyle(palette.textSecondary)
 
                 // Hero sprite
                 SpriteImageView(urlString: expressions[selectedExpression])
                     .frame(width: 200, height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .shadow(
-                        color: Color.pmSageAccent.opacity(0.35),
+                        color: palette.accent.opacity(0.35),
                         radius: 18,
                         x: 0,
                         y: 0
@@ -118,11 +119,17 @@ struct ExpressionRevealView: View {
                     .onAppear { spriteVisible = true }
 
                 if isFillingRemainingExpressions {
-                    Text("other emotions are still generating...")
-                        .font(.bodyM)
-                        .foregroundStyle(Color.pmSageTextSecondary)
-                        .multilineTextAlignment(.center)
-                        .transition(.opacity)
+                    VStack(spacing: 6) {
+                        Text("the rest are still loading…")
+                            .font(.bodyM)
+                            .foregroundStyle(palette.textSecondary)
+                        Text("you can move on — they'll appear in Settings under Sprites.")
+                            .font(.bodyS)
+                            .foregroundStyle(palette.textSecondary.opacity(0.92))
+                    }
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 8)
+                    .transition(.opacity)
                 }
 
                 // Expression thumbnails
@@ -164,12 +171,12 @@ struct ExpressionRevealView: View {
                 VStack(spacing: 16) {
                     Text("what's their name?")
                         .font(.titleL)
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.accentDark)
 
                     TextField("enter name...", text: $name)
                         .font(.displayXL)
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(Color.pmSageTextPrimary)
+                        .foregroundStyle(palette.textPrimary)
                         .focused($isNameFieldFocused)
                         .submitLabel(.done)
                         .tint(.blue)
@@ -177,10 +184,10 @@ struct ExpressionRevealView: View {
                             isNameFieldFocused = false
                         }
                         .padding(16)
-                        .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .strokeBorder(Color.pmSageBorder, lineWidth: 1.5)
+                                .strokeBorder(palette.border, lineWidth: 1.5)
                         )
                 }
                 .padding(.bottom, 8)
@@ -212,13 +219,13 @@ struct ExpressionRevealView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 48))
-                .foregroundStyle(Color.pmSageTextSecondary)
+                .foregroundStyle(palette.textSecondary)
             Text("something went wrong")
                 .font(.titleL)
-                .foregroundStyle(Color.pmSageAccentDark)
+                .foregroundStyle(palette.accentDark)
             Text(msg)
                 .font(.bodyM)
-                .foregroundStyle(Color.pmSageTextSecondary)
+                .foregroundStyle(palette.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
             PMSageCTAButton(title: "try again", action: {
@@ -365,6 +372,9 @@ struct ExpressionRevealView: View {
             // Continue polling at the app level so the home screen keeps
             // updating as the remaining expressions land.
             await MainActor.run {
+                // Install the pet before polling: `startSyncingExpressions` merges into
+                // `currentPet`, which was nil until widget setup — so Stage B updates were dropped.
+                appState.setPet(latest)
                 appState.startSyncingExpressions(petId: latest.id)
                 onComplete(latest)
             }
@@ -442,6 +452,8 @@ struct ExpressionRevealView: View {
 // MARK: - Generation Progress
 
 struct GenerationProgressView: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let state: ExpressionRevealView.GenerationState
 
     var message: String {
@@ -468,17 +480,23 @@ struct GenerationProgressView: View {
 
             Text(message)
                 .font(.titleL)
-                .foregroundStyle(Color.pmSageAccentDark)
+                .foregroundStyle(palette.accentDark)
 
             Text("this takes about 30 seconds")
                 .font(.bodyM)
-                .foregroundStyle(Color.pmSageTextSecondary)
+                .foregroundStyle(palette.textSecondary)
+
+            Text("you'll see the first look on the next screen; other moods keep finishing in the background.")
+                .font(.bodyS)
+                .foregroundStyle(palette.textSecondary.opacity(0.9))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
 
             // Shimmer placeholder cards
             HStack(spacing: 12) {
                 ForEach(0..<6, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.pmSageSurface)
+                        .fill(palette.surface)
                         .frame(width: 48, height: 48)
                         .shimmer()
                 }
@@ -492,6 +510,8 @@ struct GenerationProgressView: View {
 // MARK: - Sprite Image View
 
 struct SpriteImageView: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let urlString: String?
     var cornerRadius: CGFloat = 20
     var contentMode: ContentMode = .fit
@@ -519,17 +539,17 @@ struct SpriteImageView: View {
 
     private var retryPlaceholder: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(Color.pmSageCardNeutral)
+            .fill(palette.cardNeutral)
             .overlay {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 24))
-                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .foregroundStyle(palette.textSecondary)
             }
     }
 
     private var placeholderSprite: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            .fill(Color.pmSageSurface)
+            .fill(palette.surface)
             .overlay {
                 Text("🐾")
                     .font(.system(size: 64))
@@ -540,6 +560,8 @@ struct SpriteImageView: View {
 // MARK: - Expression Thumbnail
 
 struct ExpressionThumbnail: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let expression: PetExpression
     let urlString: String?
     let isSelected: Bool
@@ -568,14 +590,14 @@ struct ExpressionThumbnail: View {
     private var tile: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isSelected ? Color.pmSageSurface : Color.pmSageSurface.opacity(0.78))
+                .fill(isSelected ? palette.surface : palette.surface.opacity(0.78))
 
             if let urlString {
                 SpriteImageView(urlString: urlString, cornerRadius: 12)
             } else if isLoading {
                 ProgressView()
                     .progressViewStyle(.circular)
-                    .tint(Color.pmSageTextSecondary)
+                    .tint(palette.textSecondary)
             } else {
                 SpriteImageView(urlString: nil, cornerRadius: 12)
             }
@@ -585,12 +607,12 @@ struct ExpressionThumbnail: View {
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(
-                    isSelected ? Color.pmSageAccent : Color.pmSageBorder.opacity(0.55),
+                    isSelected ? palette.accent : palette.border.opacity(0.55),
                     lineWidth: isSelected ? 2.5 : 1
                 )
         )
         .shadow(
-            color: isSelected ? Color.pmSageAccent.opacity(0.45) : .clear,
+            color: isSelected ? palette.accent.opacity(0.45) : .clear,
             radius: isSelected ? 12 : 0,
             x: 0,
             y: 0
@@ -602,6 +624,8 @@ struct ExpressionThumbnail: View {
 // MARK: - Widget Setup View
 
 struct WidgetSetupView: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let onDone: () -> Void
 
     var body: some View {
@@ -617,11 +641,11 @@ struct WidgetSetupView: View {
                 VStack(spacing: 12) {
                     Text("add to home screen")
                         .font(.displayL)
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.accentDark)
                         .multilineTextAlignment(.center)
                     Text("long press your home screen → tap +\n→ search Petmoji → add widget")
                         .font(.bodyL)
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                         .multilineTextAlignment(.center)
                 }
 

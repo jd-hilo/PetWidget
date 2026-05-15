@@ -4,6 +4,7 @@ import PhotosUI
 // MARK: - Photo Picker View
 
 struct PhotoPickerView: View {
+    @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
 
@@ -18,11 +19,11 @@ struct PhotoPickerView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("show me your pet")
                         .font(.displayL)
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.accentDark)
                     Text("add 3–5 clear face photos for the best results")
                         .font(.bodyM)
                         .bold()
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                 }
                 .padding(.horizontal, 24)
 
@@ -37,7 +38,7 @@ struct PhotoPickerView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("what kind of pet?")
                         .font(.titleL)
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.accentDark)
                         .padding(.horizontal, 24)
                         .multilineTextAlignment(.center)
 
@@ -114,6 +115,8 @@ struct PhotoPickerView: View {
 }
 
 struct SpeciesTileButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let label: String
     let iconAssetName: String?
     let isSelected: Bool
@@ -128,15 +131,15 @@ struct SpeciesTileButton: View {
         Button(action: action) {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(isSelected ? Color.pmSageAccent : Color.pmSageCardNeutral)
+                    .fill(isSelected ? palette.accent : palette.cardNeutral)
                     .frame(maxWidth: .infinity)
                     .frame(height: 132)
-                    .shadow(color: Color.pmSageAccent.opacity(0.40), radius: 2, x: 0, y: 0)
-                    .shadow(color: Color.pmSageAccent.opacity(0.20), radius: 4, x: 0, y: 0)
+                    .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                    .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
                     .overlay {
                         RoundedRectangle(cornerRadius: 20, style: .continuous)
                             .strokeBorder(style: StrokeStyle(lineWidth: 2))
-                            .foregroundStyle(Color.pmSageBorder)
+                            .foregroundStyle(palette.border)
                     }
                     .pmSageSelectableTileShadow(isSelected: isSelected)
 
@@ -150,12 +153,12 @@ struct SpeciesTileButton: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: iconSideLength, height: iconSideLength)
-                            .foregroundStyle(Color.pmSageIconTint)
+                            .foregroundStyle(palette.iconTint)
                             .accessibilityLabel(Text(label))
                     } else {
                         Text(label)
                             .font(.bodyL)
-                            .foregroundStyle(Color.pmSageIconTint)
+                            .foregroundStyle(palette.iconTint)
                     }
 
                     Spacer()
@@ -165,7 +168,7 @@ struct SpeciesTileButton: View {
 
                 if isSelected {
                     Circle()
-                        .fill(Color.pmSageAccentDark)
+                        .fill(palette.accentDark)
                         .frame(width: 24, height: 24)
                         .overlay {
                             Image(systemName: "checkmark")
@@ -181,6 +184,8 @@ struct SpeciesTileButton: View {
 }
 
 struct SpeciesWideButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let label: String
     let isSelected: Bool
     let action: () -> Void
@@ -189,22 +194,22 @@ struct SpeciesWideButton: View {
         Button(action: action) {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(isSelected ? Color.pmSageAccent : Color.pmSageCardNeutral)
+                    .fill(isSelected ? palette.accent : palette.cardNeutral)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
-                    .shadow(color: Color.pmSageAccent.opacity(0.40), radius: 2, x: 0, y: 0)
-                    .shadow(color: Color.pmSageAccent.opacity(0.20), radius: 4, x: 0, y: 0)
+                    .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                    .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
                     .overlay {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
                             .strokeBorder(style: StrokeStyle(lineWidth: 2))
-                            .foregroundStyle(Color.pmSageBorder)
+                            .foregroundStyle(palette.border)
                     }
                     .pmSageSelectableTileShadow(isSelected: isSelected)
 
                 Text(label)
                     .font(.bodyM)
                     .bold()
-                    .foregroundStyle(Color.pmSageIconTint)
+                    .foregroundStyle(palette.iconTint)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16)
                     .frame(maxWidth: .infinity)
@@ -218,6 +223,8 @@ struct SpeciesWideButton: View {
 // MARK: - Photo Grid
 
 struct PhotoGridView: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let photos: [UIImage]
     let isLoading: Bool
     let onTap: () -> Void
@@ -232,22 +239,22 @@ struct PhotoGridView: View {
                         .scaledToFill()
                         .frame(width: 180, height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .shadow(color: Color.pmSageAccent.opacity(0.60), radius: 2, x: 0, y: 0)
-                        .shadow(color: Color.pmSageAccent.opacity(0.40), radius: 4, x: 0, y: 0)
-                        .shadow(color: Color.pmSageAccent.opacity(0.20), radius: 6, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.60), radius: 2, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.40), radius: 4, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.20), radius: 6, x: 0, y: 0)
                 } else {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.pmSageCardNeutral)
+                        .fill(palette.cardNeutral)
                         .frame(width: 180, height: 180)
-                        .shadow(color: Color.pmSageAccent.opacity(0.60), radius: 2, x: 0, y: 0)
-                        .shadow(color: Color.pmSageAccent.opacity(0.40), radius: 4, x: 0, y: 0)
-                        .shadow(color: Color.pmSageAccent.opacity(0.20), radius: 6, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.60), radius: 2, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.40), radius: 4, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.20), radius: 6, x: 0, y: 0)
                         .overlay {
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(
                                     style: StrokeStyle(lineWidth: 2, dash: [8])
                                 )
-                                .foregroundStyle(Color.pmSageBorder)
+                                .foregroundStyle(palette.border)
                         }
                         .overlay {
                             if isLoading {
@@ -256,10 +263,10 @@ struct PhotoGridView: View {
                                 VStack(spacing: 8) {
                                     Image(systemName: "camera")
                                         .font(.system(size: 32, weight: .light))
-                                        .foregroundStyle(Color.pmSageIconTint)
+                                        .foregroundStyle(palette.iconTint)
                                     Text("add photo")
                                         .font(.bodyS)
-                                        .foregroundStyle(Color.pmSageIconTint)
+                                        .foregroundStyle(palette.iconTint)
                                 }
                             }
                         }
@@ -273,25 +280,25 @@ struct PhotoGridView: View {
                             .scaledToFill()
                             .frame(width: 110, height: 110)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(color: Color.pmSageAccent.opacity(0.40), radius: 2, x: 0, y: 0)
-                            .shadow(color: Color.pmSageAccent.opacity(0.20), radius: 4, x: 0, y: 0)
+                            .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                            .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
                     } else {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.pmSageCardNeutral)
+                            .fill(palette.cardNeutral)
                             .frame(width: 110, height: 110)
-                            .shadow(color: Color.pmSageAccent.opacity(0.40), radius: 2, x: 0, y: 0)
-                            .shadow(color: Color.pmSageAccent.opacity(0.20), radius: 4, x: 0, y: 0)
+                            .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                            .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
                             .overlay {
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                                     .strokeBorder(
                                         style: StrokeStyle(lineWidth: 2)
                                     )
-                                    .foregroundStyle(Color.pmSageBorder)
+                                    .foregroundStyle(palette.border)
                             }
                             .overlay {
                                 Image(systemName: "plus")
                                     .font(.system(size: 24, weight: .medium))
-                                    .foregroundStyle(Color.pmSageIconTint)
+                                    .foregroundStyle(palette.iconTint)
                             }
                     }
                 }

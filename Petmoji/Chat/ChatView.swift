@@ -3,6 +3,8 @@ import SwiftUI
 // MARK: - Chat Panel (embeddable)
 
 struct ChatPanel: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let pet: Pet
 
     @State private var messages: [ChatMessage] = []
@@ -58,21 +60,21 @@ struct ChatPanel: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
                     Divider()
-                        .overlay(Color.pmSageBorder.opacity(0.6))
+                        .overlay(palette.border.opacity(0.6))
 
                     HStack(spacing: 12) {
                         TextField("say something...", text: $inputText, axis: .vertical)
                             .font(.bodyM)
                             .lineLimit(1...4)
-                            .foregroundStyle(Color.pmSageTextPrimary)
+                            .foregroundStyle(palette.textPrimary)
                             .focused($isInputFocused)
                             .onSubmit { submitFromKeyboard() }
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
-                            .background(Color.white, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .strokeBorder(Color.pmSageBorder.opacity(0.7), lineWidth: 1)
+                                    .strokeBorder(palette.border.opacity(0.7), lineWidth: 1)
                             )
 
                         Button {
@@ -82,7 +84,7 @@ struct ChatPanel: View {
                                 .font(.system(size: 36))
                                 .foregroundStyle(
                                     inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                        ? Color.pmSageBorder : Color.pmSageTextPrimary
+                                        ? palette.border : palette.textPrimary
                                 )
                         }
                         .buttonStyle(.plain)
@@ -248,6 +250,8 @@ struct ChatPanel: View {
 // MARK: - Chat Bubble
 
 struct ChatBubble: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let message: ChatMessage
     let pet: Pet
 
@@ -260,10 +264,10 @@ struct ChatBubble: View {
 
                 Text(message.content)
                     .font(.bodyM)
-                    .foregroundStyle(Color.pmSageTextPrimary)
+                    .foregroundStyle(palette.textPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    .background(Color.pmSageWashSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .background(palette.bubblePetBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .frame(maxWidth: 260, alignment: .leading)
 
                 Spacer()

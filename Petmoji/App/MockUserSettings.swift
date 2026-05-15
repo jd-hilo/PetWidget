@@ -25,7 +25,12 @@ enum MockUserSettings {
         static let email = "mock_user_email"
         static let verboseLogs = "mock_user_verbose_logs"
         static let debugSprites = "mock_user_debug_sprites"
+        /// When true, uses dark “widget glass” styling; when false, classic sage + light chrome.
+        static let darkMode = "mock_user_dark_mode"
     }
+
+    /// Legacy key from the old appearance picker; read once for migration.
+    static let legacyVisualStyleKey = "app_visual_style"
 
     static var persona: SettingsPersona {
         guard let raw = UserDefaults.standard.string(forKey: Keys.persona),

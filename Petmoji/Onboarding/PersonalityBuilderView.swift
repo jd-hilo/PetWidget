@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Personality Builder View (step wizard)
 
 struct PersonalityBuilderView: View {
+    @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
 
@@ -78,29 +79,29 @@ struct PersonalityBuilderView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("who are they, really?")
                 .font(.displayL)
-                .foregroundStyle(Color.pmSageAccentDark)
+                .foregroundStyle(palette.accentDark)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 if isReviewScreen {
                     Text("review & generate")
                         .font(.bodyM)
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                 } else {
                     Text("step \(activeStep + 1) of \(Self.totalSteps)")
                         .font(.bodyM)
                         .bold()
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.accentDark)
                     Text("·")
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                     Text("~\(secondsRemainingEstimate)s left")
                         .font(.bodyM)
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                 }
             }
 
             Text("about \(Self.totalSteps * Self.estimatedSecondsPerStep)s total")
                 .font(.bodyS)
-                .foregroundStyle(Color.pmSageTextSecondary.opacity(0.9))
+                .foregroundStyle(palette.textSecondary.opacity(0.9))
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 4)
@@ -119,21 +120,21 @@ struct PersonalityBuilderView: View {
         case 0:
             PersonalitySection(
                 title: "boy or girl?",
-                gradient: [Color.pmSageWashSoft, Color.pmSageWashDeep]
+                gradient: [palette.washSoft, palette.washDeep]
             ) {
                 GenderPickerView(selectedGender: $draft.gender)
             }
         case 1:
             PersonalitySection(
                 title: "pick 3 words that describe them",
-                gradient: [Color.pmSageWashAltSoft, Color.pmSageWashAltDeep]
+                gradient: [palette.washAltSoft, palette.washAltDeep]
             ) {
                 TraitGridView(selectedTraits: $draft.selectedTraits)
             }
         case 2:
             PersonalitySection(
                 title: "energy level",
-                gradient: [Color.pmSageWashMid, Color.pmSageWashDeep]
+                gradient: [palette.washMid, palette.washDeep]
             ) {
                 EnergySliderView(value: $draft.energyLevel)
             }
@@ -148,7 +149,7 @@ struct PersonalityBuilderView: View {
         case 4:
             PersonalitySection(
                 title: "general vibe",
-                gradient: [Color.pmSageSurface, Color.pmSageWashDeep]
+                gradient: [palette.surface, palette.washDeep]
             ) {
                 MoodSelectorView(selectedMood: $draft.baseMood)
             }
@@ -174,9 +175,9 @@ struct PersonalityBuilderView: View {
                         activeStep = Self.totalSteps - 1
                     }
                 } label: {
-                    Text("back to last step")
+                        Text("back to last step")
                         .font(.bodyM)
-                        .foregroundStyle(Color.pmSageAccentDark)
+                        .foregroundStyle(palette.accentDark)
                 }
                 .buttonStyle(.plain)
             }
@@ -196,7 +197,7 @@ struct PersonalityBuilderView: View {
                     } label: {
                         Text("previous step")
                             .font(.bodyM)
-                            .foregroundStyle(Color.pmSageAccentDark)
+                            .foregroundStyle(palette.accentDark)
                     }
                     .buttonStyle(.plain)
                 }
@@ -231,6 +232,8 @@ struct PersonalityBuilderView: View {
 // MARK: - Stepper (tap completed / current steps to go back)
 
 private struct PersonalityWizardStepper: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let activeStep: Int
     let maxUnlockedStep: Int
     /// Fills the bar through the furthest step reached (does not shrink when revisiting earlier steps).
@@ -251,11 +254,11 @@ private struct PersonalityWizardStepper: View {
                     : min(totalSteps, furthestProgressStep + 1)
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.pmSageSegmentMuted.opacity(0.55))
+                        .fill(palette.segmentMuted.opacity(0.55))
                         .frame(height: 4)
 
                     Capsule()
-                        .fill(Color.pmSageAccent)
+                        .fill(palette.accent)
                         .frame(
                             width: segment * CGFloat(filledSegments),
                             height: 4
@@ -281,27 +284,27 @@ private struct PersonalityWizardStepper: View {
                                 .font(.system(size: 11, weight: .bold, design: .rounded))
                                 .foregroundStyle(
                                     isReviewComplete || isCurrent
-                                        ? (isReviewComplete ? Color.pmSageAccentDark : Color.white)
-                                        : (isDone ? Color.pmSageAccentDark : Color.pmSageTextSecondary.opacity(0.45))
+                                        ? (isReviewComplete ? palette.accentDark : Color.white)
+                                        : (isDone ? palette.accentDark : palette.textSecondary.opacity(0.45))
                                 )
                                 .frame(width: 22, height: 22)
                                 .background(
                                     Circle()
                                         .fill(
                                             isReviewComplete
-                                                ? Color.pmSageSurface
-                                                : (isCurrent ? Color.pmSageAccent : (isDone ? Color.pmSageSurface : Color.clear))
+                                                ? palette.surface
+                                                : (isCurrent ? palette.accent : (isDone ? palette.surface : Color.clear))
                                         )
                                 )
                                 .overlay(
                                     Circle()
-                                        .strokeBorder(Color.pmSageBorder.opacity(isLocked ? 0.35 : 0.9), lineWidth: 1)
+                                        .strokeBorder(palette.border.opacity(isLocked ? 0.35 : 0.9), lineWidth: 1)
                                 )
 
                             Text(labels[index])
                                 .font(.system(size: 9, weight: .semibold, design: .rounded))
                                 .foregroundStyle(
-                                    isLocked ? Color.pmSageTextSecondary.opacity(0.35) : Color.pmSageTextSecondary
+                                    isLocked ? palette.textSecondary.opacity(0.35) : palette.textSecondary
                                 )
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.7)
@@ -319,6 +322,7 @@ private struct PersonalityWizardStepper: View {
 // MARK: - Review summary
 
 private struct PersonalityReviewSummary: View {
+    @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onEditStep: (Int) -> Void
 
@@ -327,7 +331,7 @@ private struct PersonalityReviewSummary: View {
             VStack(alignment: .leading, spacing: 14) {
                 Text("here’s what we’ve got")
                     .font(.titleL)
-                    .foregroundStyle(Color.pmSageAccentDark)
+                    .foregroundStyle(palette.accentDark)
                     .padding(.horizontal, 24)
                     .padding(.top, 20)
 
@@ -358,10 +362,10 @@ private struct PersonalityReviewSummary: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.bodyS)
-                        .foregroundStyle(Color.pmSageTextSecondary)
+                        .foregroundStyle(palette.textSecondary)
                     Text(value)
                         .font(.bodyL)
-                        .foregroundStyle(Color.pmSageTextPrimary)
+                        .foregroundStyle(palette.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
@@ -370,7 +374,7 @@ private struct PersonalityReviewSummary: View {
                 }
                 .font(.bodyS)
                 .bold()
-                .foregroundStyle(Color.pmSageAccent)
+                .foregroundStyle(palette.accent)
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
@@ -378,7 +382,7 @@ private struct PersonalityReviewSummary: View {
 
             if showDivider {
                 Divider()
-                    .background(Color.pmSageBorder.opacity(0.5))
+                    .background(palette.border.opacity(0.5))
                     .padding(.leading, 18)
             }
         }
@@ -388,17 +392,30 @@ private struct PersonalityReviewSummary: View {
 // MARK: - Section Container
 
 struct PersonalitySection<Content: View>: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let title: String
     let gradient: [Color]
-    var titleColor: Color = Color.pmSageAccentDark
+    var titleColor: Color?
     @ViewBuilder let content: () -> Content
+
+    init(title: String, gradient: [Color], titleColor: Color? = nil, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.gradient = gradient
+        self.titleColor = titleColor
+        self.content = content
+    }
+
+    private var resolvedTitleColor: Color {
+        titleColor ?? palette.accentDark
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text(title)
                     .font(.titleL)
-                    .foregroundStyle(titleColor)
+                    .foregroundStyle(resolvedTitleColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(20)
                     .background(
@@ -445,6 +462,7 @@ struct TraitGridView: View {
 // MARK: - Energy Slider
 
 struct EnergySliderView: View {
+    @Environment(\.petmojiPalette) private var palette
     @Binding var value: Double
 
     var body: some View {
@@ -463,11 +481,11 @@ struct EnergySliderView: View {
             HStack {
                 Text("professional napper")
                     .font(.bodyS)
-                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .foregroundStyle(palette.textSecondary)
                 Spacer()
                 Text("absolute chaos")
                     .font(.bodyS)
-                    .foregroundStyle(Color.pmSageTextSecondary)
+                    .foregroundStyle(palette.textSecondary)
             }
         }
     }

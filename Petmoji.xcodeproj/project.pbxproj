@@ -39,6 +39,10 @@
 		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
 		F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */; };
 		F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */; };
+		F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */; };
+		F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */; };
+		F7SIGN042F9E8D7C006EDD01 /* SignUpOTPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN052F9E8D7C006EDD01 /* SignUpOTPView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,6 +106,10 @@
 		F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_judging.png; sourceTree = "<group>"; };
 		F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
 		F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotSync.swift; sourceTree = "<group>"; };
+		F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpCoordinator.swift; sourceTree = "<group>"; };
+		F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpDraft.swift; sourceTree = "<group>"; };
+		F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpStepView.swift; sourceTree = "<group>"; };
+		F7SIGN052F9E8D7C006EDD01 /* SignUpOTPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpOTPView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -150,6 +158,17 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		F7SIGN082F9E8D7C006EDD01 /* SignUp */ = {
+			isa = PBXGroup;
+			children = (
+				F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */,
+				F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */,
+				F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */,
+				F7SIGN052F9E8D7C006EDD01 /* SignUpOTPView.swift */,
+			);
+			path = SignUp;
+			sourceTree = "<group>";
+		};
 		45DF90F334D64B93473BB379 /* Petmoji */ = {
 			isa = PBXGroup;
 			children = (
@@ -158,6 +177,7 @@
 				887A848EC3284EE734418A0C /* Fonts */,
 				230CC9C6105ED920CEA58721 /* Models */,
 				27A41F408E50E8ADAD314F80 /* Onboarding */,
+				F7SIGN082F9E8D7C006EDD01 /* SignUp */,
 				A82AA808A0B39377903C3298 /* Resources */,
 				87003FA09D86DF4E181DA645 /* Services */,
 				26FB5FFBE8B85089BE45B18F /* Widget */,
@@ -376,6 +396,10 @@
 				2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */,
 				8F5FFD67DE463FB07BBB57A1 /* PhotoPickerView.swift in Sources */,
 				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
+				F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */,
+				F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */,
+				F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */,
+				F7SIGN042F9E8D7C006EDD01 /* SignUpOTPView.swift in Sources */,
 				AB81F69F2C59C7BBBF520714 /* SupabaseService.swift in Sources */,
 				F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */,
 			);

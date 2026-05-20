@@ -23,6 +23,8 @@ enum MockUserSettings {
         static let persona = "settings_persona"
         static let displayName = "mock_user_display_name"
         static let email = "mock_user_email"
+        static let phone = "mock_user_phone"
+        static let signupCompleted = "signup_completed"
         static let verboseLogs = "mock_user_verbose_logs"
         static let debugSprites = "mock_user_debug_sprites"
         /// When true, uses dark “widget glass” styling; when false, classic sage + light chrome.

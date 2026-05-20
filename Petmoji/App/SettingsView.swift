@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var regenerateSuccess = false
     @State private var showResetConfirm = false
     @State private var showRegenerateConfirm = false
+    @State private var showSignOutConfirm = false
     @State private var nameUpdateTask: Task<Void, Never>?
 
     private var pet: Pet? { appState.currentPet }
@@ -124,6 +125,32 @@ struct SettingsView: View {
                         ClassicDarkModeToggleRow()
                     }
 #endif
+
+                    if appState.hasCompletedSignUp {
+                        SettingsSageSection(
+                            title: "account",
+                            footer: "Preview only. Returns you to sign-up from the beginning."
+                        ) {
+                            Button("sign out") {
+                                showSignOutConfirm = true
+                            }
+                            .font(.bodyL)
+                            .foregroundStyle(palette.accentDark)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .popover(
+                                isPresented: $showSignOutConfirm,
+                                attachmentAnchor: .rect(.bounds),
+                                arrowEdge: .top
+                            ) {
+                                MockSignOutConfirmPopover(
+                                    isPresented: $showSignOutConfirm,
+                                    onSignOut: {
+                                        Task { await appState.mockSignOut() }
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     if showsPetCentricSettings {
                     SettingsSageSection(title: "pet profile") {
@@ -355,6 +382,39 @@ private struct RegenerateSpritesConfirmPopover: View {
                 Button("Regenerate") {
                     isPresented = false
                     onConfirm()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(palette.accent)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 300)
+        .presentationCompactAdaptation(.popover)
+    }
+}
+
+private struct MockSignOutConfirmPopover: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    @Binding var isPresented: Bool
+    let onSignOut: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Sign out?")
+                .font(.titleL)
+                .foregroundStyle(palette.accentDark)
+            Text("This clears your account preview and pet, then takes you back to sign-up.")
+                .font(.bodyM)
+                .foregroundStyle(palette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                Button("Cancel") { isPresented = false }
+                    .buttonStyle(.bordered)
+                    .tint(palette.accentDark)
+                Button("Sign Out", role: .destructive) {
+                    isPresented = false
+                    onSignOut()
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(palette.accent)

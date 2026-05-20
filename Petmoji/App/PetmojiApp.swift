@@ -96,6 +96,14 @@ struct RootView: View {
 #endif
     }
 
+    private var shouldSkipSignUp: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipSignUp")
+#else
+        false
+#endif
+    }
+
     var body: some View {
         Group {
             if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
@@ -120,6 +128,11 @@ struct RootView: View {
                 NavigationStack {
                     PetHomeView()
                 }
+            } else if appState.isLoading {
+                Color.clear
+                    .pmSageScreenBackground()
+            } else if !appState.hasCompletedSignUp && !shouldSkipSignUp {
+                SignUpCoordinator()
             } else {
                 OnboardingCoordinator()
             }
@@ -255,8 +268,10 @@ final class AppState: ObservableObject {
     // MARK: - Mock user / developer preview (DEBUG Settings UI)
 
     @Published var settingsPersona: SettingsPersona = .pet
+    @Published var hasCompletedSignUp: Bool = false
     @Published var mockUserDisplayName: String = ""
     @Published var mockUserEmail: String = ""
+    @Published var mockUserPhone: String = ""
     @Published var mockUserVerboseLogs: Bool = false
     @Published var mockUserDebugSprites: Bool = false
 
@@ -310,8 +325,10 @@ final class AppState: ObservableObject {
         } else {
             settingsPersona = .pet
         }
+        hasCompletedSignUp = d.bool(forKey: MockUserSettings.Keys.signupCompleted)
         mockUserDisplayName = d.string(forKey: MockUserSettings.Keys.displayName) ?? ""
         mockUserEmail = d.string(forKey: MockUserSettings.Keys.email) ?? ""
+        mockUserPhone = d.string(forKey: MockUserSettings.Keys.phone) ?? ""
         mockUserVerboseLogs = d.bool(forKey: MockUserSettings.Keys.verboseLogs)
         mockUserDebugSprites = d.bool(forKey: MockUserSettings.Keys.debugSprites)
     }
@@ -329,6 +346,23 @@ final class AppState: ObservableObject {
     func setMockUserEmail(_ value: String) {
         mockUserEmail = value
         UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.email)
+    }
+
+    func setMockUserPhone(_ value: String) {
+        mockUserPhone = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.phone)
+    }
+
+    func setHasCompletedSignUp(_ value: Bool) {
+        hasCompletedSignUp = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.signupCompleted)
+    }
+
+    func completeSignUp(from draft: SignUpDraft) {
+        setMockUserDisplayName(draft.name.trimmingCharacters(in: .whitespaces))
+        setMockUserEmail(draft.email.trimmingCharacters(in: .whitespaces))
+        setMockUserPhone(draft.phoneDigitsOnly)
+        setHasCompletedSignUp(true)
     }
 
     func setMockUserVerboseLogs(_ value: Bool) {
@@ -368,6 +402,17 @@ final class AppState: ObservableObject {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
         currentPet = nil
+    }
+
+    /// Clears sign-up, pet, and session so the app returns to the first sign-up screen.
+    func mockSignOut() async {
+        stopSyncingExpressions()
+        try? await SupabaseService.shared.client.auth.signOut()
+        currentPet = nil
+        setHasCompletedSignUp(false)
+        setMockUserDisplayName("")
+        setMockUserEmail("")
+        setMockUserPhone("")
     }
 
     /// After kicking off `generate-sprites`, the edge function returns once

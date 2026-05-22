@@ -99,6 +99,7 @@ struct PetHomeView: View {
                                             }
                                         }
                                     }
+                                    .animation(PetCardToggleAnimation.main, value: isExpanded)
                                     .frame(maxWidth: .infinity)
                                     .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                                     .overlay(
@@ -312,6 +313,42 @@ private struct HomeHeader: View {
     }
 }
 
+// MARK: - Hero sprite (shared matched-geometry source for expand/collapse)
+
+private struct PetCardHeroSprite: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let urlString: String?
+    let width: CGFloat
+    let height: CGFloat
+    let cornerRadius: CGFloat
+    let heroGeometryID: String
+    let heroNamespace: Namespace.ID
+    var isBreathing: Bool = false
+    var showsCircleStroke: Bool = false
+
+    private let breatheScale: CGFloat = 1.02
+
+    var body: some View {
+        SpriteImageView(urlString: urlString, contentMode: .fill)
+            .frame(width: width, height: height)
+            .geometryGroup()
+            .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace, properties: .frame)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay {
+                if showsCircleStroke {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25)
+                }
+            }
+            .scaleEffect(isBreathing ? breatheScale : 1.0)
+            .animation(
+                isBreathing ? .easeInOut(duration: 2.5).repeatForever(autoreverses: true) : nil,
+                value: isBreathing
+            )
+    }
+}
+
 private struct CollapsedPetCardContent: View {
     @Environment(\.petmojiPalette) private var palette
 
@@ -328,12 +365,16 @@ private struct CollapsedPetCardContent: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                SpriteImageView(urlString: spriteURL, contentMode: .fill)
-                    .frame(width: 84, height: 84)
-                    .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace)
-                    .clipShape(Circle())
-                    .overlay(Circle().strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25))
-                    .padding(2)
+                PetCardHeroSprite(
+                    urlString: spriteURL,
+                    width: 84,
+                    height: 84,
+                    cornerRadius: 42,
+                    heroGeometryID: heroGeometryID,
+                    heroNamespace: heroNamespace,
+                    showsCircleStroke: true
+                )
+                .padding(2)
 
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -408,18 +449,18 @@ private struct ExpandedPetCardContent: View {
                 VStack(spacing: 14) {
                     let spriteWidth = max(170, contentWidth - 56)
                     let spriteHeight = spriteWidth * 0.9
-                    let breatheScale: CGFloat = 1.02
 
-                    SpriteImageView(urlString: spriteURL, contentMode: .fill)
-                        .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                        .frame(width: spriteWidth / breatheScale, height: spriteHeight / breatheScale)
-                        .scaleEffect(isBreathing ? breatheScale : 1.0)
-                        .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: isBreathing)
-                        .onAppear(perform: onSpriteAppeared)
-                        .frame(width: spriteWidth, height: spriteHeight)
-                        .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace)
-                        .mask(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                        .clipped()
+                    PetCardHeroSprite(
+                        urlString: spriteURL,
+                        width: spriteWidth,
+                        height: spriteHeight,
+                        cornerRadius: 28,
+                        heroGeometryID: heroGeometryID,
+                        heroNamespace: heroNamespace,
+                        isBreathing: isBreathing
+                    )
+                    .onAppear(perform: onSpriteAppeared)
+                    .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
 
                     HStack(spacing: 10) {
                         HomeStatusChip(icon: "heart.fill", title: expression.displayName)
@@ -428,7 +469,10 @@ private struct ExpandedPetCardContent: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
-                .background(palette.washDeep.opacity(0.75), in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .background {
+                    PMHomeInsetPanelBackground(cornerRadius: 32)
+                        .opacity(palette.visualStyle == .classic ? 0.75 : 1)
+                }
                 .overlay(
                     RoundedRectangle(cornerRadius: 32, style: .continuous)
                         .strokeBorder(palette.border.opacity(0.8), lineWidth: 1.4)
@@ -453,7 +497,7 @@ private struct ExpandedPetCardContent: View {
                         TypingIndicator()
                     } else if recentMessages.isEmpty {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(palette.elevatedCardFill)
+                            .fill(palette.visualStyle == .widgetGlass ? palette.washMid : palette.elevatedCardFill)
                             .overlay(
                                 Text("start chatting with your pet")
                                     .font(.bodyM)
@@ -469,7 +513,14 @@ private struct ExpandedPetCardContent: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
-                .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+                .background {
+                    if palette.visualStyle == .widgetGlass {
+                        PMHomeInsetPanelBackground(cornerRadius: 22)
+                    } else {
+                        palette.elevatedCardFill
+                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    }
+                }
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .strokeBorder(palette.border.opacity(0.7), lineWidth: 1.2)

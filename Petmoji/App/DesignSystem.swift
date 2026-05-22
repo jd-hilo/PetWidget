@@ -34,6 +34,8 @@ extension Color {
     static let pmSageWashDeep = Color(hex: "#D8E3D4")
     static let pmSageWashAltSoft = Color(hex: "#E8EDE4")
     static let pmSageWashAltDeep = Color(hex: "#DBE4D6")
+    /// Dark inset on expanded home cards (widget glass cut-out panels).
+    static let pmWidgetHomeInsetFill = Color(hex: "#1A1A1C")
     /// Warm clay accent (pair with sage; use sparingly).
     static let pmClay = Color(hex: "#B07D62")
     static let pmClayDark = Color(hex: "#7A5344")
@@ -88,6 +90,8 @@ struct PetmojiPalette: Equatable {
 
     let elevatedCardFill: Color
     let elevatedCardStroke: Color
+    /// Inset panels on expanded home pet cards (sprite area, recent messages).
+    let homeInsetFill: Color
     let sageCardFill: Color
     let sageCardStroke: Color
 
@@ -145,6 +149,7 @@ struct PetmojiPalette: Equatable {
         patternSymbol: .pmSagePatternSymbol,
         elevatedCardFill: Color.white.opacity(0.84),
         elevatedCardStroke: Color.pmSageBorder.opacity(0.75),
+        homeInsetFill: .pmSageWashDeep,
         sageCardFill: .white,
         sageCardStroke: .pmSageBorder,
         toolbarTint: .pmSageAccentDark,
@@ -190,6 +195,7 @@ struct PetmojiPalette: Equatable {
         patternSymbol: Color.white.opacity(0.22),
         elevatedCardFill: Color.white.opacity(0.14),
         elevatedCardStroke: Color.white.opacity(0.24),
+        homeInsetFill: .pmWidgetHomeInsetFill,
         sageCardFill: Color.white.opacity(0.12),
         sageCardStroke: Color.white.opacity(0.22),
         toolbarTint: Color.white.opacity(0.92),
@@ -274,6 +280,23 @@ struct PMWidgetGlassScreenBackdrop: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+    }
+}
+
+/// Inset panel on expanded home pet cards — dark fill + paw texture in widget glass (cut-out effect).
+struct PMHomeInsetPanelBackground: View {
+    @Environment(\.petmojiPalette) private var palette
+    var cornerRadius: CGFloat
+
+    var body: some View {
+        ZStack {
+            palette.homeInsetFill
+            if palette.visualStyle == .widgetGlass {
+                PMPawPatternScreenOverlay(symbolPointSize: 10)
+                    .opacity(0.032)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 

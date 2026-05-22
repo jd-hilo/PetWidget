@@ -10,12 +10,33 @@ In the Supabase SQL editor, run the contents of:
 
 ```
 migrations/001_initial_schema.sql
+migrations/002_device_tokens.sql
+migrations/003_profiles.sql
 ```
 
 This creates:
 - `pets` table with RLS
 - `messages` table with RLS
+- `profiles` table with RLS (sign-up name, email, phone)
 - Storage buckets (`pet-photos`, `pet-sprites`)
+
+## 2b. Email + password auth (Auth dashboard)
+
+The iOS app uses `auth.signUp` and `auth.signIn` with email and password. No verification email or SMS is sent yet.
+
+In **[Authentication → Providers → Email](https://supabase.com/dashboard/project/_/auth/providers?provider=Email)**:
+
+- **Email provider**: enabled
+- **Confirm email**: **off** (required so `signUp` returns an active session without inbox verification)
+- Password sign-in is enabled by default with the email provider
+
+App validation uses a minimum password length of **6** characters (`AuthPasswordConfig.minLength` in [`SignUpDraft.swift`](../Petmoji/SignUp/SignUpDraft.swift)). If you raise the minimum in the Supabase dashboard, update that constant to match.
+
+Optional: disable **Anonymous sign-ins** in production. Keep enabled if you use `-skipSignUp`.
+
+### Later: verification emails / OTP
+
+When you add email or SMS verification, re-enable **Confirm email** or switch to OTP and configure SMTP/templates. The old OTP runbook [`LOOPS_OTP_SETUP.md`](LOOPS_OTP_SETUP.md) and [`email-templates/magic-link-otp.html`](email-templates/magic-link-otp.html) are kept for reference but are **not** used by the current app.
 
 ## 3. Create Storage Buckets (UI Method)
 

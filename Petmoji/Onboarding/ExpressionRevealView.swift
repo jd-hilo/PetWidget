@@ -242,8 +242,8 @@ struct ExpressionRevealView: View {
         defer { UIApplication.shared.isIdleTimerDisabled = false }
 
         do {
-            // 1. Sign in anonymously if needed
-            let userId = try await SupabaseService.shared.signInAnonymously()
+            // 1. Use the authenticated user from sign-up / sign-in
+            let userId = try await SupabaseService.shared.requireUserId()
 
             // 2. Create initial pet record
             generationState = .uploading
@@ -624,39 +624,151 @@ struct ExpressionThumbnail: View {
 // MARK: - Widget Setup View
 
 struct WidgetSetupView: View {
+    @EnvironmentObject private var appState: AppState
     @Environment(\.petmojiPalette) private var palette
+    @ObservedObject private var locationService = LocationService.shared
 
     let onDone: () -> Void
+
+    @State private var isSavingHome = false
+    @State private var homeSaved = false
+    @State private var skippedHome = false
+    @State private var homeError: String?
+    @State private var showLocationConsentPrompt = false
+
+    private var pet: Pet? { appState.currentPet ?? appState.availablePets.first }
+
+    private var canFinish: Bool {
+        pet != nil && !isSavingHome
+    }
 
     var body: some View {
         ZStack {
             PMSageScreenBackdrop()
 
-            VStack(spacing: 32) {
-                Spacer()
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    Text("📱")
+                        .font(.system(size: 64))
+                        .padding(.top, 16)
 
-                Text("📱")
-                    .font(.system(size: 80))
+                    VStack(spacing: 12) {
+                        Text("add to home screen")
+                            .font(.displayL)
+                            .foregroundStyle(palette.accentDark)
+                            .multilineTextAlignment(.center)
+                        Text("long press your home screen → tap +\n→ search Petmoji → add widget")
+                            .font(.bodyL)
+                            .foregroundStyle(palette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
 
-                VStack(spacing: 12) {
-                    Text("add to home screen")
-                        .font(.displayL)
-                        .foregroundStyle(palette.accentDark)
-                        .multilineTextAlignment(.center)
-                    Text("long press your home screen → tap +\n→ search Petmoji → add widget")
-                        .font(.bodyL)
-                        .foregroundStyle(palette.textSecondary)
-                        .multilineTextAlignment(.center)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("leave-home reactions")
+                            .font(.titleL)
+                            .foregroundStyle(palette.accentDark)
+                        Text("Set your home so your pet can notice when you leave and send you messages.")
+                            .font(.bodyM)
+                            .foregroundStyle(palette.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        if homeSaved {
+                            Label("Home location saved", systemImage: "checkmark.circle.fill")
+                                .font(.bodyM)
+                                .foregroundStyle(palette.accentDark)
+                        } else if !skippedHome {
+                            PMSageCTAButton(
+                                title: isSavingHome ? "saving home…" : "use current location as home",
+                                action: { saveHomeFromCurrentLocation() },
+                                isEnabled: pet != nil && !isSavingHome
+                            )
+
+                            Button("skip for now") {
+                                skippedHome = true
+                                homeError = nil
+                            }
+                            .font(.bodyM)
+                            .foregroundStyle(palette.textSecondary)
+                            .frame(maxWidth: .infinity)
+                        }
+
+                        if let homeError {
+                            Text(homeError)
+                                .font(.bodyS)
+                                .foregroundStyle(.red.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        if locationService.needsAlwaysForLeaveHomeAlerts {
+                            Text("Choose Always Allow for location so your pet can react when you leave home in the background.")
+                                .font(.bodyS)
+                                .foregroundStyle(palette.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
+                    )
+
+                    PMSageCTAButton(
+                        title: isSavingHome ? "saving home…" : "done, let's go →",
+                        action: finishOnboarding,
+                        isEnabled: canFinish
+                    )
+                    .padding(.bottom, 40)
                 }
-
-                Spacer()
-
-                PMSageCTAButton(title: "done, let's go →", action: onDone)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 75)
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .alert("Enable leave-home reactions?", isPresented: $showLocationConsentPrompt) {
+            Button("Use Current Location") {
+                saveHomeFromCurrentLocation(finishAfterSave: true)
+            }
+            Button("Not Now", role: .cancel) {
+                skippedHome = true
+                homeError = nil
+                onDone()
+            }
+        } message: {
+            Text("Petmoji will save this spot as home so your pet can react when you leave and come back. You can turn this off later in Settings.")
+        }
+    }
+
+    private func finishOnboarding() {
+        if homeSaved || skippedHome {
+            onDone()
+        } else {
+            showLocationConsentPrompt = true
+        }
+    }
+
+    private func saveHomeFromCurrentLocation(finishAfterSave: Bool = false) {
+        guard let pet else {
+            homeError = "Create your pet first, then set home."
+            return
+        }
+        homeError = nil
+        isSavingHome = true
+        Task {
+            defer { isSavingHome = false }
+            do {
+                try await locationService.saveCurrentLocationAsHome(
+                    petId: pet.id,
+                    petName: pet.name
+                ) { lat, lng in
+                    appState.updateCurrentPetHome(lat: lat, lng: lng)
+                }
+                homeSaved = true
+                if finishAfterSave {
+                    onDone()
+                }
+            } catch {
+                homeError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            }
         }
     }
 }

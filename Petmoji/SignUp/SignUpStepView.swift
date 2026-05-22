@@ -83,7 +83,7 @@ struct SignUpCompletedSummaryList: View {
     private func summaryValueFont(for step: SignUpStep) -> Font {
         switch step {
         case .name: return .titleL
-        case .email, .phone, .otp: return .bodyL
+        case .email, .phone, .password: return .bodyL
         }
     }
 }
@@ -111,7 +111,7 @@ struct SignUpActiveStepView: View {
         case .name: return "what's your full name?"
         case .email: return "what's your email?"
         case .phone: return "what's your phone number?"
-        case .otp: return ""
+        case .password: return "create a password"
         }
     }
 
@@ -120,7 +120,7 @@ struct SignUpActiveStepView: View {
         case .name: return "enter full name..."
         case .email: return "enter email..."
         case .phone: return "enter phone..."
-        case .otp: return ""
+        case .password: return "password"
         }
     }
 
@@ -180,8 +180,41 @@ struct SignUpActiveStepView: View {
                 .tint(palette.accent)
                 .pmSignUpFieldChrome()
 
-        case .otp:
-            EmptyView()
+        case .password:
+            VStack(spacing: 12) {
+                SecureField(placeholder, text: $draft.password)
+                    .font(.titleL)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(palette.textPrimary)
+                    .textContentType(.newPassword)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .focused($focusedStep, equals: .password)
+                    .submitLabel(.continue)
+                    .tint(palette.accent)
+                    .pmSignUpFieldChrome()
+
+                SecureField("confirm password...", text: $draft.confirmPassword)
+                    .font(.titleL)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(palette.textPrimary)
+                    .textContentType(.newPassword)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .tint(palette.accent)
+                    .pmSignUpFieldChrome()
+
+                if !draft.password.isEmpty && draft.password != draft.confirmPassword {
+                    Text("Passwords must match.")
+                        .font(.bodyS)
+                        .foregroundStyle(.red.opacity(0.85))
+                } else if !draft.password.isEmpty && draft.password.count < AuthPasswordConfig.minLength {
+                    Text("At least \(AuthPasswordConfig.minLength) characters.")
+                        .font(.bodyS)
+                        .foregroundStyle(palette.textSecondary)
+                }
+            }
         }
     }
 }

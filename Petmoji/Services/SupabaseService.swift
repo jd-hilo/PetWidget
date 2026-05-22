@@ -28,6 +28,74 @@ final class SupabaseService: @unchecked Sendable {
         return session.user.id
     }
 
+    /// Returns true when a persisted Supabase session exists.
+    func restoreSessionIfPresent() async -> Bool {
+        (try? await client.auth.session) != nil
+    }
+
+    func requireUserId() async throws -> UUID {
+        do {
+            return try await currentUserId()
+        } catch {
+            throw SignUpAuthError.noSession
+        }
+    }
+
+    func signUp(email: String, password: String) async throws {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw SignUpAuthError.unknown("Enter a valid email address.")
+        }
+        guard password.count >= AuthPasswordConfig.minLength else {
+            throw SignUpAuthError.weakPassword
+        }
+        do {
+            _ = try await client.auth.signUp(email: trimmed, password: password)
+        } catch {
+            throw SignUpAuthError.from(error)
+        }
+    }
+
+    func signIn(email: String, password: String) async throws {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw SignUpAuthError.unknown("Enter a valid email address.")
+        }
+        do {
+            _ = try await client.auth.signIn(email: trimmed, password: password)
+        } catch {
+            throw SignUpAuthError.from(error)
+        }
+    }
+
+    // MARK: - Profiles
+
+    func fetchProfile() async throws -> UserProfile? {
+        let userId = try await currentUserId()
+        let profiles: [UserProfile] = try await client
+            .from("profiles")
+            .select()
+            .eq("id", value: userId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        return profiles.first
+    }
+
+    func upsertProfile(fullName: String, email: String, phone: String?) async throws {
+        let userId = try await currentUserId()
+        let row = ProfileUpsertRow(
+            id: userId,
+            fullName: fullName.trimmingCharacters(in: .whitespacesAndNewlines),
+            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+            phone: phone
+        )
+        try await client
+            .from("profiles")
+            .upsert(row)
+            .execute()
+    }
+
     // MARK: - Pet CRUD
 
     func fetchCurrentPet() async throws -> Pet? {
@@ -274,5 +342,31 @@ final class SupabaseService: @unchecked Sendable {
                 )
             )
         return response
+    }
+}
+
+// MARK: - Profile upsert payload
+
+private struct ProfileUpsertRow: Encodable {
+    let id: UUID
+    let fullName: String
+    let email: String
+    let phone: String?
+    let updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fullName = "full_name"
+        case email
+        case phone
+        case updatedAt = "updated_at"
+    }
+
+    init(id: UUID, fullName: String, email: String, phone: String?) {
+        self.id = id
+        self.fullName = fullName
+        self.email = email
+        self.phone = phone?.isEmpty == true ? nil : phone
+        self.updatedAt = ISO8601DateFormatter().string(from: Date())
     }
 }

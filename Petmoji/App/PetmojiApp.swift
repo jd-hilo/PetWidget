@@ -82,7 +82,6 @@ struct RootView: View {
     private var shouldUseMockSprites: Bool {
 #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-mockSprites")
-            || MockUserSettings.isDebugSpritesUserDefaultEnabled
 #else
         false
 #endif
@@ -112,6 +111,7 @@ struct RootView: View {
 #if DEBUG
                         appState.setPet(makeDebugRogerPet(useMockSprites: shouldUseMockSprites))
 #endif
+                        appState.setHasCompletedOnboarding(true)
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
@@ -124,7 +124,7 @@ struct RootView: View {
                     onSetPet: appState.setPet(_:),
                     useMockSprites: shouldUseMockSprites
                 )
-            } else if appState.currentPet != nil {
+            } else if appState.currentPet != nil, appState.hasCompletedOnboarding {
                 NavigationStack {
                     PetHomeView()
                 }
@@ -132,7 +132,7 @@ struct RootView: View {
                 Color.clear
                     .pmSageScreenBackground()
             } else if !appState.hasCompletedSignUp && !shouldSkipSignUp {
-                SignUpCoordinator()
+                AuthCoordinator()
             } else {
                 OnboardingCoordinator()
             }
@@ -141,7 +141,7 @@ struct RootView: View {
         .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
             if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
-                await appState.loadCurrentPet()
+                await appState.bootstrap()
             }
         }
     }
@@ -211,6 +211,7 @@ struct RootView: View {
 }
 
 private struct DebugRevealFlowView: View {
+    @EnvironmentObject private var appState: AppState
     @ObservedObject var draft: OnboardingDraft
     let onSetPet: (Pet) -> Void
     let useMockSprites: Bool
@@ -243,6 +244,7 @@ private struct DebugRevealFlowView: View {
                         if let pet = draft.completedPet {
                             onSetPet(pet)
                         }
+                        appState.setHasCompletedOnboarding(true)
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
@@ -265,15 +267,14 @@ final class AppState: ObservableObject {
     @Published var isLoading = false
     @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
 
-    // MARK: - Mock user / developer preview (DEBUG Settings UI)
+    // MARK: - User account cache (profiles + local prefs)
 
     @Published var settingsPersona: SettingsPersona = .pet
     @Published var hasCompletedSignUp: Bool = false
-    @Published var mockUserDisplayName: String = ""
-    @Published var mockUserEmail: String = ""
-    @Published var mockUserPhone: String = ""
-    @Published var mockUserVerboseLogs: Bool = false
-    @Published var mockUserDebugSprites: Bool = false
+    @Published var hasCompletedOnboarding: Bool = false
+    @Published var userDisplayName: String = ""
+    @Published var userEmail: String = ""
+    @Published var userPhone: String = ""
 
     @Published var visualStyle: AppVisualStyle = .classic
 
@@ -284,7 +285,7 @@ final class AppState: ObservableObject {
     @Published private(set) var expressionSyncPetId: UUID?
 
     init() {
-        loadMockUserSettingsFromUserDefaults()
+        loadUserSettingsFromUserDefaults()
         loadAppearanceFromUserDefaults()
     }
 
@@ -317,20 +318,33 @@ final class AppState: ObservableObject {
         setVisualStyle(enabled ? .widgetGlass : .classic)
     }
 
-    private func loadMockUserSettingsFromUserDefaults() {
+    private func loadUserSettingsFromUserDefaults() {
         let d = UserDefaults.standard
-        if let raw = d.string(forKey: MockUserSettings.Keys.persona),
-           let p = SettingsPersona(rawValue: raw) {
-            settingsPersona = p
+        if let raw = d.string(forKey: MockUserSettings.Keys.persona) {
+            settingsPersona = SettingsPersona(storedRawValue: raw)
         } else {
             settingsPersona = .pet
         }
         hasCompletedSignUp = d.bool(forKey: MockUserSettings.Keys.signupCompleted)
-        mockUserDisplayName = d.string(forKey: MockUserSettings.Keys.displayName) ?? ""
-        mockUserEmail = d.string(forKey: MockUserSettings.Keys.email) ?? ""
-        mockUserPhone = d.string(forKey: MockUserSettings.Keys.phone) ?? ""
-        mockUserVerboseLogs = d.bool(forKey: MockUserSettings.Keys.verboseLogs)
-        mockUserDebugSprites = d.bool(forKey: MockUserSettings.Keys.debugSprites)
+        hasCompletedOnboarding = d.bool(forKey: MockUserSettings.Keys.onboardingCompleted)
+        userDisplayName = d.string(forKey: MockUserSettings.Keys.displayName) ?? ""
+        userEmail = d.string(forKey: MockUserSettings.Keys.email) ?? ""
+        userPhone = d.string(forKey: MockUserSettings.Keys.phone) ?? ""
+    }
+
+    func setUserDisplayName(_ value: String) {
+        userDisplayName = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.displayName)
+    }
+
+    func setUserEmail(_ value: String) {
+        userEmail = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.email)
+    }
+
+    func setUserPhone(_ value: String) {
+        userPhone = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.phone)
     }
 
     func setSettingsPersona(_ value: SettingsPersona) {
@@ -338,19 +352,10 @@ final class AppState: ObservableObject {
         UserDefaults.standard.set(value.rawValue, forKey: MockUserSettings.Keys.persona)
     }
 
-    func setMockUserDisplayName(_ value: String) {
-        mockUserDisplayName = value
-        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.displayName)
-    }
-
-    func setMockUserEmail(_ value: String) {
-        mockUserEmail = value
-        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.email)
-    }
-
-    func setMockUserPhone(_ value: String) {
-        mockUserPhone = value
-        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.phone)
+    func refreshProfileIfNeeded() async {
+        if let profile = try? await supabase.fetchProfile() {
+            applyProfileCache(profile)
+        }
     }
 
     func setHasCompletedSignUp(_ value: Bool) {
@@ -358,31 +363,86 @@ final class AppState: ObservableObject {
         UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.signupCompleted)
     }
 
-    func completeSignUp(from draft: SignUpDraft) {
-        setMockUserDisplayName(draft.name.trimmingCharacters(in: .whitespaces))
-        setMockUserEmail(draft.email.trimmingCharacters(in: .whitespaces))
-        setMockUserPhone(draft.phoneDigitsOnly)
+    func setHasCompletedOnboarding(_ value: Bool) {
+        hasCompletedOnboarding = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.onboardingCompleted)
+    }
+
+    func bootstrap() async {
+        if await supabase.restoreSessionIfPresent() {
+            await restoreAuthenticatedSession()
+        } else {
+            await loadCurrentPet()
+        }
+    }
+
+    /// After sign-in or session restore: fetch pet first (routes to home when present), then profile cache.
+    func restoreAuthenticatedSession(showLoading: Bool = true) async {
+        await loadCurrentPet(showLoading: showLoading)
+        await hydrateFromProfile()
+    }
+
+    func hydrateFromProfile() async {
+        if let profile = try? await supabase.fetchProfile() {
+            applyProfileCache(profile)
+            setHasCompletedSignUp(true)
+            return
+        }
+        if let session = try? await supabase.client.auth.session,
+           let email = session.user.email, !email.isEmpty {
+            setUserEmail(email)
+            setHasCompletedSignUp(true)
+        }
+    }
+
+    private func applyProfileCache(_ profile: UserProfile) {
+        setUserDisplayName(profile.fullName)
+        setUserEmail(profile.email)
+        if let phone = profile.phone {
+            setUserPhone(phone)
+        }
+    }
+
+    func completeSignUp(from draft: SignUpDraft) async {
+        let name = draft.name.trimmingCharacters(in: .whitespaces)
+        let email = draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        setUserDisplayName(name)
+        setUserEmail(email)
+        setUserPhone(draft.phoneDigitsOnly)
         setHasCompletedSignUp(true)
     }
 
-    func setMockUserVerboseLogs(_ value: Bool) {
-        mockUserVerboseLogs = value
-        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.verboseLogs)
-    }
-
-    func setMockUserDebugSprites(_ value: Bool) {
-        mockUserDebugSprites = value
-        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.debugSprites)
-    }
-
-    func loadCurrentPet() async {
-        isLoading = true
-        defer { isLoading = false }
+    func loadCurrentPet(showLoading: Bool = true) async {
+        if showLoading { isLoading = true }
+        defer { if showLoading { isLoading = false } }
         do {
             currentPet = try await supabase.fetchCurrentPet()
+            if currentPet != nil {
+                setHasCompletedOnboarding(true)
+            }
+            syncHomeGeofenceFromCurrentPet()
         } catch {
             // No pet yet — show onboarding
         }
+    }
+
+    func updateCurrentPetHome(lat: Double, lng: Double) {
+        guard var pet = currentPet else { return }
+        pet.homeLat = lat
+        pet.homeLng = lng
+        currentPet = pet
+    }
+
+    func syncHomeGeofenceFromCurrentPet() {
+        guard let pet = currentPet,
+              let lat = pet.homeLat,
+              let lng = pet.homeLng else { return }
+        LocationService.shared.syncHomeGeofence(
+            lat: lat,
+            lng: lng,
+            petId: pet.id,
+            petName: pet.name
+        )
     }
 
     func setPet(_ pet: Pet) {
@@ -402,17 +462,19 @@ final class AppState: ObservableObject {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
         currentPet = nil
+        setHasCompletedOnboarding(false)
     }
 
-    /// Clears sign-up, pet, and session so the app returns to the first sign-up screen.
-    func mockSignOut() async {
+    /// Clears session, pet, and cached profile so the app returns to sign-in.
+    func signOut() async {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
         currentPet = nil
+        setHasCompletedOnboarding(false)
         setHasCompletedSignUp(false)
-        setMockUserDisplayName("")
-        setMockUserEmail("")
-        setMockUserPhone("")
+        setUserDisplayName("")
+        setUserEmail("")
+        setUserPhone("")
     }
 
     /// After kicking off `generate-sprites`, the edge function returns once

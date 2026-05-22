@@ -52,6 +52,7 @@ struct OnboardingCoordinator: View {
                             appState.setPet(pet)
                             appState.startSyncingExpressions(petId: pet.id)
                         }
+                        appState.setHasCompletedOnboarding(true)
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)

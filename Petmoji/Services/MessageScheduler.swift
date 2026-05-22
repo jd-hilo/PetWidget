@@ -8,6 +8,9 @@ import WidgetKit
 final class MessageScheduler {
     static let shared = MessageScheduler()
 
+    static let petIdKey = "pet_id"
+    static let petNameKey = "pet_name"
+
     private let center = UNUserNotificationCenter.current()
     private let sharedDefaults = UserDefaults(suiteName: "group.com.petmoji.app")
 
@@ -32,7 +35,7 @@ final class MessageScheduler {
             "been_gone_2h", "been_gone_6h"
         ])
 
-        let petName = sharedDefaults?.string(forKey: "pet_name") ?? "your pet"
+        let petName = sharedDefaults?.string(forKey: Self.petNameKey) ?? "your pet"
 
         // 2 hours after departure
         let content2h = UNMutableNotificationContent()
@@ -81,8 +84,8 @@ final class MessageScheduler {
     // MARK: - Store pet metadata for notifications
 
     func savePetMetadata(name: String, petId: String) {
-        sharedDefaults?.set(name, forKey: "pet_name")
-        sharedDefaults?.set(petId, forKey: "pet_id")
+        sharedDefaults?.set(name, forKey: Self.petNameKey)
+        sharedDefaults?.set(petId, forKey: Self.petIdKey)
     }
 
     // MARK: - Widget reload helper
@@ -92,16 +95,3 @@ final class MessageScheduler {
     }
 }
 
-// MARK: - AppState extension for location event helper
-
-extension AppState {
-    static var shared: AppState {
-        // Access the shared instance via the scene — best effort in background
-        // In practice, location events route through UserDefaults
-        AppState()
-    }
-
-    func petId() async -> UUID? {
-        currentPet?.id
-    }
-}

@@ -1,17 +1,28 @@
 import Foundation
 
-// MARK: - Settings persona (pet vs mock user preview)
+// MARK: - Settings section (user vs pet)
 
 enum SettingsPersona: String, CaseIterable, Identifiable {
     case pet = "pet"
-    case mockUser = "mock_user"
+    case user = "user"
 
     var id: String { rawValue }
 
     var segmentTitle: String {
         switch self {
+        case .user: return "User"
         case .pet: return "Pet"
-        case .mockUser: return "Mock user"
+        }
+    }
+
+    /// Maps legacy `mock_user` persona from older builds.
+    init(storedRawValue: String) {
+        if storedRawValue == "mock_user" {
+            self = .user
+        } else if let value = SettingsPersona(rawValue: storedRawValue) {
+            self = value
+        } else {
+            self = .pet
         }
     }
 }
@@ -25,8 +36,9 @@ enum MockUserSettings {
         static let email = "mock_user_email"
         static let phone = "mock_user_phone"
         static let signupCompleted = "signup_completed"
-        static let verboseLogs = "mock_user_verbose_logs"
-        static let debugSprites = "mock_user_debug_sprites"
+        static let onboardingCompleted = "onboarding_completed"
+        /// Leave-home geofence monitoring (default off until onboarding opt-in).
+        static let locationTrackingEnabled = "location_tracking_enabled"
         /// When true, uses dark “widget glass” styling; when false, classic sage + light chrome.
         static let darkMode = "mock_user_dark_mode"
     }
@@ -34,32 +46,7 @@ enum MockUserSettings {
     /// Legacy key from the old appearance picker; read once for migration.
     static let legacyVisualStyleKey = "app_visual_style"
 
-    static var persona: SettingsPersona {
-        guard let raw = UserDefaults.standard.string(forKey: Keys.persona),
-              let value = SettingsPersona(rawValue: raw) else { return .pet }
-        return value
-    }
-
-    static var isVerboseLoggingEnabled: Bool {
-#if DEBUG
-        UserDefaults.standard.bool(forKey: Keys.verboseLogs)
-#else
-        false
-#endif
-    }
-
-    static var isDebugSpritesUserDefaultEnabled: Bool {
-#if DEBUG
-        UserDefaults.standard.bool(forKey: Keys.debugSprites)
-#else
-        false
-#endif
-    }
-
     static func logVerbose(_ message: @autoclosure () -> String) {
-#if DEBUG
-        guard isVerboseLoggingEnabled else { return }
-        print("[Petmoji][verbose] \(message())")
-#endif
+        // Verbose logging disabled (no settings toggle).
     }
 }

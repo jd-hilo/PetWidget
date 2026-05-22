@@ -4,7 +4,6 @@ import PhotosUI
 // MARK: - Photo Picker View
 
 struct PhotoPickerView: View {
-    @EnvironmentObject private var appState: AppState
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
@@ -75,26 +74,6 @@ struct PhotoPickerView: View {
         }
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 12) {
-#if DEBUG
-                Button {
-                    Task { await appState.mockSignOut() }
-                } label: {
-                    Text("skip onboarding — back to sign-up")
-                        .font(.bodyM)
-                        .foregroundStyle(palette.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(
-                            palette.chromeButtonFill,
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .strokeBorder(palette.border.opacity(0.85), lineWidth: 1.2)
-                        )
-                }
-                .buttonStyle(.plain)
-#endif
                 PMSageCTAButton(
                     title: "continue →",
                     action: onNext,

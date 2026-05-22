@@ -8,6 +8,12 @@ struct SignUpCoordinator: View {
     @StateObject private var draft = SignUpDraft()
     @State private var step: SignUpStep = .name
     @FocusState private var focusedStep: SignUpStep?
+    @State private var isSubmitting = false
+    @State private var authError: String?
+
+    var onSwitchToSignIn: () -> Void = {}
+
+    private let supabase = SupabaseService.shared
 
     private var completedSteps: [SignUpStep] {
         draft.completedSteps(before: step)
@@ -15,7 +21,7 @@ struct SignUpCoordinator: View {
 
     private var scrollAnchorID: String {
         switch step {
-        case .otp: return "signup-active-otp"
+        case .password: return "signup-active-password"
         case .phone: return "signup-active-phone"
         case .email: return "signup-active-email"
         case .name: return "signup-active-name"
@@ -37,9 +43,22 @@ struct SignUpCoordinator: View {
                             .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
-                        activeStepContent
-                            .id(scrollAnchorID)
-                            .transition(activeStepTransition)
+                        SignUpActiveStepView(
+                            draft: draft,
+                            step: step,
+                            focusedStep: $focusedStep
+                        )
+                        .id(scrollAnchorID)
+                        .transition(activeStepTransition)
+
+                        if let authError {
+                            Text(authError)
+                                .font(.bodyM)
+                                .foregroundStyle(.red.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+
+                        signInLink
 
                         Spacer(minLength: 120)
                     }
@@ -73,7 +92,7 @@ struct SignUpCoordinator: View {
                 PMSageCTAButton(
                     title: ctaTitle,
                     action: advance,
-                    isEnabled: draft.isValid(for: step)
+                    isEnabled: draft.isValid(for: step) && !isSubmitting
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 10)
@@ -83,20 +102,20 @@ struct SignUpCoordinator: View {
         .tint(palette.toolbarTint)
     }
 
-    @ViewBuilder
-    private var activeStepContent: some View {
-        if step == .otp {
-            SignUpOTPStepView(
-                draft: draft,
-                email: draft.email.trimmingCharacters(in: .whitespaces)
-            )
-        } else {
-            SignUpActiveStepView(
-                draft: draft,
-                step: step,
-                focusedStep: $focusedStep
-            )
+    private var signInLink: some View {
+        Button(action: onSwitchToSignIn) {
+            HStack(spacing: 4) {
+                Text("Already have an account?")
+                    .foregroundStyle(palette.textSecondary)
+                Text("Sign in")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(palette.accentDark)
+            }
+            .font(.bodyM)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
+        .buttonStyle(.plain)
+        .padding(.top, 8)
     }
 
     private var activeStepTransition: AnyTransition {
@@ -107,9 +126,14 @@ struct SignUpCoordinator: View {
     }
 
     private var ctaTitle: String {
+        if isSubmitting {
+            switch step {
+            case .password: return "creating account…"
+            default: return "continue →"
+            }
+        }
         switch step {
-        case .otp: return "verify →"
-        case .phone: return "continue →"
+        case .password: return "create account →"
         default: return "continue →"
         }
     }
@@ -123,10 +147,6 @@ struct SignUpCoordinator: View {
     }
 
     private func focusActiveStep(_ newStep: SignUpStep) {
-        guard newStep != .otp else {
-            focusedStep = nil
-            return
-        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             focusedStep = newStep
         }
@@ -134,9 +154,7 @@ struct SignUpCoordinator: View {
 
     private func goToStep(_ target: SignUpStep) {
         focusedStep = nil
-        if target.rawValue < SignUpStep.otp.rawValue {
-            draft.applyOTPInput("")
-        }
+        authError = nil
         withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             step = target
         }
@@ -144,17 +162,38 @@ struct SignUpCoordinator: View {
     }
 
     private func advance() {
-        guard draft.isValid(for: step) else { return }
+        guard draft.isValid(for: step), !isSubmitting else { return }
         focusedStep = nil
+        authError = nil
 
-        if step == .otp {
-            appState.completeSignUp(from: draft)
-            return
+        switch step {
+        case .password:
+            Task { await signUpAndComplete() }
+        default:
+            guard let next = SignUpStep(rawValue: step.rawValue + 1) else { return }
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+                step = next
+            }
         }
+    }
 
-        guard let next = SignUpStep(rawValue: step.rawValue + 1) else { return }
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-            step = next
+    private var trimmedEmail: String {
+        draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func signUpAndComplete() async {
+        isSubmitting = true
+        defer { isSubmitting = false }
+        do {
+            try await supabase.signUp(email: trimmedEmail, password: draft.password)
+            try await supabase.upsertProfile(
+                fullName: draft.name,
+                email: trimmedEmail,
+                phone: draft.phoneDigitsOnly
+            )
+            await appState.completeSignUp(from: draft)
+        } catch {
+            authError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
     }
 }

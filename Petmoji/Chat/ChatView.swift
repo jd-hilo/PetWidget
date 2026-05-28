@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Chat Panel (embeddable)
 
 struct ChatPanel: View {
+    @EnvironmentObject private var appState: AppState
     @Environment(\.petmojiPalette) private var palette
 
     let pet: Pet
@@ -233,6 +234,7 @@ struct ChatPanel: View {
 
     private func syncWidget(petMessage: ChatMessage) {
         guard petMessage.isFromPet else { return }
+        guard pet.id == appState.widgetPet?.id else { return }
         let expression = petMessage.expression ?? .happy
         let synced = PetMessage(
             id: UUID(),

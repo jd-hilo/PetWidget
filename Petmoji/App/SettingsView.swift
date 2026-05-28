@@ -13,6 +13,9 @@ struct SettingsView: View {
     @State private var regenerateSuccess = false
     @State private var showResetConfirm = false
     @State private var showRegenerateConfirm = false
+    @State private var showDeletePetConfirm = false
+    @State private var isDeletingPet = false
+    @State private var deletePetError: String?
     @State private var showSignOutConfirm = false
     @State private var nameUpdateTask: Task<Void, Never>?
     @State private var isUpdatingHome = false
@@ -20,6 +23,27 @@ struct SettingsView: View {
     @ObservedObject private var locationService = LocationService.shared
 
     private var pet: Pet? { appState.currentPet }
+
+    private var settingsPetSelection: Binding<UUID> {
+        Binding(
+            get: { appState.currentPet?.id ?? appState.pets.first?.id ?? UUID() },
+            set: { id in
+                guard let selected = appState.pets.first(where: { $0.id == id }) else { return }
+                appState.selectPet(selected)
+                petName = selected.name
+            }
+        )
+    }
+
+    private var widgetPetSelection: Binding<UUID> {
+        Binding(
+            get: { appState.widgetPetId ?? appState.pets.first?.id ?? UUID() },
+            set: { id in
+                guard let selected = appState.pets.first(where: { $0.id == id }) else { return }
+                appState.setWidgetPet(selected)
+            }
+        )
+    }
 
     private func spriteThumbLoading(_ expression: PetExpression, pet: Pet) -> Bool {
         pet.expressions[expression] == nil && appState.expressionSyncPetId == pet.id
@@ -86,6 +110,17 @@ struct SettingsView: View {
             petName = pet?.name ?? ""
             Task { await appState.refreshProfileIfNeeded() }
         }
+        .onChange(of: appState.currentPet?.id) { _, _ in
+            petName = pet?.name ?? ""
+        }
+        .alert("Delete \(pet?.name ?? "this pet")?", isPresented: $showDeletePetConfirm) {
+            Button("Delete", role: .destructive) {
+                Task { await deleteSelectedPet() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This permanently removes the pet and its chat history. This can't be undone.")
+        }
         .onChange(of: petName) { _, newName in
             guard let petId = pet?.id else { return }
             nameUpdateTask?.cancel()
@@ -96,7 +131,7 @@ struct SettingsView: View {
                 await MainActor.run {
                     if var updated = appState.currentPet {
                         updated.name = newName
-                        appState.currentPet = updated
+                        appState.setPet(updated)
                     }
                 }
             }
@@ -165,6 +200,18 @@ struct SettingsView: View {
     @ViewBuilder
     private var petSettingsContent: some View {
         SettingsSageSection(title: "pet profile") {
+            if appState.pets.count > 1 {
+                Picker("Pet profile", selection: settingsPetSelection) {
+                    ForEach(appState.pets) { listedPet in
+                        Text(listedPet.name).tag(listedPet.id)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.bottom, 12)
+                .accessibilityLabel("Pet profile")
+            }
+
             HStack(spacing: 16) {
                 SpriteImageView(urlString: pet?.expressions[.happy])
                     .frame(width: 52, height: 52)
@@ -184,6 +231,22 @@ struct SettingsView: View {
                             .foregroundStyle(palette.textSecondary)
                     }
                 }
+            }
+        }
+
+        if appState.pets.count > 1 {
+            SettingsSageSection(
+                title: "home screen widget",
+                footer: "Choose which pet appears on your home screen widget."
+            ) {
+                Picker("Widget pet", selection: widgetPetSelection) {
+                    ForEach(appState.pets) { listedPet in
+                        Text(listedPet.name).tag(listedPet.id)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .accessibilityLabel("Home screen widget pet")
             }
         }
 
@@ -229,7 +292,10 @@ struct SettingsView: View {
             }
         }
 
-        SettingsSageSection(title: "notifications") {
+        SettingsSageSection(
+            title: "notifications",
+            footer: "When on, your pet sends occasional check-in messages throughout the day as push notifications. New messages also show up in chat and on your home screen."
+        ) {
             Toggle("scheduled messages", isOn: $notificationsEnabled)
                 .font(.bodyM)
                 .foregroundStyle(palette.textPrimary)
@@ -321,6 +387,19 @@ struct SettingsView: View {
         }
 
         SettingsSageSection(title: "danger zone", titleColor: .red) {
+            Button("delete pet", role: .destructive) {
+                showDeletePetConfirm = true
+            }
+            .font(.bodyL)
+            .disabled(pet == nil || isDeletingPet)
+
+            if let deletePetError {
+                Text(deletePetError)
+                    .font(.bodyS)
+                    .foregroundStyle(.red.opacity(0.9))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
             Button("reset & start over", role: .destructive) {
                 showResetConfirm = true
             }
@@ -360,6 +439,16 @@ struct SettingsView: View {
                 homeLocationError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             }
         }
+    }
+
+    @MainActor
+    private func deleteSelectedPet() async {
+        guard let pet else { return }
+        isDeletingPet = true
+        deletePetError = nil
+        await appState.deletePet(pet)
+        petName = appState.currentPet?.name ?? ""
+        isDeletingPet = false
     }
 }
 
@@ -772,7 +861,7 @@ struct RegeneratingModal: View {
             await MainActor.run {
                 if var updated = appState.currentPet {
                     updated.expressions = initialExpressions
-                    appState.currentPet = updated
+                    appState.setPet(updated)
                 }
                 appState.startSyncingExpressions(petId: pet.id)
                 success = true

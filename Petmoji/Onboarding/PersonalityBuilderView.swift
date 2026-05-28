@@ -6,6 +6,7 @@ struct PersonalityBuilderView: View {
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
+    var onCancel: (() -> Void)?
 
     private static let totalSteps = 5
     /// Rough per-step estimate for “time left” copy (personality flow).
@@ -169,6 +170,9 @@ struct PersonalityBuilderView: View {
                     action: onNext,
                     isEnabled: draft.isPersonalityStepValid
                 )
+                if let onCancel {
+                    PMOnboardingCancelButton(action: onCancel)
+                }
                 Button {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                         isReviewScreen = false
@@ -188,6 +192,9 @@ struct PersonalityBuilderView: View {
                     action: advanceWizard,
                     isEnabled: canContinueFromActiveStep
                 )
+                if let onCancel {
+                    PMOnboardingCancelButton(action: onCancel)
+                }
 
                 if activeStep > 0 {
                     Button {

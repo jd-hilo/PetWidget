@@ -6,7 +6,9 @@ struct ExpressionRevealView: View {
     @ObservedObject var draft: OnboardingDraft
     @EnvironmentObject var appState: AppState
     @Environment(\.petmojiPalette) private var palette
+    var context: OnboardingContext = .firstPet
     let onComplete: (Pet) -> Void
+    var onCancel: (() -> Void)?
     var skipGenerationForDebug: Bool = false
     var useMockSpritesForDebug: Bool = false
 
@@ -205,13 +207,19 @@ struct ExpressionRevealView: View {
             }
         )
         .safeAreaInset(edge: .bottom) {
-            PMSageCTAButton(
-                title: name.isEmpty ? "enter a name first" : "meet \(name)! →",
-                action: savePet,
-                isEnabled: !name.trimmingCharacters(in: .whitespaces).isEmpty
-            )
+            VStack(spacing: 12) {
+                PMSageCTAButton(
+                    title: name.isEmpty ? "enter a name first" : "meet \(name)! →",
+                    action: savePet,
+                    isEnabled: !name.trimmingCharacters(in: .whitespaces).isEmpty
+                )
+                if let onCancel {
+                    PMOnboardingCancelButton(action: onCancel)
+                }
+            }
             .padding(.horizontal, 24)
             .padding(.bottom, 10)
+            .background(Color.clear)
         }
     }
 
@@ -372,10 +380,13 @@ struct ExpressionRevealView: View {
             // Continue polling at the app level so the home screen keeps
             // updating as the remaining expressions land.
             await MainActor.run {
-                // Install the pet before polling: `startSyncingExpressions` merges into
-                // `currentPet`, which was nil until widget setup — so Stage B updates were dropped.
-                appState.setPet(latest)
-                appState.startSyncingExpressions(petId: latest.id)
+                draft.completedPet = latest
+                if context.isAdditionalPet {
+                    appState.registerNewPet(latest)
+                } else {
+                    appState.setPet(latest)
+                    appState.startSyncingExpressions(petId: latest.id)
+                }
                 onComplete(latest)
             }
         }
@@ -628,7 +639,9 @@ struct WidgetSetupView: View {
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject private var locationService = LocationService.shared
 
+    var pet: Pet?
     let onDone: () -> Void
+    var onCancel: (() -> Void)?
 
     @State private var isSavingHome = false
     @State private var homeSaved = false
@@ -636,10 +649,12 @@ struct WidgetSetupView: View {
     @State private var homeError: String?
     @State private var showLocationConsentPrompt = false
 
-    private var pet: Pet? { appState.currentPet ?? appState.availablePets.first }
+    private var resolvedPet: Pet? {
+        pet ?? appState.currentPet ?? appState.availablePets.first
+    }
 
     private var canFinish: Bool {
-        pet != nil && !isSavingHome
+        resolvedPet != nil && !isSavingHome
     }
 
     var body: some View {
@@ -680,7 +695,7 @@ struct WidgetSetupView: View {
                             PMSageCTAButton(
                                 title: isSavingHome ? "saving home…" : "use current location as home",
                                 action: { saveHomeFromCurrentLocation() },
-                                isEnabled: pet != nil && !isSavingHome
+                                isEnabled: resolvedPet != nil && !isSavingHome
                             )
 
                             Button("skip for now") {
@@ -714,11 +729,16 @@ struct WidgetSetupView: View {
                             .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
                     )
 
-                    PMSageCTAButton(
-                        title: isSavingHome ? "saving home…" : "done, let's go →",
-                        action: finishOnboarding,
-                        isEnabled: canFinish
-                    )
+                    VStack(spacing: 12) {
+                        PMSageCTAButton(
+                            title: isSavingHome ? "saving home…" : "done, let's go →",
+                            action: finishOnboarding,
+                            isEnabled: canFinish
+                        )
+                        if let onCancel {
+                            PMOnboardingCancelButton(action: onCancel)
+                        }
+                    }
                     .padding(.bottom, 40)
                 }
                 .padding(.horizontal, 24)
@@ -747,7 +767,7 @@ struct WidgetSetupView: View {
     }
 
     private func saveHomeFromCurrentLocation(finishAfterSave: Bool = false) {
-        guard let pet else {
+        guard let resolvedPet else {
             homeError = "Create your pet first, then set home."
             return
         }
@@ -757,10 +777,10 @@ struct WidgetSetupView: View {
             defer { isSavingHome = false }
             do {
                 try await locationService.saveCurrentLocationAsHome(
-                    petId: pet.id,
-                    petName: pet.name
+                    petId: resolvedPet.id,
+                    petName: resolvedPet.name
                 ) { lat, lng in
-                    appState.updateCurrentPetHome(lat: lat, lng: lng)
+                    appState.updatePetHome(petId: resolvedPet.id, lat: lat, lng: lng)
                 }
                 homeSaved = true
                 if finishAfterSave {

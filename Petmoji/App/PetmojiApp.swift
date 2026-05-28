@@ -13,7 +13,12 @@ struct PetmojiApp: App {
                 .onOpenURL { url in
                     guard url.scheme?.lowercased() == "petmoji" else { return }
                     if url.host?.lowercased() == "chat" {
-                        appState.pendingWidgetDeepLink = .openChat
+                        let petId = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                            .queryItems?
+                            .first(where: { $0.name == "petId" })?
+                            .value
+                            .flatMap(UUID.init(uuidString:))
+                        appState.pendingWidgetDeepLink = .openChat(petId: petId)
                     }
                 }
         }
@@ -56,8 +61,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     @MainActor
     private func refreshWidgetData() async {
-        // Fetch latest message and update shared UserDefaults for widget
-        guard let pet = try? await SupabaseService.shared.fetchCurrentPet(),
+        let defaults = UserDefaults.standard
+        let widgetPetId: UUID? = {
+            guard let raw = defaults.string(forKey: MockUserSettings.Keys.widgetPetId) else { return nil }
+            return UUID(uuidString: raw)
+        }()
+
+        let pets = (try? await SupabaseService.shared.fetchAllPets()) ?? []
+        let widgetPet = widgetPetId.flatMap { id in pets.first { $0.id == id } } ?? pets.first
+
+        guard let pet = widgetPet,
               let message = try? await SupabaseService.shared.fetchLatestMessage(for: pet.id) else {
             WidgetReloader.reload()
             return
@@ -124,13 +137,16 @@ struct RootView: View {
                     onSetPet: appState.setPet(_:),
                     useMockSprites: shouldUseMockSprites
                 )
-            } else if appState.currentPet != nil, appState.hasCompletedOnboarding {
+            } else if !appState.pets.isEmpty, appState.hasCompletedOnboarding {
                 NavigationStack {
                     PetHomeView()
                 }
-            } else if appState.isLoading {
-                Color.clear
-                    .pmSageScreenBackground()
+            } else if appState.isBootstrapping || appState.isLoading {
+                BrandLandingView(mode: .loading)
+            } else if !appState.hasCompletedSignUp, !appState.hasSeenWelcome, !shouldSkipSignUp {
+                BrandLandingView(mode: .welcome) {
+                    appState.setHasSeenWelcome(true)
+                }
             } else if !appState.hasCompletedSignUp && !shouldSkipSignUp {
                 AuthCoordinator()
             } else {
@@ -142,6 +158,8 @@ struct RootView: View {
         .task {
             if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
                 await appState.bootstrap()
+            } else {
+                appState.markBootstrapComplete()
             }
         }
     }
@@ -258,13 +276,18 @@ private struct DebugRevealFlowView: View {
 
 enum PendingWidgetDeepLink: Equatable {
     case none
-    case openChat
+    case openChat(petId: UUID?)
 }
 
 @MainActor
 final class AppState: ObservableObject {
+    static let maxPets = 2
+
     @Published var currentPet: Pet?
+    @Published private(set) var pets: [Pet] = []
+    @Published var widgetPetId: UUID?
     @Published var isLoading = false
+    @Published private(set) var isBootstrapping = true
     @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
 
     // MARK: - User account cache (profiles + local prefs)
@@ -272,6 +295,7 @@ final class AppState: ObservableObject {
     @Published var settingsPersona: SettingsPersona = .pet
     @Published var hasCompletedSignUp: Bool = false
     @Published var hasCompletedOnboarding: Bool = false
+    @Published var hasSeenWelcome: Bool = false
     @Published var userDisplayName: String = ""
     @Published var userEmail: String = ""
     @Published var userPhone: String = ""
@@ -327,9 +351,13 @@ final class AppState: ObservableObject {
         }
         hasCompletedSignUp = d.bool(forKey: MockUserSettings.Keys.signupCompleted)
         hasCompletedOnboarding = d.bool(forKey: MockUserSettings.Keys.onboardingCompleted)
+        hasSeenWelcome = d.bool(forKey: MockUserSettings.Keys.hasSeenWelcome)
         userDisplayName = d.string(forKey: MockUserSettings.Keys.displayName) ?? ""
         userEmail = d.string(forKey: MockUserSettings.Keys.email) ?? ""
         userPhone = d.string(forKey: MockUserSettings.Keys.phone) ?? ""
+        if let raw = d.string(forKey: MockUserSettings.Keys.widgetPetId) {
+            widgetPetId = UUID(uuidString: raw)
+        }
     }
 
     func setUserDisplayName(_ value: String) {
@@ -368,17 +396,27 @@ final class AppState: ObservableObject {
         UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.onboardingCompleted)
     }
 
+    func setHasSeenWelcome(_ value: Bool) {
+        hasSeenWelcome = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.hasSeenWelcome)
+    }
+
+    func markBootstrapComplete() {
+        isBootstrapping = false
+    }
+
     func bootstrap() async {
+        defer { isBootstrapping = false }
         if await supabase.restoreSessionIfPresent() {
             await restoreAuthenticatedSession()
         } else {
-            await loadCurrentPet()
+            await loadPets()
         }
     }
 
-    /// After sign-in or session restore: fetch pet first (routes to home when present), then profile cache.
+    /// After sign-in or session restore: fetch pets first (routes to home when present), then profile cache.
     func restoreAuthenticatedSession(showLoading: Bool = true) async {
-        await loadCurrentPet(showLoading: showLoading)
+        await loadPets(showLoading: showLoading)
         await hydrateFromProfile()
     }
 
@@ -412,25 +450,104 @@ final class AppState: ObservableObject {
         setHasCompletedSignUp(true)
     }
 
-    func loadCurrentPet(showLoading: Bool = true) async {
+    func loadPets(showLoading: Bool = true) async {
         if showLoading { isLoading = true }
         defer { if showLoading { isLoading = false } }
         do {
-            currentPet = try await supabase.fetchCurrentPet()
-            if currentPet != nil {
+            let previousCurrentId = currentPet?.id
+            let fetched = try await supabase.fetchAllPets(limit: Self.maxPets)
+            pets = fetched
+            if let previousCurrentId,
+               let kept = fetched.first(where: { $0.id == previousCurrentId }) {
+                currentPet = kept
+            } else {
+                currentPet = fetched.first
+            }
+            resolveWidgetPetId()
+            if !fetched.isEmpty {
                 setHasCompletedOnboarding(true)
             }
             syncHomeGeofenceFromCurrentPet()
+            await syncWidgetSnapshot()
         } catch {
-            // No pet yet — show onboarding
+            // No pets yet — show onboarding
+        }
+    }
+
+    private func resolveWidgetPetId() {
+        if let widgetPetId,
+           pets.contains(where: { $0.id == widgetPetId }) {
+            return
+        }
+        if let firstPet = pets.first {
+            setWidgetPetId(firstPet.id)
+        } else {
+            setWidgetPetId(nil)
+        }
+    }
+
+    private func setWidgetPetId(_ id: UUID?) {
+        widgetPetId = id
+        if let id {
+            UserDefaults.standard.set(id.uuidString, forKey: MockUserSettings.Keys.widgetPetId)
+        } else {
+            UserDefaults.standard.removeObject(forKey: MockUserSettings.Keys.widgetPetId)
+        }
+    }
+
+    var widgetPet: Pet? {
+        guard let widgetPetId else { return pets.first }
+        return pets.first { $0.id == widgetPetId } ?? pets.first
+    }
+
+    var canAddPet: Bool { pets.count < Self.maxPets }
+
+    var availablePets: [Pet] { pets }
+
+    func setWidgetPet(_ pet: Pet) {
+        setWidgetPetId(pet.id)
+        Task { await syncWidgetSnapshot() }
+    }
+
+    func syncWidgetSnapshot() async {
+        guard let pet = widgetPet else { return }
+        if let message = try? await supabase.fetchLatestMessage(for: pet.id) {
+            WidgetSnapshotSync.writeFromPet(pet, message: message)
+        }
+    }
+
+    func registerNewPet(_ pet: Pet) {
+        var next = pets.filter { $0.id != pet.id }
+        next.append(pet)
+        next.sort { $0.createdAt < $1.createdAt }
+        pets = Array(next.prefix(Self.maxPets))
+        mergePet(pet)
+        startSyncingExpressions(petId: pet.id)
+    }
+
+    private func mergePet(_ pet: Pet) {
+        if var current = currentPet, current.id == pet.id {
+            current = pet
+            currentPet = current
+        }
+        if let index = pets.firstIndex(where: { $0.id == pet.id }) {
+            pets[index] = pet
         }
     }
 
     func updateCurrentPetHome(lat: Double, lng: Double) {
-        guard var pet = currentPet else { return }
+        guard let petId = currentPet?.id else { return }
+        updatePetHome(petId: petId, lat: lat, lng: lng)
+    }
+
+    func updatePetHome(petId: UUID, lat: Double, lng: Double) {
+        guard var pet = pets.first(where: { $0.id == petId }) else { return }
         pet.homeLat = lat
         pet.homeLng = lng
-        currentPet = pet
+        mergePet(pet)
+        if currentPet?.id == petId {
+            syncHomeGeofenceFromCurrentPet()
+        }
     }
 
     func syncHomeGeofenceFromCurrentPet() {
@@ -447,11 +564,30 @@ final class AppState: ObservableObject {
 
     func setPet(_ pet: Pet) {
         currentPet = pet
+        if let index = pets.firstIndex(where: { $0.id == pet.id }) {
+            pets[index] = pet
+        } else if pets.count < Self.maxPets {
+            pets.append(pet)
+            pets.sort { $0.createdAt < $1.createdAt }
+        }
     }
 
-    /// Pets the user can switch between (stub: single pet until multi-pet backend exists).
-    var availablePets: [Pet] {
-        [currentPet].compactMap { $0 }
+    func removePetLocally(petId: UUID) {
+        pets.removeAll { $0.id == petId }
+        if currentPet?.id == petId {
+            currentPet = pets.first
+        }
+        resolveWidgetPetId()
+    }
+
+    func deletePet(_ pet: Pet) async {
+        if expressionSyncPetId == pet.id {
+            stopSyncingExpressions()
+        }
+        try? await supabase.deletePet(petId: pet.id)
+        ChatHistoryStore.clearHistory(for: pet.id)
+        removePetLocally(petId: pet.id)
+        await syncWidgetSnapshot()
     }
 
     func selectPet(_ pet: Pet) {
@@ -462,6 +598,8 @@ final class AppState: ObservableObject {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
         currentPet = nil
+        pets = []
+        setWidgetPetId(nil)
         setHasCompletedOnboarding(false)
     }
 
@@ -470,6 +608,8 @@ final class AppState: ObservableObject {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
         currentPet = nil
+        pets = []
+        setWidgetPetId(nil)
         setHasCompletedOnboarding(false)
         setHasCompletedSignUp(false)
         setUserDisplayName("")
@@ -491,9 +631,9 @@ final class AppState: ObservableObject {
             do {
                 for try await partial in self.supabase.observePetExpressions(petId: petId) {
                     if Task.isCancelled { return }
-                    if var pet = self.currentPet, pet.id == petId {
+                    if var pet = self.pets.first(where: { $0.id == petId }) {
                         pet.expressions = partial
-                        self.currentPet = pet
+                        self.mergePet(pet)
                     }
                 }
             } catch {

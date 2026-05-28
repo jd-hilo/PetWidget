@@ -99,17 +99,29 @@ final class SupabaseService: @unchecked Sendable {
     // MARK: - Pet CRUD
 
     func fetchCurrentPet() async throws -> Pet? {
-        MockUserSettings.logVerbose("fetchCurrentPet()")
+        try await fetchAllPets(limit: 1).last
+    }
+
+    func fetchAllPets(limit: Int = 2) async throws -> [Pet] {
+        MockUserSettings.logVerbose("fetchAllPets(limit: \(limit))")
         let userId = try await currentUserId()
         let pets: [Pet] = try await client
             .from("pets")
             .select()
             .eq("user_id", value: userId.uuidString)
-            .order("created_at", ascending: false)
-            .limit(1)
+            .order("created_at", ascending: true)
+            .limit(limit)
             .execute()
             .value
-        return pets.first
+        return pets
+    }
+
+    func deletePet(petId: UUID) async throws {
+        try await client
+            .from("pets")
+            .delete()
+            .eq("id", value: petId.uuidString)
+            .execute()
     }
 
     func savePet(_ pet: Pet) async throws -> Pet {

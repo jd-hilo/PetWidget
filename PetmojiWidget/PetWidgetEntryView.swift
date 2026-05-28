@@ -28,6 +28,13 @@ struct SmallWidgetView: View {
         Color(hex: entry.expression.accentHex)
     }
 
+    private var chatDeepLink: URL? {
+        guard let petId = entry.petId else {
+            return URL(string: "petmoji://chat")
+        }
+        return URL(string: "petmoji://chat?petId=\(petId.uuidString)")
+    }
+
     var body: some View {
         VStack(alignment: .center, spacing: 0) {
             HStack {
@@ -68,7 +75,7 @@ struct SmallWidgetView: View {
         .containerBackground(for: .widget) {
             WidgetTranslucentBackground()
         }
-        .widgetURL(URL(string: "petmoji://chat"))
+        .widgetURL(chatDeepLink)
     }
 }
 
@@ -76,6 +83,13 @@ struct SmallWidgetView: View {
 
 struct MediumWidgetView: View {
     let entry: PetWidgetEntry
+
+    private var chatDeepLink: URL? {
+        guard let petId = entry.petId else {
+            return URL(string: "petmoji://chat")
+        }
+        return URL(string: "petmoji://chat?petId=\(petId.uuidString)")
+    }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -113,7 +127,7 @@ struct MediumWidgetView: View {
         .containerBackground(for: .widget) {
             WidgetTranslucentBackground()
         }
-        .widgetURL(URL(string: "petmoji://chat"))
+        .widgetURL(chatDeepLink)
     }
 }
 

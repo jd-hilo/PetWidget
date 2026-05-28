@@ -7,6 +7,7 @@ struct PhotoPickerView: View {
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
+    var onCancel: (() -> Void)?
 
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var isLoadingPhotos = false
@@ -79,6 +80,9 @@ struct PhotoPickerView: View {
                     action: onNext,
                     isEnabled: draft.isPhotoStepValid
                 )
+                if let onCancel {
+                    PMOnboardingCancelButton(action: onCancel)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 10)

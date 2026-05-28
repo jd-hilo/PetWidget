@@ -37,6 +37,8 @@ enum MockUserSettings {
         static let phone = "mock_user_phone"
         static let signupCompleted = "signup_completed"
         static let onboardingCompleted = "onboarding_completed"
+        static let hasSeenWelcome = "has_seen_welcome"
+        static let widgetPetId = "widget_pet_id"
         /// Leave-home geofence monitoring (default off until onboarding opt-in).
         static let locationTrackingEnabled = "location_tracking_enabled"
         /// When true, uses dark “widget glass” styling; when false, classic sage + light chrome.

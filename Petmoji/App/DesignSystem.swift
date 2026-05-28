@@ -934,6 +934,21 @@ extension View {
     }
 }
 
+/// Transparent text cancel for add-pet onboarding — place directly under the primary bottom CTA.
+struct PMOnboardingCancelButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let action: () -> Void
+
+    var body: some View {
+        Button("Cancel", action: action)
+            .font(.bodyM)
+            .foregroundStyle(palette.textSecondary)
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Spring Button Style
 
 struct SpringButtonStyle: ButtonStyle {

@@ -34,6 +34,10 @@ struct ChatHistoryStore {
         }
     }
 
+    static func clearHistory(for petId: UUID) {
+        UserDefaults.standard.removeObject(forKey: historyKey(for: petId))
+    }
+
     private static func historyKey(for petId: UUID) -> String {
         keyPrefix + petId.uuidString
     }

@@ -15,11 +15,13 @@ struct PetHomeView: View {
     @State private var isLoadingByPet: [UUID: Bool] = [:]
     @State private var breatheByPet: [UUID: Bool] = [:]
     @State private var showSettings = false
+    @State private var showAddPetOnboarding = false
     @State private var selectedPetForChatRoom: Pet?
     @State private var showChatRoom = false
     @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
     private var pets: [Pet] { appState.availablePets }
+    private var supportsCollapsibleCards: Bool { pets.count > 1 }
     private var expandedPetIDs: Set<UUID> {
         Set(expandedPetIDsRaw.split(separator: ",").compactMap { UUID(uuidString: String($0)) })
     }
@@ -64,7 +66,9 @@ struct PetHomeView: View {
                                     .frame(height: 260)
                             } else {
                                 ForEach(pets) { pet in
-                                    let isExpanded = expandedPetIDs.contains(pet.id)
+                                    let isExpanded = supportsCollapsibleCards
+                                        ? expandedPetIDs.contains(pet.id)
+                                        : true
 
                                     Group {
                                         if isExpanded {
@@ -77,6 +81,7 @@ struct PetHomeView: View {
                                                 contentWidth: contentWidth,
                                                 recentPreviewLimit: recentPreviewLimit,
                                                 heroNamespace: petCardHeroNamespace,
+                                                showsCollapseControl: supportsCollapsibleCards,
                                                 onToggleCardExpansion: {
                                                     toggleExpanded(for: pet.id)
                                                 },
@@ -99,13 +104,18 @@ struct PetHomeView: View {
                                             }
                                         }
                                     }
-                                    .animation(PetCardToggleAnimation.main, value: isExpanded)
-                                    .frame(maxWidth: .infinity)
-                                    .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                            .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
+                                    .animation(
+                                        supportsCollapsibleCards ? PetCardToggleAnimation.main : nil,
+                                        value: isExpanded
                                     )
+                                    .frame(maxWidth: .infinity)
+                                }
+
+                                if appState.canAddPet {
+                                    PMSageCTAButton(title: "add another pet") {
+                                        showAddPetOnboarding = true
+                                    }
+                                    .padding(.top, 4)
                                 }
                             }
                         }
@@ -123,6 +133,14 @@ struct PetHomeView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) { SettingsView() }
+        .fullScreenCover(isPresented: $showAddPetOnboarding) {
+            OnboardingCoordinator(context: .additionalPet {
+                showAddPetOnboarding = false
+            })
+            .environmentObject(appState)
+            .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
+            .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
+        }
         .navigationDestination(isPresented: $showChatRoom) {
             if let pet = selectedPetForChatRoom {
                 PetChatRoomView(pet: pet)
@@ -132,26 +150,40 @@ struct PetHomeView: View {
             await loadMessagesForAllPets()
             reconcilePerPetState()
             reconcilePersistedExpansionWithAvailablePets()
+            if !supportsCollapsibleCards, let petID = pets.first?.id {
+                scheduleHeroBreathe(for: petID)
+            }
         }
         .onChange(of: appState.pendingWidgetDeepLink) { _, link in
-            guard link == .openChat else { return }
+            guard case .openChat = link else { return }
             openDeepLinkedChat()
         }
         .onAppear {
-            if appState.pendingWidgetDeepLink == .openChat {
+            if case .openChat = appState.pendingWidgetDeepLink {
                 openDeepLinkedChat()
             }
         }
     }
 
     private func openDeepLinkedChat() {
-        if let selected = appState.currentPet ?? pets.first {
+        let deepLinkPetId: UUID?
+        if case .openChat(let petId) = appState.pendingWidgetDeepLink {
+            deepLinkPetId = petId
+        } else {
+            deepLinkPetId = nil
+        }
+        appState.pendingWidgetDeepLink = .none
+
+        let selected = deepLinkPetId.flatMap { id in pets.first { $0.id == id } }
+            ?? appState.widgetPet
+            ?? pets.first
+
+        if let selected {
             appState.selectPet(selected)
             setExpanded(true, for: selected.id)
             selectedPetForChatRoom = selected
             showChatRoom = true
         }
-        appState.pendingWidgetDeepLink = .none
     }
 
     private func reconcilePerPetState() {
@@ -164,10 +196,15 @@ struct PetHomeView: View {
 
     private func reconcilePersistedExpansionWithAvailablePets() {
         let validIDs = Set(pets.map(\.id))
+        if pets.count == 1, let onlyPetID = pets.first?.id {
+            persistExpandedIDs([onlyPetID])
+            return
+        }
         persistExpandedIDs(expandedPetIDs.intersection(validIDs))
     }
 
     private func toggleExpanded(for petID: UUID) {
+        guard supportsCollapsibleCards else { return }
         setExpanded(!expandedPetIDs.contains(petID), for: petID)
     }
 
@@ -194,8 +231,10 @@ struct PetHomeView: View {
     /// Waits for the expand spring to mostly settle before starting breathe so expand matches the calmer collapse motion.
     private func scheduleHeroBreathe(for petID: UUID) {
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(0.45))
-            guard expandedPetIDs.contains(petID) else { return }
+            if supportsCollapsibleCards {
+                try? await Task.sleep(for: .seconds(0.45))
+                guard expandedPetIDs.contains(petID) else { return }
+            }
             breatheByPet[petID] = true
         }
     }
@@ -239,7 +278,7 @@ struct PetHomeView: View {
                 recentMessagesByPet[pet.id] = mapped
             }
 
-            if let message = latestMessageByPet[pet.id], pet.id == appState.currentPet?.id {
+            if let message = latestMessageByPet[pet.id], pet.id == appState.widgetPet?.id {
                 WidgetSnapshotSync.writeFromPet(pet, message: message)
             }
         } catch {}
@@ -261,7 +300,7 @@ struct PetHomeView: View {
                 sentAt: latestPetChat.timestamp
             )
             latestMessageByPet[pet.id] = synced
-            if pet.id == appState.currentPet?.id {
+            if pet.id == appState.widgetPet?.id {
                 WidgetSnapshotSync.writeFromPet(pet, message: synced)
             }
         }
@@ -426,6 +465,7 @@ private struct ExpandedPetCardContent: View {
     let contentWidth: CGFloat
     let recentPreviewLimit: Int
     let heroNamespace: Namespace.ID
+    var showsCollapseControl: Bool = true
     let onToggleCardExpansion: () -> Void
     let onOpenChatRoom: () -> Void
     let onSpriteAppeared: () -> Void
@@ -434,15 +474,19 @@ private struct ExpandedPetCardContent: View {
     private var spriteURL: String? { pet.expressions[expression] ?? pet.expressions[.happy] }
     private var heroGeometryID: String { "petCardHero-\(pet.id.uuidString)" }
 
+    private var recentMessagesPanelFill: Color { palette.elevatedCardFill }
+
     var body: some View {
         VStack(spacing: 14) {
             HStack {
                 Text(pet.name).font(.titleL).foregroundStyle(palette.textPrimary).lineLimit(1)
                 Spacer()
-                Button(action: onToggleCardExpansion) {
-                    Label("Collapse", systemImage: "chevron.up").font(.bodyS).foregroundStyle(palette.accentDark)
+                if showsCollapseControl {
+                    Button(action: onToggleCardExpansion) {
+                        Label("Collapse", systemImage: "chevron.up").font(.bodyS).foregroundStyle(palette.accentDark)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
 
             Button(action: onOpenChatRoom) {
@@ -469,14 +513,6 @@ private struct ExpandedPetCardContent: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 18)
-                .background {
-                    PMHomeInsetPanelBackground(cornerRadius: 32)
-                        .opacity(palette.visualStyle == .classic ? 0.75 : 1)
-                }
-                .overlay(
-                    RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        .strokeBorder(palette.border.opacity(0.8), lineWidth: 1.4)
-                )
             }
             .buttonStyle(.plain)
 
@@ -497,7 +533,7 @@ private struct ExpandedPetCardContent: View {
                         TypingIndicator()
                     } else if recentMessages.isEmpty {
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .fill(palette.visualStyle == .widgetGlass ? palette.washMid : palette.elevatedCardFill)
+                            .fill(palette.visualStyle == .widgetGlass ? palette.homeInsetFill : palette.elevatedCardFill)
                             .overlay(
                                 Text("start chatting with your pet")
                                     .font(.bodyM)
@@ -513,17 +549,10 @@ private struct ExpandedPetCardContent: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)
-                .background {
-                    if palette.visualStyle == .widgetGlass {
-                        PMHomeInsetPanelBackground(cornerRadius: 22)
-                    } else {
-                        palette.elevatedCardFill
-                            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-                    }
-                }
+                .background(recentMessagesPanelFill, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .strokeBorder(palette.border.opacity(0.7), lineWidth: 1.2)
+                        .strokeBorder(palette.border.opacity(0.8), lineWidth: 1.2)
                 )
                 .contentShape(Rectangle())
             }

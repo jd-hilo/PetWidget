@@ -6,6 +6,7 @@ enum WidgetSnapshotSync {
     static let appGroupSuiteName = "group.com.petmoji.app"
 
     enum Keys {
+        static let petId = "widget_pet_id"
         static let petName = "pet_name"
         static let message = "widget_message"
         static let expression = "widget_expression"
@@ -16,6 +17,7 @@ enum WidgetSnapshotSync {
     static func writeFromPet(_ pet: Pet, message: PetMessage) {
         let spriteURL = pet.expressions[message.expression] ?? pet.expressions[.happy]
         let defaults = UserDefaults(suiteName: appGroupSuiteName)
+        defaults?.set(pet.id.uuidString, forKey: Keys.petId)
         defaults?.set(pet.name, forKey: Keys.petName)
         defaults?.set(message.content, forKey: Keys.message)
         defaults?.set(message.expression.rawValue, forKey: Keys.expression)

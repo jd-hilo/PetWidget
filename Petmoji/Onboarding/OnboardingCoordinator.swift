@@ -1,5 +1,23 @@
 import SwiftUI
 
+// MARK: - Onboarding Context
+
+enum OnboardingContext {
+    case firstPet
+    case additionalPet(onDismiss: () -> Void)
+
+    var isAdditionalPet: Bool {
+        if case .additionalPet = self { return true }
+        return false
+    }
+
+    func dismissAdditionalPet() {
+        if case .additionalPet(let onDismiss) = self {
+            onDismiss()
+        }
+    }
+}
+
 // MARK: - Onboarding Coordinator
 
 struct OnboardingCoordinator: View {
@@ -7,6 +25,10 @@ struct OnboardingCoordinator: View {
     @Environment(\.petmojiPalette) private var palette
     @StateObject private var draft = OnboardingDraft()
     @State private var path: [OnboardingStep] = []
+    @State private var showDiscardPetConfirm = false
+    @State private var isDiscardingPet = false
+
+    var context: OnboardingContext = .firstPet
 
     enum OnboardingStep: Hashable {
         case personality
@@ -14,54 +36,125 @@ struct OnboardingCoordinator: View {
         case widgetSetup
     }
 
+    private var pendingPetId: UUID? {
+        draft.completedPet?.id
+    }
+
+    private var additionalPetCancelAction: (() -> Void)? {
+        guard context.isAdditionalPet else { return nil }
+        return { handleCancelTapped() }
+    }
+
+    private var progressTotal: Int {
+        context.isAdditionalPet ? 3 : 4
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
-            PhotoPickerView(draft: draft) {
-                path.append(.personality)
-            }
+            PhotoPickerView(
+                draft: draft,
+                onNext: { path.append(.personality) },
+                onCancel: additionalPetCancelAction
+            )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .pmOnboardingToolbar(total: 4, current: 0, balancedBackButton: false)
+            .pmOnboardingToolbar(total: progressTotal, current: 0, balancedBackButton: false)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: OnboardingStep.self) { step in
                 switch step {
                 case .personality:
-                    PersonalityBuilderView(draft: draft) {
-                        path.append(.spriteReveal)
-                    }
+                    PersonalityBuilderView(
+                        draft: draft,
+                        onNext: { path.append(.spriteReveal) },
+                        onCancel: additionalPetCancelAction
+                    )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 1, balancedBackButton: true)
+                    .pmOnboardingToolbar(total: progressTotal, current: 1, balancedBackButton: true)
                     .toolbarBackground(.hidden, for: .navigationBar)
 
                 case .spriteReveal:
-                    ExpressionRevealView(draft: draft) { pet in
-                        draft.completedPet = pet
-                        path.append(.widgetSetup)
-                    }
+                    ExpressionRevealView(
+                        draft: draft,
+                        context: context,
+                        onComplete: handleRevealComplete,
+                        onCancel: additionalPetCancelAction
+                    )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 2, balancedBackButton: false)
+                    .pmOnboardingToolbar(total: progressTotal, current: 2, balancedBackButton: false)
                     .navigationBarBackButtonHidden(true)
 
                 case .widgetSetup:
-                    WidgetSetupView {
-                        // Handoff already set `currentPet` + expression sync on the reveal screen;
-                        // avoid replacing with `draft.completedPet` (can be stale vs. live server row).
-                        if appState.currentPet == nil, let pet = draft.completedPet {
-                            appState.setPet(pet)
-                            appState.startSyncingExpressions(petId: pet.id)
-                        }
-                        appState.setHasCompletedOnboarding(true)
-                    }
+                    WidgetSetupView(
+                        pet: draft.completedPet,
+                        onDone: finishWidgetSetup,
+                        onCancel: additionalPetCancelAction
+                    )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3, balancedBackButton: false)
+                    .pmOnboardingToolbar(total: progressTotal, current: 3, balancedBackButton: false)
                     .navigationBarBackButtonHidden(true)
                 }
             }
         }
         .tint(palette.toolbarTint)
+        .alert("Discard this pet?", isPresented: $showDiscardPetConfirm) {
+            Button("Discard", role: .destructive) {
+                Task { await discardPendingPetAndDismiss() }
+            }
+            Button("Keep editing", role: .cancel) {}
+        } message: {
+            Text("Your new pet will be removed and you'll return home.")
+        }
+        .disabled(isDiscardingPet)
+    }
+
+    private func handleCancelTapped() {
+        if pendingPetId != nil {
+            showDiscardPetConfirm = true
+        } else {
+            dismissFlow()
+        }
+    }
+
+    private func dismissFlow() {
+        context.dismissAdditionalPet()
+    }
+
+    private func handleRevealComplete(_ pet: Pet) {
+        draft.completedPet = pet
+        if context.isAdditionalPet {
+            Task {
+                await appState.loadPets(showLoading: false)
+                context.dismissAdditionalPet()
+            }
+        } else {
+            path.append(.widgetSetup)
+        }
+    }
+
+    @MainActor
+    private func discardPendingPetAndDismiss() async {
+        guard let petId = pendingPetId else {
+            dismissFlow()
+            return
+        }
+        isDiscardingPet = true
+        appState.stopSyncingExpressions()
+        try? await SupabaseService.shared.deletePet(petId: petId)
+        appState.removePetLocally(petId: petId)
+        draft.completedPet = nil
+        isDiscardingPet = false
+        dismissFlow()
+    }
+
+    private func finishWidgetSetup() {
+        if appState.currentPet == nil, let pet = draft.completedPet {
+            appState.setPet(pet)
+            appState.startSyncingExpressions(petId: pet.id)
+        }
+        appState.setHasCompletedOnboarding(true)
     }
 }
 

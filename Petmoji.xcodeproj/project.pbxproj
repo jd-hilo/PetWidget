@@ -45,6 +45,7 @@
 		F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */; };
 		F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */; };
 		F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */; };
+		F7BRAND012F9E8D7C006EDD01 /* BrandLandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -114,6 +115,7 @@
 		F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpStepView.swift; sourceTree = "<group>"; };
 		F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthCoordinator.swift; sourceTree = "<group>"; };
 		F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandLandingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -197,6 +199,7 @@
 			isa = PBXGroup;
 			children = (
 				A1B2C3D32F9E8D7C006EDD01 /* AppearanceSettings.swift */,
+				F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */,
 				C9EFEE996E1C4B444F152178 /* ContentView.swift */,
 				E367B57172A90687CF9B9982 /* DesignSystem.swift */,
 				F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */,
@@ -389,6 +392,7 @@
 				DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */,
 				C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */,
 				DACC0F73BE1E01340A6A9DA3 /* ContentView.swift in Sources */,
+				F7BRAND012F9E8D7C006EDD01 /* BrandLandingView.swift in Sources */,
 				E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */,
 				F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,

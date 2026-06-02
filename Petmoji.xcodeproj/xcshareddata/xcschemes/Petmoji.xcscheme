@@ -65,6 +65,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "-testPetMessage"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "-skipOnboardingToWidgetSetup"
             isEnabled = "NO">
          </CommandLineArgument>

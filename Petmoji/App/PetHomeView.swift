@@ -154,6 +154,12 @@ struct PetHomeView: View {
                 scheduleHeroBreathe(for: petID)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .petMessageDelivered)) { notification in
+            guard let raw = notification.userInfo?["pet_id"] as? String,
+                  let petId = UUID(uuidString: raw),
+                  let pet = pets.first(where: { $0.id == petId }) else { return }
+            Task { await refreshMessagePreview(for: pet) }
+        }
         .onChange(of: appState.pendingWidgetDeepLink) { _, link in
             guard case .openChat = link else { return }
             openDeepLinkedChat()
@@ -217,7 +223,7 @@ struct PetHomeView: View {
             } else {
                 next.remove(petID)
                 breatheByPet[petID] = false
-                refreshRecentMessagesFromLocalHistory(for: petID)
+                refreshMessagePreview(forPetID: petID)
             }
             persistExpandedIDs(next)
         }
@@ -252,58 +258,46 @@ struct PetHomeView: View {
     private func loadMessageData(for pet: Pet) async {
         isLoadingByPet[pet.id] = true
         defer { isLoadingByPet[pet.id] = false }
-        do {
-            let localHistory = ChatHistoryStore.loadHistory(for: pet.id)
-            if !localHistory.isEmpty {
-                recentMessagesByPet[pet.id] = Array(localHistory.suffix(8))
-                if let latestPetChat = localHistory.last(where: { $0.isFromPet }) {
-                    latestMessageByPet[pet.id] = PetMessage(
-                        id: UUID(),
-                        petId: pet.id,
-                        content: latestPetChat.content,
-                        expression: latestPetChat.expression ?? .happy,
-                        triggerType: .chatReply,
-                        scheduledFor: latestPetChat.timestamp,
-                        sentAt: latestPetChat.timestamp
-                    )
-                }
-            }
-
-            if let fetchedLatest = try await SupabaseService.shared.fetchLatestMessage(for: pet.id) {
-                latestMessageByPet[pet.id] = fetchedLatest
-            }
-            let recent = try await SupabaseService.shared.fetchRecentMessages(for: pet.id, limit: 4)
-            let mapped = recent.reversed().map { ChatMessage(content: $0.content, isFromPet: true, expression: $0.expression) }
-            if localHistory.isEmpty {
-                recentMessagesByPet[pet.id] = mapped
-            }
-
-            if let message = latestMessageByPet[pet.id], pet.id == appState.widgetPet?.id {
-                WidgetSnapshotSync.writeFromPet(pet, message: message)
-            }
-        } catch {}
+        await refreshMessagePreview(for: pet)
     }
 
-    private func refreshRecentMessagesFromLocalHistory(for petID: UUID) {
-        guard let pet = pets.first(where: { $0.id == petID }) else { return }
-        let localHistory = ChatHistoryStore.loadHistory(for: pet.id)
-        guard !localHistory.isEmpty else { return }
-        recentMessagesByPet[pet.id] = Array(localHistory.suffix(8))
-        if let latestPetChat = localHistory.last(where: { $0.isFromPet }) {
-            let synced = PetMessage(
-                id: UUID(),
-                petId: pet.id,
-                content: latestPetChat.content,
-                expression: latestPetChat.expression ?? .happy,
-                triggerType: .chatReply,
-                scheduledFor: latestPetChat.timestamp,
-                sentAt: latestPetChat.timestamp
-            )
-            latestMessageByPet[pet.id] = synced
-            if pet.id == appState.widgetPet?.id {
-                WidgetSnapshotSync.writeFromPet(pet, message: synced)
-            }
+    private func refreshMessagePreview(for pet: Pet) async {
+        await ChatHistoryStore.mergeServerMessages(for: pet.id)
+
+        let history = ChatHistoryStore.loadHistory(for: pet.id)
+        if !history.isEmpty {
+            recentMessagesByPet[pet.id] = Array(history.suffix(8))
         }
+
+        if let fetchedLatest = try? await SupabaseService.shared.fetchLatestMessage(for: pet.id) {
+            ChatHistoryStore.appendPetMessage(fetchedLatest)
+            latestMessageByPet[pet.id] = fetchedLatest
+            let refreshedHistory = ChatHistoryStore.loadHistory(for: pet.id)
+            recentMessagesByPet[pet.id] = Array(refreshedHistory.suffix(8))
+        } else if let latestPetChat = history.last(where: { $0.isFromPet }) {
+            latestMessageByPet[pet.id] = petMessage(from: latestPetChat, petId: pet.id)
+        }
+
+        if let message = latestMessageByPet[pet.id], pet.id == appState.widgetPet?.id {
+            WidgetSnapshotSync.writeFromPet(pet, message: message)
+        }
+    }
+
+    private func refreshMessagePreview(forPetID petID: UUID) {
+        guard let pet = pets.first(where: { $0.id == petID }) else { return }
+        Task { await refreshMessagePreview(for: pet) }
+    }
+
+    private func petMessage(from chat: ChatMessage, petId: UUID) -> PetMessage {
+        PetMessage(
+            id: chat.id,
+            petId: petId,
+            content: chat.content,
+            expression: chat.expression ?? .happy,
+            triggerType: .chatReply,
+            scheduledFor: chat.timestamp,
+            sentAt: chat.timestamp
+        )
     }
 }
 

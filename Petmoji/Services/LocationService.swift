@@ -276,8 +276,7 @@ extension LocationService: CLLocationManagerDelegate {
         WidgetReloader.reload()
 
         Task {
-            guard let petId = storedPetId() else { return }
-            try? await SupabaseService.shared.reportLocationEvent(petId: petId, event: "left_home")
+            await deliverLocationEvent("left_home")
         }
     }
 
@@ -286,11 +285,28 @@ extension LocationService: CLLocationManagerDelegate {
         guard isLocationTrackingEnabled else { return }
         sharedDefaults?.removeObject(forKey: "departure_time")
         MessageScheduler.shared.cancelBeenGoneNotifications()
-        WidgetReloader.reload()
 
         Task {
-            guard let petId = storedPetId() else { return }
-            try? await SupabaseService.shared.reportLocationEvent(petId: petId, event: "returned")
+            await deliverLocationEvent("returned")
+        }
+    }
+
+    @MainActor
+    private func deliverLocationEvent(_ event: String) async {
+        guard let petId = storedPetId() else {
+            WidgetReloader.reload()
+            return
+        }
+        do {
+            let message = try await SupabaseService.shared.reportLocationEvent(petId: petId, event: event)
+            if let pet = try await SupabaseService.shared.fetchPet(by: petId) {
+                PetMessageDelivery.deliver(pet: pet, message: message)
+            } else {
+                WidgetReloader.reload()
+            }
+        } catch {
+            print("[LocationService] \(event) message failed: \(error)")
+            WidgetReloader.reload()
         }
     }
 }

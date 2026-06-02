@@ -33,7 +33,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        BeenGoneBackgroundScheduler.registerHandlers()
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        Task { @MainActor in
+            await PetMessageDelivery.refreshWidgetFromServer()
+        }
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -61,22 +68,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     @MainActor
     private func refreshWidgetData() async {
-        let defaults = UserDefaults.standard
-        let widgetPetId: UUID? = {
-            guard let raw = defaults.string(forKey: MockUserSettings.Keys.widgetPetId) else { return nil }
-            return UUID(uuidString: raw)
-        }()
-
-        let pets = (try? await SupabaseService.shared.fetchAllPets()) ?? []
-        let widgetPet = widgetPetId.flatMap { id in pets.first { $0.id == id } } ?? pets.first
-
-        guard let pet = widgetPet,
-              let message = try? await SupabaseService.shared.fetchLatestMessage(for: pet.id) else {
-            WidgetReloader.reload()
-            return
-        }
-
-        WidgetSnapshotSync.writeFromPet(pet, message: message)
+        await PetMessageDelivery.refreshWidgetFromServer()
     }
 }
 
@@ -162,11 +154,22 @@ struct RootView: View {
         .task {
             if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
                 await appState.bootstrap()
+#if DEBUG
+                if shouldSendTestPetMessage, appState.isAuthenticated {
+                    try? await PetMessageDelivery.sendTestMessage(appState: appState)
+                }
+#endif
             } else {
                 appState.markBootstrapComplete()
             }
         }
     }
+
+#if DEBUG
+    private var shouldSendTestPetMessage: Bool {
+        ProcessInfo.processInfo.arguments.contains("-testPetMessage")
+    }
+#endif
 
 #if DEBUG
     private func makeDebugRogerPet(useMockSprites: Bool) -> Pet {
@@ -488,6 +491,7 @@ final class AppState: ObservableObject {
             }
             syncHomeGeofenceFromCurrentPet()
             await syncWidgetSnapshot()
+            await PetMessageDelivery.refreshWidgetFromServer()
         } catch {
             // No pets yet — show onboarding
         }

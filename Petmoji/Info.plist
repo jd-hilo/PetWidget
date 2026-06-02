@@ -50,6 +50,11 @@
 		<string>location</string>
 		<string>remote-notification</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.petmoji.been-gone-2h</string>
+		<string>com.petmoji.been-gone-6h</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string></string>
 	<key>UISupportedInterfaceOrientations</key>

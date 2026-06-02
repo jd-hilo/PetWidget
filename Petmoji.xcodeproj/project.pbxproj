@@ -28,6 +28,8 @@
 		DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB74AD025C1FF75210D44E4 /* ChatView.swift */; };
 		E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E367B57172A90687CF9B9982 /* DesignSystem.swift */; };
 		EBCAA8C98D86B2BDF29F0DD7 /* MessageScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */; };
+		F7DELIV012F9E8D7C006EDD01 /* PetMessageDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */; };
+		F7BGONE012F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BGONE002F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift */; };
 		ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9844B5416F8DE38FCA025428 /* LocationService.swift */; };
 		EFF5B90AECAEC78FD9950367 /* PetWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B15C9F26B1590FEDD4031F /* PetWidgetEntryView.swift */; };
 		F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 05D7681EDDDE782F2D2CA814 /* Assets.xcassets */; };
@@ -92,6 +94,8 @@
 		A0EE906FD9A6976FFE99CD77 /* Petmoji.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Petmoji.entitlements; sourceTree = "<group>"; };
 		ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageScheduler.swift; sourceTree = "<group>"; };
+		F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetMessageDelivery.swift; sourceTree = "<group>"; };
+		F7BGONE002F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeenGoneBackgroundScheduler.swift; sourceTree = "<group>"; };
 		BE4275124830FEE1D8B137A8 /* PetHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetHomeView.swift; sourceTree = "<group>"; };
 		C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpressionRevealView.swift; sourceTree = "<group>"; };
 		C9EFEE996E1C4B444F152178 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -227,6 +231,8 @@
 			children = (
 				26DB63C95E1A7663528035EC /* ClaudeService.swift */,
 				9844B5416F8DE38FCA025428 /* LocationService.swift */,
+				F7BGONE002F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift */,
+				F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */,
 				B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */,
 				9C1681768AB9E46038876ECF /* SupabaseService.swift */,
 				F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */,
@@ -397,6 +403,8 @@
 				F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,
 				ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */,
+				F7BGONE012F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift in Sources */,
+				F7DELIV012F9E8D7C006EDD01 /* PetMessageDelivery.swift in Sources */,
 				EBCAA8C98D86B2BDF29F0DD7 /* MessageScheduler.swift in Sources */,
 				1E4B9C810D7BF0E33A9BA04B /* OnboardingCoordinator.swift in Sources */,
 				292F7496F3240B0562708EBF /* PersonalityBuilderView.swift in Sources */,

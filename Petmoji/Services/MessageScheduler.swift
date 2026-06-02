@@ -27,58 +27,14 @@ final class MessageScheduler {
         return granted ?? false
     }
 
-    // MARK: - Been gone notifications (scheduled on departure)
+    // MARK: - Been gone follow-ups (AI messages via background refresh at ~2h / ~6h)
 
     func scheduleBeenGoneNotifications() {
-        // Cancel any existing ones
-        center.removePendingNotificationRequests(withIdentifiers: [
-            "been_gone_2h", "been_gone_6h"
-        ])
-
-        let petName = sharedDefaults?.string(forKey: Self.petNameKey) ?? "your pet"
-
-        // 2 hours after departure
-        let content2h = UNMutableNotificationContent()
-        content2h.title = petName
-        content2h.body = "it has been two hours. i am fine. i am not waiting by the door."
-        content2h.sound = .default
-        content2h.userInfo = ["trigger": "been_gone_2h"]
-
-        let trigger2h = UNTimeIntervalNotificationTrigger(
-            timeInterval: 2 * 60 * 60,
-            repeats: false
-        )
-        let request2h = UNNotificationRequest(
-            identifier: "been_gone_2h",
-            content: content2h,
-            trigger: trigger2h
-        )
-
-        // 6 hours after departure
-        let content6h = UNMutableNotificationContent()
-        content6h.title = petName
-        content6h.body = "ok i literally cannot believe this"
-        content6h.sound = .default
-        content6h.userInfo = ["trigger": "been_gone_6h"]
-
-        let trigger6h = UNTimeIntervalNotificationTrigger(
-            timeInterval: 6 * 60 * 60,
-            repeats: false
-        )
-        let request6h = UNNotificationRequest(
-            identifier: "been_gone_6h",
-            content: content6h,
-            trigger: trigger6h
-        )
-
-        center.add(request2h)
-        center.add(request6h)
+        BeenGoneBackgroundScheduler.scheduleFollowUps()
     }
 
     func cancelBeenGoneNotifications() {
-        center.removePendingNotificationRequests(withIdentifiers: [
-            "been_gone_2h", "been_gone_6h"
-        ])
+        BeenGoneBackgroundScheduler.cancelFollowUps()
     }
 
     // MARK: - Store pet metadata for notifications

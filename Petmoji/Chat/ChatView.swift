@@ -114,10 +114,26 @@ struct ChatPanel: View {
             }
         }
         .onAppear {
-            let loaded = ChatHistoryStore.loadHistory(for: pet.id)
-            messages = loaded
-            if loaded.isEmpty {
-                Task { await sendPetOpening() }
+            Task {
+                await ChatHistoryStore.mergeServerMessages(for: pet.id)
+                let loaded = ChatHistoryStore.loadHistory(for: pet.id)
+                await MainActor.run {
+                    messages = loaded
+                    if loaded.isEmpty {
+                        Task { await sendPetOpening() }
+                    }
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .petMessageDelivered)) { notification in
+            guard let raw = notification.userInfo?["pet_id"] as? String,
+                  raw == pet.id.uuidString else { return }
+            Task {
+                await ChatHistoryStore.mergeServerMessages(for: pet.id)
+                let loaded = ChatHistoryStore.loadHistory(for: pet.id)
+                await MainActor.run {
+                    messages = loaded
+                }
             }
         }
         .onChange(of: messages) { _, newMessages in

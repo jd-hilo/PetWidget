@@ -116,7 +116,7 @@ async function generateLocationMessage(
     ? "The owner just left home. The pet is reacting to being left alone."
     : "The owner just came back home after being away. The pet is reacting to their return.";
 
-  const systemPrompt = `You are ${pet.name}, a ${pet.species}. Personality: ${pet.personality_traits.join(", ")}. Energy: ${pet.energy_level}/10. Nemesis: ${pet.biggest_enemy}. Vibe: ${pet.base_mood}. Speak in first person, short and dramatic. Max 80 characters.`;
+  const systemPrompt = `You are ${pet.name}, a ${pet.species}. Personality: ${pet.personality_traits.join(", ")}. Energy: ${pet.energy_level}/10. Things that set you off: ${pet.biggest_enemy}. Vibe: ${pet.base_mood}. Speak in first person, short and dramatic. Max 80 characters.`;
 
   const userPrompt = `${eventContext}
 

@@ -169,11 +169,14 @@ final class OnboardingDraft: ObservableObject {
     @Published var gender: PetGender = .boy
     @Published var selectedTraits: Set<PersonalityTrait> = []
     @Published var energyLevel: Double = 5.0
-    @Published var biggestEnemy: Enemy = .vacuumCleaner
+    @Published var selectedTriggers: Set<PetTrigger> = []
+    @Published var customTrigger: String = ""
     @Published var baseMood: BaseMood = .chill
     @Published var completedPet: Pet?
     @Published var generatedExpressions: ExpressionMap = ExpressionMap()
 
     var isPhotoStepValid: Bool { !photos.isEmpty }
-    var isPersonalityStepValid: Bool { selectedTraits.count == 3 }
+    var isPersonalityStepValid: Bool {
+        selectedTraits.count == 3 && isTriggersStepValid
+    }
 }

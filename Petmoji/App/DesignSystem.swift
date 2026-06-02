@@ -635,7 +635,7 @@ struct PMTraitPill: View {
     }
 }
 
-// MARK: - Enemy / Mood Chip
+// MARK: - Trigger / Mood Chip
 
 struct PMChip: View {
     @Environment(\.petmojiPalette) private var palette

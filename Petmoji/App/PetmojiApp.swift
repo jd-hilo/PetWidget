@@ -137,20 +137,24 @@ struct RootView: View {
                     onSetPet: appState.setPet(_:),
                     useMockSprites: shouldUseMockSprites
                 )
-            } else if !appState.pets.isEmpty, appState.hasCompletedOnboarding {
+            } else if appState.isBootstrapping || appState.isLoading {
+                BrandLandingView(mode: .loading)
+            } else if !appState.isAuthenticated && !shouldSkipSignUp {
+                if !appState.hasSeenWelcome {
+                    BrandLandingView(mode: .welcome) {
+                        appState.setHasSeenWelcome(true)
+                    }
+                } else {
+                    AuthCoordinator()
+                }
+            } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
                 NavigationStack {
                     PetHomeView()
                 }
-            } else if appState.isBootstrapping || appState.isLoading {
-                BrandLandingView(mode: .loading)
-            } else if !appState.hasCompletedSignUp, !appState.hasSeenWelcome, !shouldSkipSignUp {
-                BrandLandingView(mode: .welcome) {
-                    appState.setHasSeenWelcome(true)
-                }
-            } else if !appState.hasCompletedSignUp && !shouldSkipSignUp {
-                AuthCoordinator()
-            } else {
+            } else if appState.isAuthenticated {
                 OnboardingCoordinator()
+            } else {
+                AuthCoordinator()
             }
         }
         .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
@@ -175,7 +179,8 @@ struct RootView: View {
             expressions: useMockSprites ? debugTesterExpressions() : ExpressionMap(),
             personalityTraits: [.dramatic, .mischievous, .sweet],
             energyLevel: 7,
-            biggestEnemy: .vacuumCleaner,
+            triggers: [.vacuumCleaner],
+            customTrigger: nil,
             baseMood: .mildlySuspicious,
             homeLat: nil,
             homeLng: nil,
@@ -288,6 +293,7 @@ final class AppState: ObservableObject {
     @Published var widgetPetId: UUID?
     @Published var isLoading = false
     @Published private(set) var isBootstrapping = true
+    @Published private(set) var isAuthenticated = false
     @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
 
     // MARK: - User account cache (profiles + local prefs)
@@ -408,14 +414,26 @@ final class AppState: ObservableObject {
     func bootstrap() async {
         defer { isBootstrapping = false }
         if await supabase.restoreSessionIfPresent() {
+            isAuthenticated = true
             await restoreAuthenticatedSession()
         } else {
-            await loadPets()
+            applyUnauthenticatedState()
         }
+    }
+
+    /// Clears in-memory app data when there is no Supabase session (stale UserDefaults must not unlock the app).
+    func applyUnauthenticatedState() {
+        isAuthenticated = false
+        stopSyncingExpressions()
+        currentPet = nil
+        pets = []
+        setWidgetPetId(nil)
+        setHasCompletedSignUp(false)
     }
 
     /// After sign-in or session restore: fetch pets first (routes to home when present), then profile cache.
     func restoreAuthenticatedSession(showLoading: Bool = true) async {
+        isAuthenticated = true
         await loadPets(showLoading: showLoading)
         await hydrateFromProfile()
     }
@@ -442,6 +460,7 @@ final class AppState: ObservableObject {
     }
 
     func completeSignUp(from draft: SignUpDraft) async {
+        isAuthenticated = true
         let name = draft.name.trimmingCharacters(in: .whitespaces)
         let email = draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
         setUserDisplayName(name)
@@ -597,9 +616,7 @@ final class AppState: ObservableObject {
     func resetForOnboarding() async {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
-        currentPet = nil
-        pets = []
-        setWidgetPetId(nil)
+        applyUnauthenticatedState()
         setHasCompletedOnboarding(false)
     }
 
@@ -607,11 +624,8 @@ final class AppState: ObservableObject {
     func signOut() async {
         stopSyncingExpressions()
         try? await SupabaseService.shared.client.auth.signOut()
-        currentPet = nil
-        pets = []
-        setWidgetPetId(nil)
+        applyUnauthenticatedState()
         setHasCompletedOnboarding(false)
-        setHasCompletedSignUp(false)
         setUserDisplayName("")
         setUserEmail("")
         setUserPhone("")

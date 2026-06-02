@@ -141,11 +141,14 @@ struct PersonalityBuilderView: View {
             }
         case 3:
             PersonalitySection(
-                title: "biggest enemy",
+                title: "what sets them off?",
                 gradient: [Color.pmClayLight, Color.pmClayMid],
                 titleColor: Color.pmClayDark
             ) {
-                EnemyGridView(selectedEnemy: $draft.biggestEnemy)
+                TriggerSelectorView(
+                    selectedTriggers: $draft.selectedTriggers,
+                    customTrigger: $draft.customTrigger
+                )
             }
         case 4:
             PersonalitySection(
@@ -216,7 +219,8 @@ struct PersonalityBuilderView: View {
         switch activeStep {
         case 0: return true
         case 1: return draft.selectedTraits.count == 3
-        case 2, 3, 4: return true
+        case 2, 4: return true
+        case 3: return draft.isTriggersStepValid
         default: return false
         }
     }
@@ -249,7 +253,7 @@ private struct PersonalityWizardStepper: View {
     let totalSteps: Int
     let onSelectStep: (Int) -> Void
 
-    private let labels = ["gender", "traits", "energy", "enemy", "mood"]
+    private let labels = ["gender", "traits", "energy", "triggers", "mood"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -346,7 +350,7 @@ private struct PersonalityReviewSummary: View {
                     reviewRow(title: "gender", value: draft.gender.displayName, step: 0)
                     reviewRow(title: "traits", value: traitSummary, step: 1)
                     reviewRow(title: "energy", value: "\(Int(draft.energyLevel))/10", step: 2)
-                    reviewRow(title: "enemy", value: draft.biggestEnemy.displayName, step: 3)
+                    reviewRow(title: "triggers", value: draft.triggersReviewSummary, step: 3)
                     reviewRow(title: "vibe", value: draft.baseMood.displayName, step: 4, showDivider: false)
                 }
                 .pmSageCard(cornerRadius: 20)
@@ -498,23 +502,75 @@ struct EnergySliderView: View {
     }
 }
 
-// MARK: - Enemy Grid
+// MARK: - Trigger Selector
 
-struct EnemyGridView: View {
-    @Binding var selectedEnemy: Enemy
+private enum TriggerSelectorConfig {
+    static let maxPresetSelections = 3
+    static let maxCustomLength = 40
+}
 
-    let columns = [GridItem(.flexible()), GridItem(.flexible())]
+struct TriggerSelectorView: View {
+    @Environment(\.petmojiPalette) private var palette
+    @Binding var selectedTriggers: Set<PetTrigger>
+    @Binding var customTrigger: String
+
+    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(Enemy.allCases, id: \.self) { enemy in
-                PMChip(
-                    label: enemy.displayName,
-                    isSelected: selectedEnemy == enemy
-                ) {
-                    selectedEnemy = enemy
+        VStack(alignment: .leading, spacing: 16) {
+            Text("pick up to \(TriggerSelectorConfig.maxPresetSelections) (or add your own below)")
+                .font(.bodyS)
+                .foregroundStyle(palette.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(PetTrigger.allCases, id: \.self) { trigger in
+                    PMChip(
+                        label: trigger.displayName,
+                        isSelected: selectedTriggers.contains(trigger)
+                    ) {
+                        toggleTrigger(trigger)
+                    }
                 }
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("something else?")
+                    .font(.bodyM)
+                    .bold()
+                    .foregroundStyle(palette.accentDark)
+
+                TextField("e.g. skateboards, squirrels...", text: $customTrigger)
+                    .font(.bodyL)
+                    .foregroundStyle(palette.textPrimary)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .tint(palette.accent)
+                    .onChange(of: customTrigger) { _, newValue in
+                        if newValue.count > TriggerSelectorConfig.maxCustomLength {
+                            customTrigger = String(newValue.prefix(TriggerSelectorConfig.maxCustomLength))
+                        }
+                    }
+                    .padding(14)
+                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(palette.border, lineWidth: 1.5)
+                    )
+
+                Text("\(customTrigger.count)/\(TriggerSelectorConfig.maxCustomLength)")
+                    .font(.bodyS)
+                    .foregroundStyle(palette.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+
+    private func toggleTrigger(_ trigger: PetTrigger) {
+        if selectedTriggers.contains(trigger) {
+            selectedTriggers.remove(trigger)
+        } else if selectedTriggers.count < TriggerSelectorConfig.maxPresetSelections {
+            selectedTriggers.insert(trigger)
         }
     }
 }

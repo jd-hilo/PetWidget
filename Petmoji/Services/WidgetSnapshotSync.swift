@@ -14,6 +14,19 @@ enum WidgetSnapshotSync {
     }
 
     @MainActor
+    static func clear() {
+        let defaults = UserDefaults(suiteName: appGroupSuiteName)
+        defaults?.removeObject(forKey: Keys.petId)
+        defaults?.removeObject(forKey: Keys.petName)
+        defaults?.removeObject(forKey: Keys.message)
+        defaults?.removeObject(forKey: Keys.expression)
+        defaults?.removeObject(forKey: Keys.spriteURL)
+        defaults?.removeObject(forKey: "pet_id")
+        defaults?.removeObject(forKey: "pet_name")
+        WidgetReloader.reload()
+    }
+
+    @MainActor
     static func writeFromPet(_ pet: Pet, message: PetMessage) {
         let spriteURL = pet.expressions[message.expression] ?? pet.expressions[.happy]
         let defaults = UserDefaults(suiteName: appGroupSuiteName)

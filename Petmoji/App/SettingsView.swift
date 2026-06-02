@@ -20,11 +20,6 @@ struct SettingsView: View {
     @State private var nameUpdateTask: Task<Void, Never>?
     @State private var isUpdatingHome = false
     @State private var homeLocationError: String?
-#if DEBUG
-    @State private var isSendingTestMessage = false
-    @State private var testMessagePreview: String?
-    @State private var testMessageError: String?
-#endif
     @ObservedObject private var locationService = LocationService.shared
 
     private var pet: Pet? { appState.currentPet }
@@ -391,36 +386,6 @@ struct SettingsView: View {
                 .padding(.horizontal, 16)
         }
 
-#if DEBUG
-        SettingsSageSection(
-            title: "developer",
-            footer: "Calls the live location-event edge function (Claude) and pushes the result to your widget and a notification."
-        ) {
-            Button {
-                sendTestPetMessage()
-            } label: {
-                Text(isSendingTestMessage ? "sending test message…" : "send test pet message")
-                    .font(.bodyL)
-                    .foregroundStyle(palette.accentDark)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .disabled(isSendingTestMessage || pet == nil)
-
-            if let testMessagePreview {
-                Text("“\(testMessagePreview)”")
-                    .font(.bodyM)
-                    .foregroundStyle(palette.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            if let testMessageError {
-                Text(testMessageError)
-                    .font(.bodyS)
-                    .foregroundStyle(.red.opacity(0.9))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-#endif
-
         SettingsSageSection(title: "danger zone", titleColor: .red) {
             Button("delete pet", role: .destructive) {
                 showDeletePetConfirm = true
@@ -453,23 +418,6 @@ struct SettingsView: View {
             }
         }
     }
-
-#if DEBUG
-    private func sendTestPetMessage() {
-        testMessageError = nil
-        testMessagePreview = nil
-        isSendingTestMessage = true
-        Task {
-            defer { isSendingTestMessage = false }
-            do {
-                let content = try await PetMessageDelivery.sendTestMessage(appState: appState)
-                testMessagePreview = content
-            } catch {
-                testMessageError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            }
-        }
-    }
-#endif
 
     private func updateHomeLocation() {
         guard let pet else {

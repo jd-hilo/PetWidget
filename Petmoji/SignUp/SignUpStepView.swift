@@ -83,7 +83,7 @@ struct SignUpCompletedSummaryList: View {
     private func summaryValueFont(for step: SignUpStep) -> Font {
         switch step {
         case .name: return .titleL
-        case .email, .phone, .password: return .bodyL
+        case .email, .phone, .otp: return .bodyL
         }
     }
 }
@@ -105,13 +105,16 @@ struct SignUpActiveStepView: View {
     @ObservedObject var draft: SignUpDraft
     let step: SignUpStep
     @FocusState.Binding var focusedStep: SignUpStep?
+    var resendCooldownRemaining: Int = 0
+    var isResendDisabled: Bool = false
+    var onResendOTP: (() -> Void)?
 
     private var headline: String {
         switch step {
         case .name: return "what's your full name?"
         case .email: return "what's your email?"
         case .phone: return "what's your phone number?"
-        case .password: return "create a password"
+        case .otp: return ""
         }
     }
 
@@ -120,16 +123,18 @@ struct SignUpActiveStepView: View {
         case .name: return "enter full name..."
         case .email: return "enter email..."
         case .phone: return "enter phone..."
-        case .password: return "password"
+        case .otp: return ""
         }
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(headline)
-                .font(.displayL)
-                .foregroundStyle(palette.accentDark)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if step != .otp {
+                Text(headline)
+                    .font(.displayL)
+                    .foregroundStyle(palette.accentDark)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
 
             activeField
         }
@@ -180,41 +185,14 @@ struct SignUpActiveStepView: View {
                 .tint(palette.accent)
                 .pmSignUpFieldChrome()
 
-        case .password:
-            VStack(spacing: 12) {
-                SecureField(placeholder, text: $draft.password)
-                    .font(.titleL)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(palette.textPrimary)
-                    .textContentType(.newPassword)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .focused($focusedStep, equals: .password)
-                    .submitLabel(.continue)
-                    .tint(palette.accent)
-                    .pmSignUpFieldChrome()
-
-                SecureField("confirm password...", text: $draft.confirmPassword)
-                    .font(.titleL)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(palette.textPrimary)
-                    .textContentType(.newPassword)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .submitLabel(.done)
-                    .tint(palette.accent)
-                    .pmSignUpFieldChrome()
-
-                if !draft.password.isEmpty && draft.password != draft.confirmPassword {
-                    Text("Passwords must match.")
-                        .font(.bodyS)
-                        .foregroundStyle(.red.opacity(0.85))
-                } else if !draft.password.isEmpty && draft.password.count < AuthPasswordConfig.minLength {
-                    Text("At least \(AuthPasswordConfig.minLength) characters.")
-                        .font(.bodyS)
-                        .foregroundStyle(palette.textSecondary)
-                }
-            }
+        case .otp:
+            EmailOTPFieldView(
+                code: $draft.otpCode,
+                email: draft.email,
+                resendCooldownRemaining: resendCooldownRemaining,
+                isResendDisabled: isResendDisabled,
+                onResend: onResendOTP
+            )
         }
     }
 }

@@ -10,6 +10,8 @@ struct SignUpCoordinator: View {
     @FocusState private var focusedStep: SignUpStep?
     @State private var isSubmitting = false
     @State private var authError: String?
+    @State private var resendCooldownRemaining = 0
+    @State private var resendCooldownTask: Task<Void, Never>?
 
     var onSwitchToSignIn: () -> Void = {}
 
@@ -21,7 +23,7 @@ struct SignUpCoordinator: View {
 
     private var scrollAnchorID: String {
         switch step {
-        case .password: return "signup-active-password"
+        case .otp: return "signup-active-otp"
         case .phone: return "signup-active-phone"
         case .email: return "signup-active-email"
         case .name: return "signup-active-name"
@@ -46,7 +48,10 @@ struct SignUpCoordinator: View {
                         SignUpActiveStepView(
                             draft: draft,
                             step: step,
-                            focusedStep: $focusedStep
+                            focusedStep: $focusedStep,
+                            resendCooldownRemaining: resendCooldownRemaining,
+                            isResendDisabled: isSubmitting,
+                            onResendOTP: resendOTP
                         )
                         .id(scrollAnchorID)
                         .transition(activeStepTransition)
@@ -74,6 +79,10 @@ struct SignUpCoordinator: View {
                 }
                 .onAppear {
                     focusedStep = .name
+                }
+                .onDisappear {
+                    resendCooldownTask?.cancel()
+                    resendCooldownTask = nil
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -128,12 +137,14 @@ struct SignUpCoordinator: View {
     private var ctaTitle: String {
         if isSubmitting {
             switch step {
-            case .password: return "creating account…"
+            case .phone: return "sending code…"
+            case .otp: return "verifying…"
             default: return "continue →"
             }
         }
         switch step {
-        case .password: return "create account →"
+        case .phone: return "send code →"
+        case .otp: return "verify →"
         default: return "continue →"
         }
     }
@@ -147,6 +158,7 @@ struct SignUpCoordinator: View {
     }
 
     private func focusActiveStep(_ newStep: SignUpStep) {
+        guard newStep != .otp else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             focusedStep = newStep
         }
@@ -155,6 +167,10 @@ struct SignUpCoordinator: View {
     private func goToStep(_ target: SignUpStep) {
         focusedStep = nil
         authError = nil
+        if target.rawValue <= SignUpStep.phone.rawValue {
+            draft.clearOTP()
+            stopResendCooldown()
+        }
         withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             step = target
         }
@@ -167,8 +183,10 @@ struct SignUpCoordinator: View {
         authError = nil
 
         switch step {
-        case .password:
-            Task { await signUpAndComplete() }
+        case .phone:
+            Task { await sendOTPAndAdvance() }
+        case .otp:
+            Task { await verifyOTPAndComplete() }
         default:
             guard let next = SignUpStep(rawValue: step.rawValue + 1) else { return }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
@@ -181,11 +199,42 @@ struct SignUpCoordinator: View {
         draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func signUpAndComplete() async {
+    private func sendOTPAndAdvance() async {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            try await supabase.signUp(email: trimmedEmail, password: draft.password)
+            try await supabase.sendEmailOTP(email: trimmedEmail, shouldCreateUser: true)
+            startResendCooldown()
+            draft.clearOTP()
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+                step = .otp
+            }
+        } catch {
+            authError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    private func resendOTP() {
+        guard !isSubmitting, resendCooldownRemaining == 0 else { return }
+        authError = nil
+        Task {
+            isSubmitting = true
+            defer { isSubmitting = false }
+            do {
+                try await supabase.sendEmailOTP(email: trimmedEmail, shouldCreateUser: true)
+                startResendCooldown()
+                draft.clearOTP()
+            } catch {
+                authError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            }
+        }
+    }
+
+    private func verifyOTPAndComplete() async {
+        isSubmitting = true
+        defer { isSubmitting = false }
+        do {
+            _ = try await supabase.verifyEmailOTP(email: trimmedEmail, token: draft.otpCode)
             try await supabase.upsertProfile(
                 fullName: draft.name,
                 email: trimmedEmail,
@@ -195,5 +244,23 @@ struct SignUpCoordinator: View {
         } catch {
             authError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
+    }
+
+    private func startResendCooldown() {
+        resendCooldownTask?.cancel()
+        resendCooldownRemaining = SignUpOTPConfig.resendCooldownSeconds
+        resendCooldownTask = Task { @MainActor in
+            while resendCooldownRemaining > 0 {
+                try? await Task.sleep(for: .seconds(1))
+                if Task.isCancelled { return }
+                resendCooldownRemaining -= 1
+            }
+        }
+    }
+
+    private func stopResendCooldown() {
+        resendCooldownTask?.cancel()
+        resendCooldownTask = nil
+        resendCooldownRemaining = 0
     }
 }

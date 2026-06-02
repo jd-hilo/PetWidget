@@ -1,9 +1,10 @@
 import SwiftUI
 
-// MARK: - Password rules (must match Supabase project minimum)
+// MARK: - OTP rules (must match Supabase project OTP length)
 
-enum AuthPasswordConfig {
-    static let minLength = 6
+enum SignUpOTPConfig {
+    static let length = 6
+    static let resendCooldownSeconds = 60
 }
 
 // MARK: - Sign-up steps
@@ -12,7 +13,7 @@ enum SignUpStep: Int, CaseIterable, Hashable {
     case name = 0
     case email = 1
     case phone = 2
-    case password = 3
+    case otp = 3
 
     var progressIndex: Int { rawValue }
 
@@ -26,8 +27,7 @@ final class SignUpDraft: ObservableObject {
     @Published var name: String = ""
     @Published var email: String = ""
     @Published var phone: String = ""
-    @Published var password: String = ""
-    @Published var confirmPassword: String = ""
+    @Published var otpCode: String = ""
 
     var phoneDigitsOnly: String {
         phone.filter(\.isNumber)
@@ -46,9 +46,8 @@ final class SignUpDraft: ObservableObject {
         phoneDigitsOnly.count >= 10
     }
 
-    var isPasswordValid: Bool {
-        password.count >= AuthPasswordConfig.minLength
-            && password == confirmPassword
+    var isOTPValid: Bool {
+        otpCode.count == SignUpOTPConfig.length && otpCode.allSatisfy(\.isNumber)
     }
 
     func isValid(for step: SignUpStep) -> Bool {
@@ -56,7 +55,7 @@ final class SignUpDraft: ObservableObject {
         case .name: return isNameValid
         case .email: return isEmailValid
         case .phone: return isPhoneValid
-        case .password: return isPasswordValid
+        case .otp: return isOTPValid
         }
     }
 
@@ -70,8 +69,8 @@ final class SignUpDraft: ObservableObject {
             return trimmed.isEmpty ? nil : trimmed
         case .phone:
             return phoneDigitsOnly.count >= 10 ? phone : nil
-        case .password:
-            return isPasswordValid ? String(repeating: "•", count: min(password.count, 8)) : nil
+        case .otp:
+            return isOTPValid ? String(repeating: "•", count: SignUpOTPConfig.length) : nil
         }
     }
 
@@ -80,15 +79,19 @@ final class SignUpDraft: ObservableObject {
         case .name: return "full name"
         case .email: return "email"
         case .phone: return "phone"
-        case .password: return "password"
+        case .otp: return "verification code"
         }
     }
 
     /// Steps before `step` that have a displayable summary (for the compact list).
     func completedSteps(before step: SignUpStep) -> [SignUpStep] {
-        let candidates: [SignUpStep] = step == .password
+        let candidates: [SignUpStep] = step == .otp
             ? SignUpStep.fieldSteps
             : SignUpStep.allCases.filter { $0.rawValue < step.rawValue }
         return candidates.filter { summary(for: $0) != nil }
+    }
+
+    func clearOTP() {
+        otpCode = ""
     }
 }

@@ -41,28 +41,51 @@ final class SupabaseService: @unchecked Sendable {
         }
     }
 
-    func signUp(email: String, password: String) async throws {
+    func sendEmailOTP(email: String, shouldCreateUser: Bool) async throws {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw SignUpAuthError.unknown("Enter a valid email address.")
         }
-        guard password.count >= AuthPasswordConfig.minLength else {
-            throw SignUpAuthError.weakPassword
-        }
         do {
-            _ = try await client.auth.signUp(email: trimmed, password: password)
+            try await client.auth.signInWithOTP(
+                email: trimmed,
+                redirectTo: nil,
+                shouldCreateUser: shouldCreateUser
+            )
         } catch {
+#if DEBUG
+            print("[SupabaseService] sendEmailOTP failed: \(error)")
+#endif
             throw SignUpAuthError.from(error)
         }
     }
 
-    func signIn(email: String, password: String) async throws {
+    @discardableResult
+    func verifyEmailOTP(email: String, token: String) async throws -> Session {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw SignUpAuthError.unknown("Enter a valid email address.")
         }
+        let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedToken.count == SignUpOTPConfig.length else {
+            throw SignUpAuthError.invalidOTP
+        }
         do {
-            _ = try await client.auth.signIn(email: trimmed, password: password)
+            let response = try await client.auth.verifyOTP(
+                email: trimmed,
+                token: normalizedToken,
+                type: .email,
+                redirectTo: nil
+            )
+            switch response {
+            case .session(let session):
+                return session
+            case .user:
+                if let session = try? await client.auth.session {
+                    return session
+                }
+                throw SignUpAuthError.noSession
+            }
         } catch {
             throw SignUpAuthError.from(error)
         }

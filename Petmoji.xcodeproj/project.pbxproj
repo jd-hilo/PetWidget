@@ -45,6 +45,7 @@
 		F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */; };
 		F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */; };
 		F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */; };
+		F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */; };
 		F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */; };
 		F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */; };
 		F7BRAND012F9E8D7C006EDD01 /* BrandLandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */; };
@@ -117,6 +118,7 @@
 		F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpCoordinator.swift; sourceTree = "<group>"; };
 		F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpDraft.swift; sourceTree = "<group>"; };
 		F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpStepView.swift; sourceTree = "<group>"; };
+		F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPFieldView.swift; sourceTree = "<group>"; };
 		F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthCoordinator.swift; sourceTree = "<group>"; };
 		F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandLandingView.swift; sourceTree = "<group>"; };
@@ -175,6 +177,7 @@
 				F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */,
 				F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */,
 				F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */,
+				F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */,
 				F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */,
 				F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */,
 			);
@@ -418,6 +421,7 @@
 				F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */,
 				F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */,
 				F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */,
+				F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */,
 				F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */,
 				F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */,
 				AB81F69F2C59C7BBBF520714 /* SupabaseService.swift in Sources */,

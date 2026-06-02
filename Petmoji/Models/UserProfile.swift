@@ -21,10 +21,13 @@ struct UserProfile: Codable, Identifiable, Equatable {
 enum SignUpAuthError: LocalizedError {
     case noSession
     case invalidCredentials
+    case invalidOTP
+    case expiredOTP
     case emailAlreadyExists
-    case weakPassword
+    case userNotFound
     case rateLimited
     case network
+    case emailDeliveryFailed
     case unknown(String)
 
     var errorDescription: String? {
@@ -32,15 +35,21 @@ enum SignUpAuthError: LocalizedError {
         case .noSession:
             return "You're not signed in. Please sign in again."
         case .invalidCredentials:
-            return "Email or password is incorrect."
+            return "Invalid or expired code."
+        case .invalidOTP:
+            return "That code doesn't look right. Check the email and try again."
+        case .expiredOTP:
+            return "That code has expired. Request a new one."
         case .emailAlreadyExists:
             return "An account with this email already exists. Sign in instead."
-        case .weakPassword:
-            return "Password must be at least \(AuthPasswordConfig.minLength) characters."
+        case .userNotFound:
+            return "No account found for this email. Create an account instead."
         case .rateLimited:
             return "Too many attempts. Wait a minute and try again."
         case .network:
             return "Couldn't reach the server. Check your connection and try again."
+        case .emailDeliveryFailed:
+            return "Couldn't send the verification email. In Supabase, set both Magic Link and Confirm signup templates to your Loops JSON payload, then check Authentication → Logs."
         case .unknown(let message):
             return message
         }
@@ -55,16 +64,28 @@ enum SignUpAuthError: LocalizedError {
         if message.contains("already") && (message.contains("registered") || message.contains("exists")) {
             return .emailAlreadyExists
         }
+        if message.contains("user not found") || message.contains("signups not allowed")
+            || message.contains("user does not exist") {
+            return .userNotFound
+        }
+        if message.contains("expired") || message.contains("otp_expired") {
+            return .expiredOTP
+        }
+        if message.contains("invalid otp") || message.contains("invalid token")
+            || message.contains("token is invalid") {
+            return .invalidOTP
+        }
         if message.contains("invalid login") || message.contains("invalid credentials")
             || message.contains("invalid email or password") {
             return .invalidCredentials
         }
-        if message.contains("weak password") || message.contains("password should be")
-            || message.contains("at least") && message.contains("character") {
-            return .weakPassword
-        }
         if message.contains("rate") || message.contains("too many") || message.contains("429") {
             return .rateLimited
+        }
+        if message.contains("magic link email") || message.contains("confirmation email")
+            || message.contains("error sending") || message.contains("450")
+            || message.contains("valid json payload") {
+            return .emailDeliveryFailed
         }
         if let urlError = error as? URLError {
             switch urlError.code {

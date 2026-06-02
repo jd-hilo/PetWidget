@@ -1,8 +1,6 @@
 # Loops + Supabase: OTP sign-in setup (Petmoji)
 
-> **Obsolete:** Petmoji now uses email + password auth (see [`README.md`](README.md) §2b). Keep this doc only if you re-enable OTP verification later.
-
-End-to-end guide so sign-up sends a **numeric code** (not a magic link) and the Petmoji app can verify it.
+End-to-end guide so sign-up and sign-in send a **6-digit numeric code** (not a magic link) and the Petmoji app can verify it.
 
 **How it works:** The app calls `signInWithOTP` → Supabase Auth → Loops SMTP → Loops sends your **published** transactional email with `{{ .Token }}` → user types the code in the app → `verifyOTP`.
 
@@ -13,7 +11,7 @@ End-to-end guide so sign-up sends a **numeric code** (not a magic link) and the 
 - Supabase project (petmoji)
 - Loops account
 - A domain you can edit DNS for (required to **publish** in Loops)
-- Petmoji `SignUpOTPConfig.length` matches Supabase **OTP length** (currently **8** in `Petmoji/SignUp/SignUpDraft.swift`)
+- Petmoji `SignUpOTPConfig.length` matches Supabase **OTP length** (currently **6** in [`Petmoji/SignUp/SignUpDraft.swift`](Petmoji/SignUp/SignUpDraft.swift))
 
 ---
 
@@ -37,7 +35,7 @@ Sender name/email in Loops templates come from this domain setup.
 1. [Loops → Settings → Supabase](https://app.loops.so/settings?page=supabase) → **Connect Supabase**.
 2. Authorize, pick your Supabase project, choose a Loops API key → **Set up SMTP**.
 
-**Option B — Manual (matches your current screen)**
+**Option B — Manual**
 
 In Supabase → **Authentication → Emails → SMTP**:
 
@@ -61,10 +59,10 @@ Then in Supabase → **Authentication → Rate Limits**, set **Emails sent per h
 
 1. **Authentication → Providers → Email**
    - Email enabled
-   - Note **OTP length** (6–10) — must match `SignUpOTPConfig.length` in the app
+   - **OTP length: 6** — must match `SignUpOTPConfig.length` in the app
    - **Confirm email** can stay **off** (user verifies via code in app)
 
-2. Do **not** set a redirect URL in the app (already omitted in code).
+2. Do **not** set a redirect URL in the app (OTP is entered in-app, not via link).
 
 ---
 
@@ -86,6 +84,8 @@ Supabase still uses the template named **Magic Link** for OTP sends. The email m
    - Fix every warning (subject, from, content, domain)
 7. Click **Publish** (requires verified domain from Part 1).
 
+Use [`Supabase/email-templates/magic-link-otp.html`](Supabase/email-templates/magic-link-otp.html) as a **design reference** only — paste into the Loops editor, not Supabase.
+
 ---
 
 ## Part 5 — Create “Confirm signup” in Loops (required)
@@ -93,9 +93,8 @@ Supabase still uses the template named **Magic Link** for OTP sends. The email m
 If the user isn’t “confirmed” yet, Supabase may send **Confirm signup** instead of Magic Link.
 
 1. Transactional → **New** → e.g. `Petmoji Confirm signup`.
-2. Same idea: include **`token`** (or same variable name) mapped to the code if you use OTP there, or `confirmationUrl` if you use a link for confirm-only flows.
-3. For OTP-only sign-up, simplest approach: same code variable `{{ .Token }}` in the Loops design and JSON payload.
-4. **Publish** this email too.
+2. Same idea: include **`token`** mapped to the code.
+3. **Publish** this email too.
 
 ---
 
@@ -112,7 +111,7 @@ Loops SMTP does **not** use HTML in Supabase. Each auth template body must be **
 
 ```json
 {
-  "transactionalId": "cmpg1m25708lu0jwvkseer1i4",
+  "transactionalId": "YOUR_TRANSACTIONAL_ID",
   "email": "{{ .Email }}",
   "dataVariables": {
     "token": "{{ .Token }}"
@@ -120,9 +119,39 @@ Loops SMTP does **not** use HTML in Supabase. Each auth template body must be **
 }
 ```
 
-- `transactionalId` = from Loops Review (yours was `cmpg1m25708lu0jwvkseer1i4`)
-- Keys inside `dataVariables` must **exactly match** the data variable names in the Loops editor (`token` vs `Token` matters)
-- `{{ .Token }}` is the OTP from Supabase (length = your OTP setting, e.g. 8 digits)
+- `transactionalId` = from Loops Review
+- Keys inside `dataVariables` must **exactly match** the data variable names in the Loops editor (`token` vs `Token` vs `var0` matters)
+- `{{ .Token }}` is the OTP from Supabase (length = 6 digits)
+- **Every value must be a quoted string** — `"token": "{{ .Token }}"` not `"token": {{.Token}}`
+
+### Troubleshooting: email shows `var0` or literal text instead of the code
+
+This means the Loops **data variable name** in your email design does not match the key in `dataVariables`.
+
+1. In Loops, click the large code area in your template — if it says `var0`, that is the variable name Loops assigned (not static text).
+2. Either rename it to `token` in the Loops editor (recommended), or use whatever name Loops shows in **Review → API payload**.
+3. Do **not** type the word `Token` as plain text — use **Insert data variable** (type `{` in the editor) so Loops knows to substitute it.
+4. In Supabase, the JSON must look like this (note quotes and spaces):
+
+```json
+{
+  "transactionalId": "cmpx1cdu801mg0j4rl7ncr07q",
+  "email": "{{ .Email }}",
+  "dataVariables": {
+    "token": "{{ .Token }}"
+  }
+}
+```
+
+If you keep Loops' default name, match it exactly:
+
+```json
+"dataVariables": {
+  "var0": "{{ .Token }}"
+}
+```
+
+5. Re-publish the Loops email after changing variables, then update the Supabase template body.
 
 5. Save the template.
 
@@ -130,7 +159,7 @@ Loops SMTP does **not** use HTML in Supabase. Each auth template body must be **
 
 1. Copy the **Confirm signup** payload from its published Loops email.
 2. Supabase → **Emails** → **Confirm signup** → paste JSON (not HTML).
-3. Any variable in Confirm signup must also exist in Magic Link if Supabase might send either (Loops/Supabase requirement).
+3. Any variable in Confirm signup must also exist in Magic Link if Supabase might send either.
 
 **Wrong (causes `450 valid JSON payload`):**
 
@@ -146,37 +175,43 @@ Loops SMTP does **not** use HTML in Supabase. Each auth template body must be **
 
 ### A. Test from Supabase
 
-1. **Authentication → Users** → **Add user** (email you control) or pick existing user.
-2. **Send magic link** (sends via Loops using Magic Link JSON).
-3. Check [Loops → Transactional](https://app.loops.so/transactional) → your email → **Metrics / sends** — should show delivered.
-4. Inbox should show the **numeric code** (not “click to log in”).
+1. **Authentication → Users** → **Add user** → **Create new user** (enter an email you control).
+2. **Click the new user row** in the table — a side panel opens (the button is not on the empty list page).
+3. In the panel, click **Send magic link** (or **Send confirmation email** if the user is unconfirmed).
+4. Check [Loops → Transactional](https://app.loops.so/transactional) → your email → **Metrics / sends** — should show delivered.
+5. Inbox should show a **6-digit code** (not “click to log in”).
 
 ### B. Test from Petmoji app
 
 1. Sign out if needed (Settings → sign out).
-2. Sign-up: name → email → phone → **continue** (sends OTP).
-3. Enter full code (8 digits if that’s your Supabase OTP length).
-4. **verify →** should complete and continue to onboarding.
+2. **Sign-up:** name → email → phone → **send code** → enter 6 digits → **verify** → onboarding.
+3. **Sign-in:** email → **send code** → enter 6 digits → **sign in** → home/onboarding.
 
 ### C. If it fails
 
 | Log / error | Fix |
 |-------------|-----|
 | `450 … valid JSON payload` | Supabase template still HTML; use JSON from Loops Review |
-| `error sending magic link email` | Loops publish/domain/SMTP; check [Logs → Auth](https://supabase.com/dashboard/project/_/logs/auth-logs) |
+| `error sending magic link email` | Usually **Confirm signup** template missing or still HTML — configure both Magic Link **and** Confirm signup with Loops JSON; check [Logs → Auth](https://supabase.com/dashboard/project/_/logs/auth-logs) |
 | Rate limit | Wait 60s; raise Rate Limits |
 | Code wrong in app | `SignUpOTPConfig.length` ≠ Supabase OTP length |
+| Sign-in: no account | Expected when email unknown (`shouldCreateUser: false`) |
+| Email shows `var0` or `Token` literally | Loops variable name ≠ `dataVariables` key; use `{token}` dynamic field, not static text; quote values in JSON |
 
 ---
 
-## Part 8 — App checklist (already implemented)
+## Part 8 — App implementation
 
-- Sends OTP: `SupabaseService.sendEmailOTP` on phone step
-- Verifies: `verifyEmailOTP` with `type: .email`
-- UI: 8 boxes if `SignUpOTPConfig.length = 8`
-- No `redirectTo` (OTP in-app, not link)
+| Component | Behavior |
+|-----------|----------|
+| `SupabaseService.sendEmailOTP` | `signInWithOTP(email:shouldCreateUser:)` — sign-up uses `true`, sign-in uses `false` |
+| `SupabaseService.verifyEmailOTP` | `verifyOTP(email:token:type: .email)` — establishes session |
+| `SignUpCoordinator` | Sends OTP after phone step; verifies on OTP step; then `upsertProfile` |
+| `SignInView` | Email step → send code; OTP step → verify → `restoreAuthenticatedSession` |
+| `EmailOTPFieldView` | Shared 6-box input with resend (60s cooldown) |
+| `SignUpOTPConfig.length` | **6** — must match Supabase dashboard |
 
-No app changes needed once Loops + Supabase templates are correct.
+No redirect URL is passed — verification is in-app only.
 
 ---
 

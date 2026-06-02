@@ -153,6 +153,11 @@ struct RootView: View {
         .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
             if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
+#if DEBUG
+                if shouldForceSignOut {
+                    await appState.signOut()
+                }
+#endif
                 await appState.bootstrap()
 #if DEBUG
                 if shouldSendTestPetMessage, appState.isAuthenticated {
@@ -168,6 +173,10 @@ struct RootView: View {
 #if DEBUG
     private var shouldSendTestPetMessage: Bool {
         ProcessInfo.processInfo.arguments.contains("-testPetMessage")
+    }
+
+    private var shouldForceSignOut: Bool {
+        ProcessInfo.processInfo.arguments.contains("-forceSignOut")
     }
 #endif
 
@@ -627,12 +636,14 @@ final class AppState: ObservableObject {
     /// Clears session, pet, and cached profile so the app returns to sign-in.
     func signOut() async {
         stopSyncingExpressions()
-        try? await SupabaseService.shared.client.auth.signOut()
+        MessageScheduler.shared.cancelBeenGoneNotifications()
+        try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         applyUnauthenticatedState()
         setHasCompletedOnboarding(false)
         setUserDisplayName("")
         setUserEmail("")
         setUserPhone("")
+        WidgetSnapshotSync.clear()
     }
 
     /// After kicking off `generate-sprites`, the edge function returns once

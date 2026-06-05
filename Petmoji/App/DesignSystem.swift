@@ -192,7 +192,7 @@ struct PetmojiPalette: Equatable {
         washDeep: Color.white.opacity(0.07),
         washAltSoft: Color.white.opacity(0.13),
         washAltDeep: Color.white.opacity(0.06),
-        patternSymbol: Color.white.opacity(0.22),
+        patternSymbol: Color.white.opacity(0.30),
         elevatedCardFill: Color.white.opacity(0.14),
         elevatedCardStroke: Color.white.opacity(0.24),
         homeInsetFill: .pmWidgetHomeInsetFill,
@@ -234,69 +234,26 @@ extension EnvironmentValues {
     }
 }
 
-/// Faint paw grid over material (aligned with small/medium `PetWidgetEntryView`).
-private struct PMPawPatternScreenOverlay: View {
-    var symbolPointSize: CGFloat = 10
-    private var tile: CGFloat { max(40, symbolPointSize * 3.8) }
-
-    var body: some View {
-        Canvas { context, size in
-            guard let symbol = context.resolveSymbol(id: 0) else { return }
-
-            let cols = Int(ceil(size.width / tile)) + 2
-            let rows = Int(ceil(size.height / tile)) + 2
-
-            for row in 0..<rows {
-                for col in 0..<cols {
-                    let xOffset = (row % 2 == 0) ? 0 : tile / 2
-                    let x = CGFloat(col) * tile + xOffset - tile / 2
-                    let y = CGFloat(row) * tile - tile / 2
-                    let rotation = Angle.degrees(row % 2 == 0 ? -10 : 12)
-
-                    var ctx = context
-                    ctx.translateBy(x: x, y: y)
-                    ctx.rotate(by: rotation)
-                    ctx.draw(symbol, at: .zero, anchor: .center)
-                }
-            }
-        } symbols: {
-            Image(systemName: "pawprint.fill")
-                .font(.system(size: symbolPointSize, weight: .light))
-                .foregroundStyle(.white)
-                .tag(0)
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-/// Translucent material + paw texture (home screen widget style).
+/// Translucent material + edge decoration (paws / leaves), matching classic sage layout.
 struct PMWidgetGlassScreenBackdrop: View {
     var body: some View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial)
-            PMPawPatternScreenOverlay(symbolPointSize: 10)
-                .opacity(0.032)
+            PMSageEdgePattern()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
     }
 }
 
-/// Inset panel on expanded home pet cards — dark fill + paw texture in widget glass (cut-out effect).
+/// Inset panel on expanded home pet cards — solid fill (no texture overlay).
 struct PMHomeInsetPanelBackground: View {
     @Environment(\.petmojiPalette) private var palette
     var cornerRadius: CGFloat
 
     var body: some View {
-        ZStack {
-            palette.homeInsetFill
-            if palette.visualStyle == .widgetGlass {
-                PMPawPatternScreenOverlay(symbolPointSize: 10)
-                    .opacity(0.032)
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        palette.homeInsetFill
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 
@@ -472,19 +429,17 @@ struct PMSageScreenBackdrop: View {
     @Environment(\.petmojiPalette) private var palette
 
     var body: some View {
-        Group {
+        ZStack {
             if palette.visualStyle == .classic {
-                ZStack {
-                    LinearGradient(
-                        colors: [Color.pmSageBackground, Color.pmSageBackgroundTint],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    PMSageEdgePattern()
-                }
+                LinearGradient(
+                    colors: [Color.pmSageBackground, Color.pmSageBackgroundTint],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
             } else {
-                PMWidgetGlassScreenBackdrop()
+                Rectangle().fill(.ultraThinMaterial)
             }
+            PMSageEdgePattern()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()

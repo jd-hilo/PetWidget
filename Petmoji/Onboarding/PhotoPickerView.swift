@@ -69,12 +69,12 @@ struct PhotoPickerView: View {
                     .padding(.horizontal, 24)
                 }
 
-                Spacer(minLength: 120)
+                Spacer(minLength: onCancel != nil ? 8 : 120)
             }
             .padding(.top, 8)
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 12) {
+            VStack(spacing: onCancel != nil ? 8 : 12) {
                 PMSageCTAButton(
                     title: "continue →",
                     action: onNext,

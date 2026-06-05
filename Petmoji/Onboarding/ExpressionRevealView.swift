@@ -197,7 +197,7 @@ struct ExpressionRevealView: View {
             .padding(.top, 8)
             .padding(.horizontal, 24)
             // Room to scroll the name field above the pinned CTA (56pt) + inset padding.
-            .padding(.bottom, 96)
+            .padding(.bottom, onCancel != nil ? 16 : 96)
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
@@ -207,7 +207,7 @@ struct ExpressionRevealView: View {
             }
         )
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 12) {
+            VStack(spacing: onCancel != nil ? 8 : 12) {
                 PMSageCTAButton(
                     title: name.isEmpty ? "enter a name first" : "meet \(name)! →",
                     action: savePet,

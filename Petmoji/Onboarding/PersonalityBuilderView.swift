@@ -68,7 +68,7 @@ struct PersonalityBuilderView: View {
         .safeAreaInset(edge: .bottom) {
             bottomBar
                 .padding(.horizontal, 24)
-                .padding(.bottom, 34)
+                .padding(.bottom, onCancel != nil ? 10 : 34)
                 .background(Color.clear)
         }
         .pmSageScreenBackground()
@@ -164,10 +164,14 @@ struct PersonalityBuilderView: View {
 
     // MARK: - Bottom actions
 
+    private var bottomBarSpacing: CGFloat {
+        onCancel != nil ? 8 : 12
+    }
+
     @ViewBuilder
     private var bottomBar: some View {
         if isReviewScreen {
-            VStack(spacing: 12) {
+            VStack(spacing: bottomBarSpacing) {
                 PMSageCTAButton(
                     title: "generate sprites →",
                     action: onNext,
@@ -189,7 +193,7 @@ struct PersonalityBuilderView: View {
                 .buttonStyle(.plain)
             }
         } else {
-            VStack(spacing: 12) {
+            VStack(spacing: bottomBarSpacing) {
                 PMSageCTAButton(
                     title: activeStep == Self.totalSteps - 1 ? "review →" : "continue →",
                     action: advanceWizard,

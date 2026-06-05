@@ -49,6 +49,10 @@ struct OnboardingCoordinator: View {
         context.isAdditionalPet ? 3 : 4
     }
 
+    private var showsOnboardingBackButton: Bool {
+        !context.isAdditionalPet
+    }
+
     var body: some View {
         NavigationStack(path: $path) {
             PhotoPickerView(
@@ -70,7 +74,8 @@ struct OnboardingCoordinator: View {
                     )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: progressTotal, current: 1, balancedBackButton: true)
+                    .pmOnboardingToolbar(total: progressTotal, current: 1, balancedBackButton: showsOnboardingBackButton)
+                    .navigationBarBackButtonHidden(context.isAdditionalPet)
                     .toolbarBackground(.hidden, for: .navigationBar)
 
                 case .spriteReveal:

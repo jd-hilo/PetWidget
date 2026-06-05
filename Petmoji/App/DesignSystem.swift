@@ -224,7 +224,7 @@ struct PetmojiPalette: Equatable {
 }
 
 private struct PetmojiPaletteKey: EnvironmentKey {
-    static let defaultValue = PetmojiPalette.palette(for: .classic)
+    static let defaultValue = PetmojiPalette.palette(for: .widgetGlass)
 }
 
 extension EnvironmentValues {
@@ -237,7 +237,7 @@ extension EnvironmentValues {
 /// Faint paw grid over material (aligned with small/medium `PetWidgetEntryView`).
 private struct PMPawPatternScreenOverlay: View {
     var symbolPointSize: CGFloat = 10
-    private var tile: CGFloat { max(24, symbolPointSize * 2.2) }
+    private var tile: CGFloat { max(40, symbolPointSize * 3.8) }
 
     var body: some View {
         Canvas { context, size in

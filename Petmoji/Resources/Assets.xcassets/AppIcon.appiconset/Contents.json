@@ -10,10 +10,10 @@
       "appearances" : [
         {
           "appearance" : "luminosity",
-          "value" : "light"
+          "value" : "dark"
         }
       ],
-      "filename" : "AppIcon-Light.png",
+      "filename" : "AppIcon-Dark.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -22,10 +22,10 @@
       "appearances" : [
         {
           "appearance" : "luminosity",
-          "value" : "dark"
+          "value" : "light"
         }
       ],
-      "filename" : "AppIcon-Dark.png",
+      "filename" : "AppIcon-Light.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

@@ -147,7 +147,7 @@ private struct WidgetTranslucentBackground: View {
 // Faint, staggered grid of paw prints behind the glass (no corner badge).
 private struct PawPatternOverlay: View {
     var symbolPointSize: CGFloat = 10
-    private var tile: CGFloat { max(24, symbolPointSize * 2.2) }
+    private var tile: CGFloat { max(40, symbolPointSize * 3.8) }
 
     var body: some View {
         Canvas { context, size in

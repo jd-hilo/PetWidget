@@ -318,7 +318,7 @@ final class AppState: ObservableObject {
     @Published var userEmail: String = ""
     @Published var userPhone: String = ""
 
-    @Published var visualStyle: AppVisualStyle = .classic
+    @Published var visualStyle: AppVisualStyle = .widgetGlass
 
     private let supabase = SupabaseService.shared
     private var expressionSyncTask: Task<Void, Never>?
@@ -344,7 +344,7 @@ final class AppState: ObservableObject {
             d.removeObject(forKey: MockUserSettings.legacyVisualStyleKey)
             return
         }
-        visualStyle = .classic
+        visualStyle = .widgetGlass
     }
 
     func setVisualStyle(_ value: AppVisualStyle) {

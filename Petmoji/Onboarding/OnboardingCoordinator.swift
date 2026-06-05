@@ -49,10 +49,6 @@ struct OnboardingCoordinator: View {
         context.isAdditionalPet ? 3 : 4
     }
 
-    private var showsOnboardingBackButton: Bool {
-        !context.isAdditionalPet
-    }
-
     var body: some View {
         NavigationStack(path: $path) {
             PhotoPickerView(
@@ -62,7 +58,7 @@ struct OnboardingCoordinator: View {
             )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .pmOnboardingToolbar(total: progressTotal, current: 0, balancedBackButton: false)
+            .pmOnboardingToolbar(total: progressTotal, current: 0)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: OnboardingStep.self) { step in
                 switch step {
@@ -74,8 +70,8 @@ struct OnboardingCoordinator: View {
                     )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: progressTotal, current: 1, balancedBackButton: showsOnboardingBackButton)
-                    .navigationBarBackButtonHidden(context.isAdditionalPet)
+                    .pmOnboardingToolbar(total: progressTotal, current: 1)
+                    .navigationBarBackButtonHidden(true)
                     .toolbarBackground(.hidden, for: .navigationBar)
 
                 case .spriteReveal:
@@ -87,7 +83,7 @@ struct OnboardingCoordinator: View {
                     )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: progressTotal, current: 2, balancedBackButton: false)
+                    .pmOnboardingToolbar(total: progressTotal, current: 2)
                     .navigationBarBackButtonHidden(true)
 
                 case .widgetSetup:
@@ -98,7 +94,7 @@ struct OnboardingCoordinator: View {
                     )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: progressTotal, current: 3, balancedBackButton: false)
+                    .pmOnboardingToolbar(total: progressTotal, current: 3)
                     .navigationBarBackButtonHidden(true)
                 }
             }

@@ -120,7 +120,7 @@ struct RootView: View {
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3, balancedBackButton: false)
+                    .pmOnboardingToolbar(total: 4, current: 3)
                     .navigationBarBackButtonHidden(true)
                 }
             } else if shouldSkipOnboardingToReveal {
@@ -270,7 +270,7 @@ private struct DebugRevealFlowView: View {
             )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .pmOnboardingToolbar(total: 4, current: 2, balancedBackButton: false)
+            .pmOnboardingToolbar(total: 4, current: 2)
             .navigationBarBackButtonHidden(true)
             .navigationDestination(for: Step.self) { step in
                 switch step {
@@ -283,7 +283,7 @@ private struct DebugRevealFlowView: View {
                     }
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3, balancedBackButton: false)
+                    .pmOnboardingToolbar(total: 4, current: 3)
                     .navigationBarBackButtonHidden(true)
                 }
             }
@@ -626,17 +626,28 @@ final class AppState: ObservableObject {
         currentPet = pet
     }
 
-    func resetForOnboarding() async {
-        stopSyncingExpressions()
-        try? await SupabaseService.shared.client.auth.signOut()
-        applyUnauthenticatedState()
-        setHasCompletedOnboarding(false)
-    }
-
     /// Clears session, pet, and cached profile so the app returns to sign-in.
     func signOut() async {
         stopSyncingExpressions()
         MessageScheduler.shared.cancelBeenGoneNotifications()
+        try? await SupabaseService.shared.client.auth.signOut(scope: .global)
+        applyUnauthenticatedState()
+        setHasCompletedOnboarding(false)
+        setUserDisplayName("")
+        setUserEmail("")
+        setUserPhone("")
+        WidgetSnapshotSync.clear()
+    }
+
+    /// Permanently deletes the account on the server and clears all local state.
+    func deleteAccount() async throws {
+        let petIds = pets.map(\.id)
+        stopSyncingExpressions()
+        MessageScheduler.shared.cancelBeenGoneNotifications()
+        try await supabase.deleteAccount()
+        for petId in petIds {
+            ChatHistoryStore.clearHistory(for: petId)
+        }
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         applyUnauthenticatedState()
         setHasCompletedOnboarding(false)

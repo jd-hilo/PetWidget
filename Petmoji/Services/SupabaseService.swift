@@ -147,6 +147,23 @@ final class SupabaseService: @unchecked Sendable {
             .execute()
     }
 
+    /// Permanently deletes the signed-in user and all associated data via edge function.
+    func deleteAccount() async throws {
+        struct DeleteAccountResponse: Decodable {
+            let success: Bool?
+            let error: String?
+        }
+
+        let response: DeleteAccountResponse = try await client.functions.invoke(
+            "delete-account",
+            options: FunctionInvokeOptions(method: .post)
+        )
+
+        if response.success != true {
+            throw SignUpAuthError.unknown(response.error ?? "Could not delete your account.")
+        }
+    }
+
     func savePet(_ pet: Pet) async throws -> Pet {
         let saved: Pet = try await client
             .from("pets")

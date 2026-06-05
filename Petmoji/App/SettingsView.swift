@@ -11,11 +11,13 @@ struct SettingsView: View {
     @State private var isRegenerating = false
     @State private var regenerateError: String?
     @State private var regenerateSuccess = false
-    @State private var showResetConfirm = false
     @State private var showRegenerateConfirm = false
     @State private var showDeletePetConfirm = false
     @State private var isDeletingPet = false
     @State private var deletePetError: String?
+    @State private var showDeleteAccountConfirm = false
+    @State private var isDeletingAccount = false
+    @State private var deleteAccountError: String?
     @State private var showSignOutConfirm = false
     @State private var nameUpdateTask: Task<Void, Never>?
     @State private var isUpdatingHome = false
@@ -121,6 +123,14 @@ struct SettingsView: View {
         } message: {
             Text("This permanently removes the pet and its chat history. This can't be undone.")
         }
+        .alert("Delete your account?", isPresented: $showDeleteAccountConfirm) {
+            Button("Delete Account", role: .destructive) {
+                Task { await deleteAccount() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure? All of your pets, messages, photos, and profile data will be permanently deleted. This can't be undone.")
+        }
         .onChange(of: petName) { _, newName in
             guard let petId = pet?.id else { return }
             nameUpdateTask?.cancel()
@@ -193,6 +203,21 @@ struct SettingsView: View {
 
             SignOutPillButton(showConfirm: $showSignOutConfirm) {
                 Task { await appState.signOut() }
+            }
+
+            SettingsSageSection(title: "danger zone", titleColor: .red) {
+                Button("delete account", role: .destructive) {
+                    showDeleteAccountConfirm = true
+                }
+                .font(.bodyL)
+                .disabled(isDeletingAccount)
+
+                if let deleteAccountError {
+                    Text(deleteAccountError)
+                        .font(.bodyS)
+                        .foregroundStyle(.red.opacity(0.9))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
         }
     }
@@ -399,23 +424,6 @@ struct SettingsView: View {
                     .foregroundStyle(.red.opacity(0.9))
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            Button("reset & start over", role: .destructive) {
-                showResetConfirm = true
-            }
-            .font(.bodyL)
-            .popover(
-                isPresented: $showResetConfirm,
-                attachmentAnchor: .rect(.bounds),
-                arrowEdge: .bottom
-            ) {
-                ResetOnboardingConfirmPopover(
-                    isPresented: $showResetConfirm,
-                    onReset: {
-                        Task { await appState.resetForOnboarding() }
-                    }
-                )
-            }
         }
     }
 
@@ -449,6 +457,18 @@ struct SettingsView: View {
         await appState.deletePet(pet)
         petName = appState.currentPet?.name ?? ""
         isDeletingPet = false
+    }
+
+    @MainActor
+    private func deleteAccount() async {
+        isDeletingAccount = true
+        deleteAccountError = nil
+        do {
+            try await appState.deleteAccount()
+        } catch {
+            deleteAccountError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        isDeletingAccount = false
     }
 }
 
@@ -629,39 +649,6 @@ private struct SignOutConfirmPopover: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(palette.accent)
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 300)
-        .presentationCompactAdaptation(.popover)
-    }
-}
-
-private struct ResetOnboardingConfirmPopover: View {
-    @Environment(\.petmojiPalette) private var palette
-
-    @Binding var isPresented: Bool
-    let onReset: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Reset onboarding")
-                .font(.titleL)
-                .foregroundStyle(palette.accentDark)
-            Text("This will sign you out and delete your current pet setup.")
-                .font(.bodyM)
-                .foregroundStyle(palette.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 12) {
-                Button("Cancel") { isPresented = false }
-                    .buttonStyle(.bordered)
-                    .tint(palette.accentDark)
-                Button("Reset & Start Over", role: .destructive) {
-                    isPresented = false
-                    onReset()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.red)
             }
         }
         .padding(20)

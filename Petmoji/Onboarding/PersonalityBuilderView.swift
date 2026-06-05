@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Personality Builder View (step wizard)
 
 struct PersonalityBuilderView: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
@@ -203,18 +204,20 @@ struct PersonalityBuilderView: View {
                     PMOnboardingCancelButton(action: onCancel)
                 }
 
-                if activeStep > 0 {
-                    Button {
+                Button {
+                    if activeStep > 0 {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
                             activeStep -= 1
                         }
-                    } label: {
-                        Text("previous step")
-                            .font(.bodyM)
-                            .foregroundStyle(palette.accentDark)
+                    } else {
+                        dismiss()
                     }
-                    .buttonStyle(.plain)
+                } label: {
+                    Text("previous step")
+                        .font(.bodyM)
+                        .foregroundStyle(palette.accentDark)
                 }
+                .buttonStyle(.plain)
             }
         }
     }

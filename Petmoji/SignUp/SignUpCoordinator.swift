@@ -57,10 +57,7 @@ struct SignUpCoordinator: View {
                         .transition(activeStepTransition)
 
                         if let authError {
-                            Text(authError)
-                                .font(.bodyM)
-                                .foregroundStyle(.red.opacity(0.9))
-                                .fixedSize(horizontal: false, vertical: true)
+                            PMAuthErrorBanner(message: authError)
                         }
 
                         signInLink

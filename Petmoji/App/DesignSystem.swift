@@ -481,6 +481,38 @@ extension View {
     }
 }
 
+struct PMAuthErrorBanner: View {
+    let message: String
+
+    private let errorForeground = Color.red.opacity(0.9)
+    private let errorBackground = Color.red.opacity(0.08)
+    private let errorBorder = Color.red.opacity(0.22)
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(errorForeground)
+                .padding(.top, 1)
+
+            Text(message)
+                .font(.bodyM)
+                .foregroundStyle(errorForeground)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(errorBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(errorBorder, lineWidth: 1.5)
+        )
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+
 struct PMSageCTAButton: View {
     @Environment(\.petmojiPalette) private var palette
 
@@ -839,42 +871,15 @@ struct PMOnboardingIconProgressBar: View {
     }
 }
 
-// MARK: - Onboarding navigation bar (centered progress + back)
+// MARK: - Onboarding navigation bar (centered progress)
 
-/// Hides the system back chevron (which shrinks the principal area and shifts the progress bar) and replaces it with a custom leading control plus a same-width trailing placeholder so `ToolbarItem(.principal)` stays visually centered.
 struct PMOnboardingToolbarModifier: ViewModifier {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.petmojiPalette) private var palette
-
     let total: Int
     let current: Int
-    let balancedBackButton: Bool
-
-    private static let barButtonSlot: CGFloat = 44
 
     func body(content: Content) -> some View {
         content
-            .navigationBarBackButtonHidden(balancedBackButton)
             .toolbar {
-                if balancedBackButton {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 17, weight: .semibold))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(palette.toolbarTint)
-                        .frame(minWidth: Self.barButtonSlot, minHeight: Self.barButtonSlot)
-                        .contentShape(Rectangle())
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Color.clear
-                            .frame(width: Self.barButtonSlot, height: Self.barButtonSlot)
-                            .allowsHitTesting(false)
-                    }
-                }
                 ToolbarItem(placement: .principal) {
                     PMOnboardingIconProgressBar(total: total, current: current)
                 }
@@ -883,9 +888,9 @@ struct PMOnboardingToolbarModifier: ViewModifier {
 }
 
 extension View {
-    /// Progress in the nav bar principal slot. Use `balancedBackButton: true` on pushed steps so the back control does not shove the progress bar sideways.
-    func pmOnboardingToolbar(total: Int, current: Int, balancedBackButton: Bool = false) -> some View {
-        modifier(PMOnboardingToolbarModifier(total: total, current: current, balancedBackButton: balancedBackButton))
+    /// Progress in the nav bar principal slot.
+    func pmOnboardingToolbar(total: Int, current: Int) -> some View {
+        modifier(PMOnboardingToolbarModifier(total: total, current: current))
     }
 }
 

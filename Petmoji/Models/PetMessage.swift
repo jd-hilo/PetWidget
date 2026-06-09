@@ -34,6 +34,27 @@ enum TriggerType: String, Codable {
 struct ClaudeMessageResponse: Codable {
     let message: String
     let expression: PetExpression
+    let id: UUID?
+    let petId: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case message
+        case expression
+        case id
+        case petId = "pet_id"
+    }
+
+    func asPetMessage(fallbackPetId: UUID, timestamp: Date = Date()) -> PetMessage {
+        PetMessage(
+            id: id ?? UUID(),
+            petId: petId ?? fallbackPetId,
+            content: message,
+            expression: expression,
+            triggerType: .chatReply,
+            scheduledFor: timestamp,
+            sentAt: timestamp
+        )
+    }
 }
 
 // MARK: - Chat message (persisted via `ChatHistoryStore`)

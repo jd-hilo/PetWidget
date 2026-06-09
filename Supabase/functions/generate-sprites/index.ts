@@ -25,38 +25,91 @@ const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-// Describes the target aesthetic; mirrors the animals-Memoji reference grid
-// uploaded to pet-sprites/style/memoji-style-animals.png.
+// Photo fidelity — never invent traits not visible in the reference image.
+const IDENTITY_PRESERVE =
+  `Preserve this pet's identity from the reference image: exact fur color and markings, ` +
+  `eye color and iris color as in the photo, nose color, ear shape and size, breed silhouette. ` +
+  `Match the reference photo's eye color exactly — if eyes are amber or light, keep them amber or light in cartoon form. ` +
+  `Do not darken pupils or irises beyond what appears in the photo. ` +
+  `Only include markings visible in the photo. ` +
+  `Do NOT add accessories, collars, hats, extra markings, heterochromia, or color changes not in the photo. ` +
+  `Stylize into cartoon proportions but keep the same colors the pet actually has.`;
+
+// Memoji aesthetic without forcing eye color or generic template features.
 const MEMOJI_STYLE_DESCRIPTION =
   `Apple iOS animal emoji style, official Apple Memoji animal sticker aesthetic, ` +
   `3D rendered cartoon character like the Apple dog/cat/bear emoji, ` +
   `soft matte 3D surface with gentle subsurface scattering (NOT shiny plastic, NOT wet), ` +
   `chibi proportions: oversized head, tiny or no body, ` +
-  `huge round glossy eyes with two crisp white catchlights and dark pupils, ` +
+  `large expressive cartoon eyes scaled up from the photo's actual eye color, subtle white catchlights only, ` +
   `simplified stylized fur (smooth volumetric shapes, no individual hair strands), ` +
   `tiny cute nose, small expressive mouth, perky simplified ears, ` +
-  `bright saturated cartoon colors, soft even cartoon lighting, ` +
+  `bright saturated cartoon colors matching the pet's real colors, soft even cartoon lighting, ` +
   `Pixar 3D animation quality, front-facing centered portrait headshot, no shoulders, ` +
   `pure flat white background, fully isolated subject`;
 
 const MEMOJI_NEGATIVE =
   `realistic photo, photographic, photo-real fur, individual hair strands, ` +
-  `wet glossy plastic, oily skin, harsh specular highlights, ` +
+  `wet glossy plastic, oily skin, harsh specular highlights, plastic shine, ` +
+  `wrong eye color, black eyes when photo has light eyes, darkened pupils, invented eye color, ` +
+  `added markings, added accessories, collar, hat, heterochromia, extra spots, ` +
+  `identical expression to input, subtle expression change, same face as before, ` +
   `flat 2D illustration, sticker outline, painterly, watercolor, sketch, line art, ` +
   `anime style, manga style, ` +
   `realistic proportions, small head, full body, shoulders, neck, ` +
   `busy background, gradient background, dark background, shadows on background, ` +
   `text, watermark, border, frame, multiple characters`;
 
+// Stage B rules applied around each expression-specific instruction.
+const EXPRESSION_EDIT_RULES =
+  `PRESERVE EXACTLY: fur colors, markings, eye color, iris color, nose, head shape, pose, ` +
+  `matte 3D art style, pure white background. Do not change eye color or fur color. ` +
+  `This must look clearly different from a happy/neutral face at a glance.`;
+
 const BASE_EXPRESSION = "happy" as const;
 
-const EXPRESSION_EDITS: Array<{ key: string; instruction: string }> = [
-  { key: "happy",      instruction: "" /* base */ },
-  { key: "sleepy",     instruction: "same character, half-closed droopy eyelids, small yawn, relaxed sleepy mouth" },
-  { key: "mad",        instruction: "same character, furrowed angry brows, scowling frown, narrowed eyes, grumpy" },
-  { key: "excited",    instruction: "same character, wide open excited eyes, big open mouth smile, ears perked up" },
-  { key: "misses_you", instruction: "same character, sad watery eyes, slight frown, ears dropped, longing look" },
-  { key: "judging",    instruction: "same character, one eyebrow raised, side-eye, unimpressed flat mouth, judging" },
+const EXPRESSION_EDITS: Array<{ key: string; emotion: string; instruction: string }> = [
+  { key: "happy", emotion: "happy", instruction: "" /* base */ },
+  {
+    key: "sleepy",
+    emotion: "sleepy",
+    instruction:
+      `CHANGE ONLY: eyelids 70% closed and heavy, droopy relaxed brows, small open yawn, ` +
+      `mouth slightly agape, ears relaxed and angled down. ` +
+      `Do not change eye color or fur color.`,
+  },
+  {
+    key: "mad",
+    emotion: "angry",
+    instruction:
+      `CHANGE ONLY: sharp V-shaped angry brows, narrowed squinting eyes (same eye color), ` +
+      `tight downturned scowling mouth, ears slightly pulled back. ` +
+      `Do not change eye color or fur color.`,
+  },
+  {
+    key: "excited",
+    emotion: "excited",
+    instruction:
+      `CHANGE ONLY: eyes wide open with visible eye whites, big open grin showing enthusiasm, ` +
+      `ears perked forward and alert — noticeably more open and energetic than a gentle happy smile. ` +
+      `Do not change eye color or fur color.`,
+  },
+  {
+    key: "misses_you",
+    emotion: "sad and longing",
+    instruction:
+      `CHANGE ONLY: soft downturned mouth, glossy watery sheen in eyes without changing eye color, ` +
+      `ears drooped low, subtle sad raised inner brows, longing wistful look. ` +
+      `Do not change eye color or fur color.`,
+  },
+  {
+    key: "judging",
+    emotion: "judging and unimpressed",
+    instruction:
+      `CHANGE ONLY: one eyebrow raised asymmetrically, sidelong side-eye glance, ` +
+      `flat unimpressed mouth line, skeptical expression. ` +
+      `Do not change eye color or fur color.`,
+  },
 ];
 
 interface GenerateRequest {
@@ -138,7 +191,13 @@ Deno.serve(async (req: Request) => {
       const results = await Promise.allSettled(
         edits.map(async (expr, i) => {
           await sleep(i * 600);
-          const rawEditURL = await editExpression(baseRawURL, expr.instruction, pet_id, expr.key);
+          const rawEditURL = await editExpression(
+            baseRawURL,
+            expr.emotion,
+            expr.instruction,
+            pet_id,
+            expr.key,
+          );
           const cutoutURL = await removeBackground(rawEditURL);
           const storedURL = await storeSprite(pet_id, expr.key, cutoutURL);
 
@@ -195,12 +254,12 @@ async function generateBaseMemoji(
   const seed = stableSeed(`${petId}:base`);
 
   const prompt =
-    `Convert this ${species}${petName ? ` named ${petName}` : ""} into an official ` +
-    `Apple iOS animal Memoji emoji sticker. Think of the Apple dog/cat/bear emoji on iPhone — ` +
-    `that exact 3D cartoon style. ${MEMOJI_STYLE_DESCRIPTION}. ` +
-    `Preserve this pet's identifying traits: fur color, markings, ear shape, breed silhouette. ` +
+    `Stylize this ${species}${petName ? ` named ${petName}` : ""} from the reference photo ` +
+    `into an Apple iOS animal Memoji emoji sticker — that exact 3D cartoon style, ` +
+    `but recognizably THIS specific pet, not a generic template. ` +
+    `${IDENTITY_PRESERVE} ` +
+    `${MEMOJI_STYLE_DESCRIPTION}. ` +
     `Render the head dramatically larger than realistic (chibi cartoon proportions). ` +
-    `Eyes should be huge, round, glossy black or brown with two crisp white catchlights. ` +
     `Surface is soft matte 3D — NOT shiny, NOT wet, NOT plastic-looking. ` +
     `Happy gentle smile, mouth slightly open or closed softly. ` +
     `One single character, centered headshot, pure white background. ` +
@@ -212,6 +271,7 @@ async function generateBaseMemoji(
       input_image: photoURL,
       aspect_ratio: "1:1",
       output_format: "png",
+      prompt_upsampling: false,
       safety_tolerance: 2,
       seed,
     });
@@ -238,10 +298,13 @@ async function generateBaseMemoji(
     {
       image: photoURL,
       prompt:
-        `cute cartoon ${species} portrait, Memoji style, clean rounded cartoon, smooth shading, ` +
-        `expressive face, simplified but recognizable features, transparent background, sticker art, ` +
-        `smiling, bright eyes, happy expression, cheerful`,
-      negative_prompt: "realistic, photograph, blurry, ugly, text, watermark",
+        `cute cartoon ${species} portrait, Memoji style, clean rounded cartoon, soft matte shading, ` +
+        `expressive face, simplified but recognizable features from the reference photo, ` +
+        `preserve exact fur color, markings, and eye color from photo, ` +
+        `transparent background, sticker art, gentle happy smile`,
+      negative_prompt:
+        `realistic, photograph, blurry, ugly, text, watermark, wrong eye color, dark eyes, ` +
+        `added accessories, invented markings, glossy plastic`,
       steps: 20,
       style: "Sticker",
       upscale: false,
@@ -258,20 +321,24 @@ async function generateBaseMemoji(
 
 async function editExpression(
   baseImageURL: string,
+  emotion: string,
   instruction: string,
   petId: string,
   expressionKey: string,
 ): Promise<string> {
   const prompt =
-    `${instruction}. Keep the IDENTICAL 3D glossy Apple-Memoji style, same colors, ` +
-    `same head shape, same pose, same glossy plastic shading and specular highlights, ` +
-    `PURE WHITE BACKGROUND. Only change the facial expression. AVOID: ${MEMOJI_NEGATIVE}.`;
+    `Edit this character to show a ${emotion} expression. ` +
+    `${instruction} ` +
+    `${EXPRESSION_EDIT_RULES} ` +
+    `Keep the IDENTICAL soft matte 3D Apple-Memoji style — NOT shiny, NOT plastic. ` +
+    `AVOID: ${MEMOJI_NEGATIVE}.`;
 
   return await runReplicate("black-forest-labs/flux-kontext-pro", {
     prompt,
     input_image: baseImageURL,
     aspect_ratio: "match_input_image",
     output_format: "png",
+    prompt_upsampling: false,
     safety_tolerance: 2,
     seed: stableSeed(`${petId}:${expressionKey}`),
   });

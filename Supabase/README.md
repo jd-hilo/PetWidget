@@ -52,6 +52,7 @@ Install the Supabase CLI and run:
 supabase functions deploy generate-sprites
 supabase functions deploy generate-messages
 supabase functions deploy location-event
+supabase functions deploy chat-reply
 supabase functions deploy delete-account
 ```
 

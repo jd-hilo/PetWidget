@@ -61,10 +61,6 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-skipOnboardingToReveal"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
             argument = "-testPetMessage:left_home"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -74,18 +70,10 @@
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-testPetMessage:been_gone_2h"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-testPetMessage:been_gone_6h"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-skipOnboardingToWidgetSetup"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-mockSprites"
             isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>

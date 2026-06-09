@@ -1,4 +1,5 @@
 import Foundation
+import Intents
 import UserNotifications
 
 // MARK: - Delivers generated pet messages to widget + notifications
@@ -9,7 +10,7 @@ enum PetMessageDelivery {
     static func deliver(pet: Pet, message: PetMessage) {
         ChatHistoryStore.appendPetMessage(message)
         WidgetSnapshotSync.writeFromPet(pet, message: message)
-        postNotification(petName: pet.name, message: message)
+        postNotification(pet: pet, message: message)
         NotificationCenter.default.post(
             name: .petMessageDelivered,
             object: nil,
@@ -35,9 +36,25 @@ enum PetMessageDelivery {
         WidgetSnapshotSync.writeFromPet(pet, message: message)
     }
 
-    private static func postNotification(petName: String, message: PetMessage) {
-        let content = UNMutableNotificationContent()
-        content.title = petName
+    private static func postNotification(pet: Pet, message: PetMessage) {
+        Task {
+            let content = await PetNotificationBuilder.makeContent(pet: pet, message: message)
+            let request = UNNotificationRequest(
+                identifier: "pet_message_\(message.id.uuidString)",
+                content: content,
+                trigger: nil
+            )
+            try? await UNUserNotificationCenter.current().add(request)
+        }
+    }
+}
+
+// MARK: - Communication notification (pet sprite avatar on the left)
+
+private enum PetNotificationBuilder {
+    static func makeContent(pet: Pet, message: PetMessage) async -> UNNotificationContent {
+        var content = UNMutableNotificationContent()
+        content.title = pet.name
         content.body = message.content
         content.sound = .default
         content.userInfo = [
@@ -45,12 +62,61 @@ enum PetMessageDelivery {
             "trigger": message.triggerType.rawValue,
         ]
 
-        let request = UNNotificationRequest(
-            identifier: "pet_message_\(message.id.uuidString)",
-            content: content,
-            trigger: nil
+        guard let spriteData = await downloadSpriteData(pet: pet, expression: message.expression) else {
+            return content
+        }
+
+        let avatar = INImage(imageData: spriteData)
+        let sender = INPerson(
+            personHandle: INPersonHandle(value: pet.id.uuidString, type: .unknown),
+            nameComponents: nil,
+            displayName: pet.name,
+            image: avatar,
+            contactIdentifier: nil,
+            customIdentifier: pet.id.uuidString
         )
-        UNUserNotificationCenter.current().add(request)
+
+        let intent = INSendMessageIntent(
+            recipients: nil,
+            outgoingMessageType: .outgoingMessageText,
+            content: message.content,
+            speakableGroupName: nil,
+            conversationIdentifier: pet.id.uuidString,
+            serviceName: "Petmoji",
+            sender: sender,
+            attachments: nil
+        )
+        intent.setImage(avatar, forParameterNamed: \.sender)
+
+        let interaction = INInteraction(intent: intent, response: nil)
+        interaction.direction = .incoming
+        await donate(interaction)
+
+        if let communicationContent = try? content.updating(from: intent),
+           var mutable = communicationContent.mutableCopy() as? UNMutableNotificationContent {
+            mutable.userInfo = content.userInfo
+            return mutable
+        }
+
+        return content
+    }
+
+    private static func donate(_ interaction: INInteraction) async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            interaction.donate { _ in continuation.resume() }
+        }
+    }
+
+    private static func downloadSpriteData(pet: Pet, expression: PetExpression) async -> Data? {
+        guard let urlString = pet.expressions[expression] ?? pet.expressions[.happy],
+              !urlString.isEmpty else { return nil }
+
+        do {
+            return try await SupabaseService.shared.downloadSprite(from: urlString)
+        } catch {
+            print("[PetNotificationBuilder] sprite download failed: \(error)")
+            return nil
+        }
     }
 }
 
@@ -58,20 +124,29 @@ enum PetMessageDelivery {
 extension PetMessageDelivery {
     enum TestMessageError: LocalizedError {
         case noPet
+        case unsupportedEvent(String)
 
         var errorDescription: String? {
             switch self {
-            case .noPet: return "No pet loaded. Open the app with a pet first."
+            case .noPet:
+                return "No pet loaded. Sign in and open the app with a pet first."
+            case .unsupportedEvent(let event):
+                return "Unknown test event \"\(event)\". Use: \(supportedLocationEvents.joined(separator: ", "))."
             }
         }
     }
 
-    /// Generates a real Claude message via `location-event` and delivers it to the widget + notification.
+    static let supportedLocationEvents = ["left_home", "returned", "been_gone_2h", "been_gone_6h"]
+
     @MainActor
     static func sendTestMessage(appState: AppState, event: String = "been_gone_2h") async throws -> String {
+        guard supportedLocationEvents.contains(event) else {
+            throw TestMessageError.unsupportedEvent(event)
+        }
         guard let pet = appState.widgetPet ?? appState.currentPet ?? appState.pets.first else {
             throw TestMessageError.noPet
         }
+        _ = await MessageScheduler.shared.requestNotificationPermission()
         let message = try await SupabaseService.shared.reportLocationEvent(petId: pet.id, event: event)
         guard let updatedPet = try await SupabaseService.shared.fetchPet(by: pet.id) else {
             throw TestMessageError.noPet

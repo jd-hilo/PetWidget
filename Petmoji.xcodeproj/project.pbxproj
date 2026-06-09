@@ -10,6 +10,7 @@
 		1E4B9C810D7BF0E33A9BA04B /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */; };
 		292F7496F3240B0562708EBF /* PersonalityBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */; };
 		2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73DA20062A61BDF056EB316 /* PetmojiApp.swift */; };
+		F7DEBUG012F9E8D7C006EDD01 /* DebugLaunchArgs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DEBUG002F9E8D7C006EDD01 /* DebugLaunchArgs.swift */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
 		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
 		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
@@ -104,6 +105,7 @@
 		D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUserSettings.swift; sourceTree = "<group>"; };
 		D73DA20062A61BDF056EB316 /* PetmojiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetmojiApp.swift; sourceTree = "<group>"; };
+		F7DEBUG002F9E8D7C006EDD01 /* DebugLaunchArgs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLaunchArgs.swift; sourceTree = "<group>"; };
 		E2C31EB3D182749A40DD6A1F /* Petmoji.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Petmoji.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E367B57172A90687CF9B9982 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		ECAC105A00465289B0DF46CE /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
@@ -208,6 +210,7 @@
 				A1B2C3D32F9E8D7C006EDD01 /* AppearanceSettings.swift */,
 				F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */,
 				C9EFEE996E1C4B444F152178 /* ContentView.swift */,
+				F7DEBUG002F9E8D7C006EDD01 /* DebugLaunchArgs.swift */,
 				E367B57172A90687CF9B9982 /* DesignSystem.swift */,
 				F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */,
 				BE4275124830FEE1D8B137A8 /* PetHomeView.swift */,
@@ -416,6 +419,7 @@
 				9E547404C5B2A052DE973A3C /* PetMessage.swift in Sources */,
 				F7PROF012F9E8D7C006EDD01 /* UserProfile.swift in Sources */,
 				2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */,
+				F7DEBUG012F9E8D7C006EDD01 /* DebugLaunchArgs.swift in Sources */,
 				8F5FFD67DE463FB07BBB57A1 /* PhotoPickerView.swift in Sources */,
 				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
 				F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */,
@@ -478,6 +482,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = N8SACG5845;
@@ -621,6 +626,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEVELOPMENT_TEAM = N8SACG5845;

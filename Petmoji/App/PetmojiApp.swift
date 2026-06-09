@@ -27,7 +27,7 @@ struct PetmojiApp: App {
 
 // MARK: - App Delegate (APNs registration)
 
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
@@ -69,6 +69,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     @MainActor
     private func refreshWidgetData() async {
         await PetMessageDelivery.refreshWidgetFromServer()
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .list])
     }
 }
 
@@ -152,7 +160,14 @@ struct RootView: View {
         .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
         .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
-            if !shouldSkipOnboardingToReveal && !shouldSkipOnboardingToWidgetSetup {
+            let skipNormalBootstrap = shouldSkipOnboardingToReveal || shouldSkipOnboardingToWidgetSetup
+#if DEBUG
+            let wantsTestNotifications = !debugTestPetMessageEvents.isEmpty
+#else
+            let wantsTestNotifications = false
+#endif
+
+            if !skipNormalBootstrap || wantsTestNotifications {
 #if DEBUG
                 if shouldForceSignOut {
                     await appState.signOut()
@@ -160,9 +175,7 @@ struct RootView: View {
 #endif
                 await appState.bootstrap()
 #if DEBUG
-                if shouldSendTestPetMessage, appState.isAuthenticated {
-                    try? await PetMessageDelivery.sendTestMessage(appState: appState)
-                }
+                await runDebugTestNotificationsIfNeeded()
 #endif
             } else {
                 appState.markBootstrapComplete()
@@ -171,16 +184,57 @@ struct RootView: View {
     }
 
 #if DEBUG
-    private var shouldSendTestPetMessage: Bool {
-        ProcessInfo.processInfo.arguments.contains("-testPetMessage")
+    private var debugTestPetMessageEvents: [String] {
+        DebugLaunchArgs.testPetMessageEvents
+    }
+
+    @MainActor
+    private func runDebugTestNotificationsIfNeeded() async {
+        guard !debugTestPetMessageEvents.isEmpty else { return }
+
+        guard appState.isAuthenticated else {
+            print("[Debug] Test notification skipped — sign in first.")
+            return
+        }
+
+        guard !appState.pets.isEmpty else {
+            print("[Debug] Test notification skipped — no pets loaded.")
+            return
+        }
+
+        for (index, event) in debugTestPetMessageEvents.enumerated() {
+            if index > 0 {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            }
+            do {
+                let content = try await PetMessageDelivery.sendTestMessage(appState: appState, event: event)
+                print("[Debug] Test notification (\(event)): \"\(content)\"")
+            } catch {
+                print("[Debug] Test notification failed (\(event)): \(debugErrorDescription(error))")
+            }
+        }
     }
 
     private var shouldForceSignOut: Bool {
         ProcessInfo.processInfo.arguments.contains("-forceSignOut")
     }
-#endif
 
-#if DEBUG
+    private func debugErrorDescription(_ error: Error) -> String {
+        if case DecodingError.dataCorrupted(let context) = error {
+            return "Decode error: \(context.debugDescription)"
+        }
+        if case DecodingError.keyNotFound(let key, let context) = error {
+            return "Missing key \"\(key.stringValue)\": \(context.debugDescription)"
+        }
+        if case DecodingError.typeMismatch(let type, let context) = error {
+            return "Type mismatch for \(type): \(context.debugDescription)"
+        }
+        if case DecodingError.valueNotFound(let type, let context) = error {
+            return "Missing value for \(type): \(context.debugDescription)"
+        }
+        return error.localizedDescription
+    }
+
     private func makeDebugRogerPet(useMockSprites: Bool) -> Pet {
         Pet(
             id: UUID(),

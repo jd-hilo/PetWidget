@@ -200,13 +200,12 @@ struct ChatPanel: View {
             let response = try await ClaudeService.shared.chatReply(
                 petId: pet.id,
                 userMessage: userText,
-                conversationHistory: messages
+                conversationHistory: messages,
+                ownerName: appState.userDisplayName
             )
-            let petMsg = ChatMessage(
-                content: response.message,
-                isFromPet: true,
-                expression: response.expression
-            )
+            await applyTypingDelay(for: response.message)
+            let petMsg = chatMessage(from: response)
+            ChatHistoryStore.appendPetMessage(response.asPetMessage(fallbackPetId: pet.id))
             await MainActor.run {
                 isTyping = false
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
@@ -215,9 +214,16 @@ struct ChatPanel: View {
                 syncWidget(petMessage: petMsg)
             }
         } catch {
+#if DEBUG
+            print("[ChatPanel] chat reply failed: \(error)")
+#endif
             await MainActor.run {
                 isTyping = false
-                let fallback = ChatMessage(content: "...", isFromPet: true, expression: .judging)
+                let fallback = ChatMessage(
+                    content: "my brain glitched. try again?",
+                    isFromPet: true,
+                    expression: .judging
+                )
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                     messages.append(fallback)
                 }
@@ -228,14 +234,18 @@ struct ChatPanel: View {
 
     private func sendPetOpening() async {
         isTyping = true
-        try? await Task.sleep(nanoseconds: 800_000_000)
+        try? await Task.sleep(nanoseconds: 600_000_000)
         do {
             let response = try await ClaudeService.shared.chatReply(
                 petId: pet.id,
-                userMessage: "say a short, in-character greeting",
-                conversationHistory: []
+                userMessage: "",
+                conversationHistory: [],
+                ownerName: appState.userDisplayName,
+                isOpening: true
             )
-            let opening = ChatMessage(content: response.message, isFromPet: true, expression: response.expression)
+            await applyTypingDelay(for: response.message)
+            let opening = chatMessage(from: response)
+            ChatHistoryStore.appendPetMessage(response.asPetMessage(fallbackPetId: pet.id))
             await MainActor.run {
                 isTyping = false
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
@@ -244,8 +254,25 @@ struct ChatPanel: View {
                 syncWidget(petMessage: opening)
             }
         } catch {
+#if DEBUG
+            print("[ChatPanel] opening greeting failed: \(error)")
+#endif
             await MainActor.run { isTyping = false }
         }
+    }
+
+    private func chatMessage(from response: ClaudeMessageResponse) -> ChatMessage {
+        let stored = response.asPetMessage(fallbackPetId: pet.id)
+        return ChatHistoryStore.chatMessage(from: stored)
+    }
+
+    private func applyTypingDelay(for reply: String) async {
+        let baseSeconds = 0.6
+        let perCharSeconds = 0.03
+        let maxSeconds = 2.5
+        let delay = min(maxSeconds, baseSeconds + Double(reply.count) * perCharSeconds)
+        let nanos = UInt64(delay * 1_000_000_000)
+        try? await Task.sleep(nanoseconds: nanos)
     }
 
     private func syncWidget(petMessage: ChatMessage) {

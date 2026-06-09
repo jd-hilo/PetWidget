@@ -391,7 +391,8 @@ final class SupabaseService: @unchecked Sendable {
                 "location-event",
                 options: FunctionInvokeOptions(
                     body: LocationRequest(petId: petId.uuidString, event: event)
-                )
+                ),
+                decoder: PostgrestClient.Configuration.jsonDecoder
             )
         return response
     }

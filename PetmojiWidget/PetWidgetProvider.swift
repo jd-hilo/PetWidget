@@ -19,6 +19,7 @@ private final class PetWidgetTimelineCompletion: @unchecked Sendable {
 
 struct PetWidgetEntry: TimelineEntry {
     let date: Date
+    let petId: UUID?
     let petName: String
     let spriteURL: String?
     let spriteImageData: Data?     // Data is Sendable; convert to UIImage at render time
@@ -27,6 +28,7 @@ struct PetWidgetEntry: TimelineEntry {
 
     static let placeholder = PetWidgetEntry(
         date: .now,
+        petId: nil,
         petName: "Mochi",
         spriteURL: nil,
         spriteImageData: nil,
@@ -105,10 +107,12 @@ struct PetWidgetProvider: TimelineProvider {
 
         let expressionStr = defaults?.string(forKey: "widget_expression") ?? "happy"
         let spriteURL     = defaults?.string(forKey: "widget_sprite_url")
+        let petId         = defaults?.string(forKey: "widget_pet_id").flatMap(UUID.init(uuidString:))
         let imageData     = await Self.downloadImageData(from: spriteURL)
 
         return PetWidgetEntry(
             date: .now,
+            petId: petId,
             petName: name,
             spriteURL: spriteURL,
             spriteImageData: imageData,

@@ -4,11 +4,14 @@ import PhotosUI
 // MARK: - Photo Picker View
 
 struct PhotoPickerView: View {
+    @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
+    var onCancel: (() -> Void)?
 
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var isLoadingPhotos = false
+    @State private var isPhotoPickerPresented = false
 
     var body: some View {
         ScrollView {
@@ -17,92 +20,218 @@ struct PhotoPickerView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("show me your pet")
                         .font(.displayL)
-                        .foregroundStyle(Color.pmTextPrimary)
+                        .foregroundStyle(palette.accentDark)
                     Text("add 3–5 clear face photos for the best results")
                         .font(.bodyM)
-                        .foregroundStyle(Color.pmTextSecondary)
+                        .bold()
+                        .foregroundStyle(palette.textSecondary)
                 }
                 .padding(.horizontal, 24)
 
-                // Photo grid
-                PhotoGridView(photos: draft.photos, isLoading: isLoadingPhotos) {
-                    // Remove photo
-                }
+                // Photo grid (tap to open picker)
+                PhotoGridView(
+                    photos: draft.photos,
+                    isLoading: isLoadingPhotos,
+                    onTap: { isPhotoPickerPresented = true }
+                )
 
                 // Species picker
                 VStack(alignment: .leading, spacing: 12) {
                     Text("what kind of pet?")
                         .font(.titleL)
-                        .foregroundStyle(Color.pmTextPrimary)
+                        .foregroundStyle(palette.accentDark)
                         .padding(.horizontal, 24)
+                        .multilineTextAlignment(.center)
 
-                    HStack(spacing: 12) {
-                        ForEach(Species.allCases, id: \.self) { species in
-                            PMChip(
-                                label: species.displayName,
-                                isSelected: draft.species == species
-                            ) {
-                                draft.species = species
-                            }
+                    VStack(spacing: 16) {
+                        HStack(spacing: 20) {
+                            SpeciesTileButton(
+                                label: Species.dog.displayName.lowercased(),
+                                iconAssetName: "dogIcon",
+                                isSelected: draft.species == .dog,
+                                action: { draft.species = .dog }
+                            )
+
+                            SpeciesTileButton(
+                                label: Species.cat.displayName.lowercased(),
+                                iconAssetName: "catIcon",
+                                isSelected: draft.species == .cat,
+                                action: { draft.species = .cat }
+                            )
                         }
+
+                        SpeciesWideButton(
+                            label: Species.other.displayName.lowercased(),
+                            isSelected: draft.species == .other,
+                            action: { draft.species = .other }
+                        )
                     }
                     .padding(.horizontal, 24)
                 }
 
-                Spacer(minLength: 120)
+                Spacer(minLength: onCancel != nil ? 8 : 120)
             }
             .padding(.top, 8)
         }
         .safeAreaInset(edge: .bottom) {
-            VStack(spacing: 12) {
-                PhotosPicker(
-                    selection: $selectedItems,
-                    maxSelectionCount: 5,
-                    matching: .images
-                ) {
-                    Text(draft.photos.isEmpty ? "add photos" : "add more photos")
-                        .font(.buttonFont)
-                        .foregroundStyle(Color.pmPrimary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 58)
-                        .background(Color.pmPrimaryLight, in: Capsule())
-                }
-                .padding(.horizontal, 24)
-
-                PMPrimaryButton(
+            VStack(spacing: onCancel != nil ? 8 : 12) {
+                PMSageCTAButton(
                     title: "continue →",
                     action: onNext,
                     isEnabled: draft.isPhotoStepValid
                 )
-                .padding(.horizontal, 24)
+                if let onCancel {
+                    PMOnboardingCancelButton(action: onCancel)
+                }
             }
-            .padding(.bottom, 40)
-            .background(Color.pmBackground.opacity(0.95))
+            .padding(.horizontal, 24)
+            .padding(.bottom, 10)
+            .background(Color.clear)
         }
+        .pmSageScreenBackground()
         .onChange(of: selectedItems) { _, newItems in
             Task {
                 isLoadingPhotos = true
+                var images: [UIImage] = []
+                var dataItems: [Data] = []
                 for item in newItems {
                     if let data = try? await item.loadTransferable(type: Data.self),
                        let image = UIImage(data: data) {
-                        await MainActor.run {
-                            draft.photos.append(image)
-                            draft.photoData.append(data)
-                        }
+                        images.append(image)
+                        dataItems.append(data)
                     }
                 }
-                await MainActor.run { isLoadingPhotos = false }
+                await MainActor.run {
+                    // Treat each picker session as an edit of current photo set.
+                    draft.photos = images
+                    draft.photoData = dataItems
+                    isLoadingPhotos = false
+                }
             }
         }
+        .photosPicker(
+            isPresented: $isPhotoPickerPresented,
+            selection: $selectedItems,
+            maxSelectionCount: 5,
+            matching: .images
+        )
+    }
+}
+
+struct SpeciesTileButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let label: String
+    let iconAssetName: String?
+    let isSelected: Bool
+    let action: () -> Void
+
+    private var iconSideLength: CGFloat {
+        guard let name = iconAssetName else { return 84 }
+        return name.range(of: "cat", options: .caseInsensitive) != nil ? 96 : 84
+    }
+
+    var body: some View {
+        Button(action: action) {
+            ZStack(alignment: .topTrailing) {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(isSelected ? palette.accent : palette.cardNeutral)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 132)
+                    .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                    .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 2))
+                            .foregroundStyle(palette.border)
+                    }
+                    .pmSageSelectableTileShadow(isSelected: isSelected)
+
+                VStack(spacing: 10) {
+                    Spacer()
+
+                    if let iconAssetName,
+                       let uiImage = UIImage(named: iconAssetName) {
+                        Image(uiImage: uiImage)
+                            .renderingMode(.template)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: iconSideLength, height: iconSideLength)
+                            .foregroundStyle(palette.iconTint)
+                            .accessibilityLabel(Text(label))
+                    } else {
+                        Text(label)
+                            .font(.bodyL)
+                            .foregroundStyle(palette.iconTint)
+                    }
+
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 132)
+
+                if isSelected {
+                    Circle()
+                        .fill(palette.accentDark)
+                        .frame(width: 24, height: 24)
+                        .overlay {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(10)
+                }
+            }
+        }
+        .buttonStyle(SpringButtonStyle())
+    }
+}
+
+struct SpeciesWideButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let label: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(isSelected ? palette.accent : palette.cardNeutral)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                    .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(style: StrokeStyle(lineWidth: 2))
+                            .foregroundStyle(palette.border)
+                    }
+                    .pmSageSelectableTileShadow(isSelected: isSelected)
+
+                Text(label)
+                    .font(.bodyM)
+                    .bold()
+                    .foregroundStyle(palette.iconTint)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+            }
+        }
+        .buttonStyle(SpringButtonStyle())
     }
 }
 
 // MARK: - Photo Grid
 
 struct PhotoGridView: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let photos: [UIImage]
     let isLoading: Bool
-    let onRemove: () -> Void
+    let onTap: () -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -112,18 +241,24 @@ struct PhotoGridView: View {
                     Image(uiImage: first)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 220, height: 220)
+                        .frame(width: 180, height: 180)
                         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .shadow(color: palette.accent.opacity(0.60), radius: 2, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.40), radius: 4, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.20), radius: 6, x: 0, y: 0)
                 } else {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(Color.pmCardAlt)
-                        .frame(width: 220, height: 220)
+                        .fill(palette.cardNeutral)
+                        .frame(width: 180, height: 180)
+                        .shadow(color: palette.accent.opacity(0.60), radius: 2, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.40), radius: 4, x: 0, y: 0)
+                        .shadow(color: palette.accent.opacity(0.20), radius: 6, x: 0, y: 0)
                         .overlay {
                             RoundedRectangle(cornerRadius: 20, style: .continuous)
                                 .strokeBorder(
                                     style: StrokeStyle(lineWidth: 2, dash: [8])
                                 )
-                                .foregroundStyle(Color.pmTextSecondary.opacity(0.4))
+                                .foregroundStyle(palette.border)
                         }
                         .overlay {
                             if isLoading {
@@ -132,10 +267,10 @@ struct PhotoGridView: View {
                                 VStack(spacing: 8) {
                                     Image(systemName: "camera")
                                         .font(.system(size: 32, weight: .light))
-                                        .foregroundStyle(Color.pmTextSecondary)
+                                        .foregroundStyle(palette.iconTint)
                                     Text("add photo")
                                         .font(.bodyS)
-                                        .foregroundStyle(Color.pmTextSecondary)
+                                        .foregroundStyle(palette.iconTint)
                                 }
                             }
                         }
@@ -147,21 +282,35 @@ struct PhotoGridView: View {
                         Image(uiImage: photos[i])
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 140, height: 140)
+                            .frame(width: 110, height: 110)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                            .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
                     } else {
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.pmCardAlt)
-                            .frame(width: 140, height: 140)
+                            .fill(palette.cardNeutral)
+                            .frame(width: 110, height: 110)
+                            .shadow(color: palette.accent.opacity(0.40), radius: 2, x: 0, y: 0)
+                            .shadow(color: palette.accent.opacity(0.20), radius: 4, x: 0, y: 0)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .strokeBorder(
+                                        style: StrokeStyle(lineWidth: 2)
+                                    )
+                                    .foregroundStyle(palette.border)
+                            }
                             .overlay {
                                 Image(systemName: "plus")
                                     .font(.system(size: 24, weight: .medium))
-                                    .foregroundStyle(Color.pmTextSecondary)
+                                    .foregroundStyle(palette.iconTint)
                             }
                     }
                 }
             }
             .padding(.horizontal, 24)
+            .padding(.vertical, 10)
         }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
     }
 }

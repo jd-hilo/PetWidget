@@ -10,12 +10,31 @@ In the Supabase SQL editor, run the contents of:
 
 ```
 migrations/001_initial_schema.sql
+migrations/002_device_tokens.sql
+migrations/003_profiles.sql
 ```
 
 This creates:
 - `pets` table with RLS
 - `messages` table with RLS
+- `profiles` table with RLS (sign-up name, email, phone)
 - Storage buckets (`pet-photos`, `pet-sprites`)
+
+## 2b. Email OTP auth (Auth dashboard + Loops)
+
+The iOS app uses **passwordless email OTP** (6-digit code) for both sign-up and sign-in via `signInWithOTP` and `verifyOTP`. Emails are delivered through **Loops SMTP**.
+
+**Full setup:** follow [`CLAUDE.md`](../CLAUDE.md).
+
+Quick checklist in **[Authentication → Providers → Email](https://supabase.com/dashboard/project/_/auth/providers?provider=Email)**:
+
+- **Email provider**: enabled
+- **OTP length**: **6** (must match `SignUpOTPConfig.length` in [`SignUpDraft.swift`](../Petmoji/SignUp/SignUpDraft.swift))
+- **Confirm email**: **off** (verification happens in-app via OTP)
+- **Custom SMTP**: Loops (`smtp.loops.so`, port 587) — see runbook
+- **Email templates**: Magic Link + Confirm signup bodies must be **JSON payloads** from Loops (not HTML)
+
+Optional: disable **Anonymous sign-ins** in production. Keep enabled if you use `-skipSignUp`.
 
 ## 3. Create Storage Buckets (UI Method)
 
@@ -33,6 +52,8 @@ Install the Supabase CLI and run:
 supabase functions deploy generate-sprites
 supabase functions deploy generate-messages
 supabase functions deploy location-event
+supabase functions deploy chat-reply
+supabase functions deploy delete-account
 ```
 
 Set required secrets:

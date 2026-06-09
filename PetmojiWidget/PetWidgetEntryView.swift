@@ -24,69 +24,58 @@ struct PetWidgetEntryView: View {
 struct SmallWidgetView: View {
     let entry: PetWidgetEntry
 
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(spacing: 0) {
-
-                // Name pill — top right
-                HStack {
-                    Spacer()
-                    Text(entry.petName)
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(.ultraThinMaterial, in: Capsule())
-                }
-                .padding(.horizontal, 12)
-                .padding(.top, 12)
-
-                Spacer()
-
-                // Sprite — centered
-                WidgetSpriteView(image: entry.spriteImage)
-                    .frame(width: 88, height: 88)
-
-                Spacer()
-
-                // Message + chat icon — bottom row
-                HStack(alignment: .bottom, spacing: 8) {
-                    Text(entry.message)
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .lineLimit(2)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Image(systemName: "message.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 30, height: 30)
-                        .background(.black.opacity(0.25), in: Circle())
-                }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
-            }
-        }
-        .containerBackground(for: .widget) {
-            blurredBackground
-        }
+    private var emotionDotColor: Color {
+        Color(hex: entry.expression.accentHex)
     }
 
-    private var blurredBackground: some View {
-        ZStack {
-            // Frosted glass — blurs the wallpaper behind the widget
-            Rectangle().fill(.ultraThinMaterial)
-
-            // Expression colour tint at 50% so wallpaper still reads through
-            Color(hex: entry.expression.accentHex).opacity(0.50)
-
-            // Blurred sprite glow for depth
-            WidgetSpriteView(image: entry.spriteImage)
-                .scaleEffect(2.0)
-                .blur(radius: 20)
-                .opacity(0.15)
-                .allowsHitTesting(false)
+    private var chatDeepLink: URL? {
+        guard let petId = entry.petId else {
+            return URL(string: "petmoji://chat")
         }
+        return URL(string: "petmoji://chat?petId=\(petId.uuidString)")
+    }
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            HStack {
+                Spacer(minLength: 0)
+                WidgetBoundSpriteCircle(
+                    image: entry.spriteImage,
+                    size: 100,
+                    diskFill: AnyShapeStyle(Color.clear),
+                    showsBorder: false,
+                    knockoutWhiteMatte: true,
+                    knockoutDarkMatte: true,
+                    spriteScale: 1.28
+                )
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 2)
+
+            HStack(alignment: .center, spacing: 6) {
+                WidgetEmotionStatusBullet(dotColor: emotionDotColor)
+
+                Text(entry.message)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.93))
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(2)
+                    .lineLimit(14)
+                    .minimumScaleFactor(0.72)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.leading, 6)
+            .padding(.trailing, 8)
+            .padding(.top, 6)
+            .padding(.bottom, 8)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .containerBackground(for: .widget) {
+            WidgetTranslucentBackground()
+        }
+        .widgetURL(chatDeepLink)
     }
 }
 
@@ -95,75 +84,196 @@ struct SmallWidgetView: View {
 struct MediumWidgetView: View {
     let entry: PetWidgetEntry
 
-    var body: some View {
-        ZStack {
-            HStack(spacing: 0) {
-
-                // Sprite left
-                WidgetSpriteView(image: entry.spriteImage)
-                    .frame(width: 110, height: 110)
-                    .padding(.leading, 12)
-
-                // Right column
-                VStack(alignment: .leading, spacing: 8) {
-
-                    // Name pill top-right
-                    HStack {
-                        Spacer()
-                        Text(entry.petName)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(.ultraThinMaterial, in: Capsule())
-                    }
-
-                    Spacer()
-
-                    // Message
-                    Text(entry.message)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                    Spacer()
-
-                    // Chat icon bottom-right
-                    HStack {
-                        Spacer()
-                        Image(systemName: "message.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 34, height: 34)
-                            .background(.black.opacity(0.25), in: Circle())
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-            }
+    private var chatDeepLink: URL? {
+        guard let petId = entry.petId else {
+            return URL(string: "petmoji://chat")
         }
-        .containerBackground(for: .widget) {
-            blurredBackground
-        }
+        return URL(string: "petmoji://chat?petId=\(petId.uuidString)")
     }
 
-    private var blurredBackground: some View {
-        ZStack {
-            Color(hex: entry.expression.accentHex)
-
-            RadialGradient(
-                colors: [.white.opacity(0.35), .clear],
-                center: .topLeading,
-                startRadius: 0,
-                endRadius: 200
+    var body: some View {
+        HStack(spacing: 6) {
+            WidgetBoundSpriteCircle(
+                image: entry.spriteImage,
+                size: 136,
+                diskFill: AnyShapeStyle(Color.clear),
+                showsBorder: false,
+                knockoutWhiteMatte: true,
+                knockoutDarkMatte: true,
+                spriteScale: 1.24
             )
+            .padding(.leading, 4)
+            .padding(.vertical, 4)
 
-            WidgetSpriteView(image: entry.spriteImage)
-                .scaleEffect(2.0)
-                .blur(radius: 20)
-                .opacity(0.3)
-                .allowsHitTesting(false)
+            VStack(alignment: .leading, spacing: 6) {
+                WidgetBulletEmotionRow(
+                    expression: entry.expression,
+                    dotColor: Color(hex: entry.expression.accentHex)
+                )
+
+                Text(entry.message)
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(4)
+                    .lineLimit(18)
+                    .minimumScaleFactor(0.74)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
+        }
+        .containerBackground(for: .widget) {
+            WidgetTranslucentBackground()
+        }
+        .widgetURL(chatDeepLink)
+    }
+}
+
+// MARK: - Shared backgrounds
+
+/// Stock-style translucent widget surface + faint paw texture (small + medium).
+private struct WidgetTranslucentBackground: View {
+    var body: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial)
+            PawPatternOverlay(symbolPointSize: 10)
+                .opacity(0.032)
+        }
+    }
+}
+
+// Faint, staggered grid of paw prints behind the glass (no corner badge).
+private struct PawPatternOverlay: View {
+    var symbolPointSize: CGFloat = 10
+    private var tile: CGFloat { max(40, symbolPointSize * 3.8) }
+
+    var body: some View {
+        Canvas { context, size in
+            guard let symbol = context.resolveSymbol(id: 0) else { return }
+
+            let cols = Int(ceil(size.width / tile)) + 2
+            let rows = Int(ceil(size.height / tile)) + 2
+
+            for row in 0..<rows {
+                for col in 0..<cols {
+                    let xOffset = (row % 2 == 0) ? 0 : tile / 2
+                    let x = CGFloat(col) * tile + xOffset - tile / 2
+                    let y = CGFloat(row) * tile - tile / 2
+                    let rotation = Angle.degrees(row % 2 == 0 ? -10 : 12)
+
+                    var ctx = context
+                    ctx.translateBy(x: x, y: y)
+                    ctx.rotate(by: rotation)
+                    ctx.draw(symbol, at: .zero, anchor: .center)
+                }
+            }
+        } symbols: {
+            Image(systemName: "pawprint.fill")
+                .font(.system(size: symbolPointSize, weight: .light))
+                .foregroundStyle(.white)
+                .tag(0)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Shared Widget Blocks
+
+/// Medium widget: colored bullet + emotion label on one line (no pet name).
+private struct WidgetBulletEmotionRow: View {
+    let expression: WidgetExpression
+    let dotColor: Color
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Text("•")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(dotColor)
+                .shadow(color: dotColor.opacity(0.45), radius: 1, x: 0, y: 0)
+                .shadow(color: dotColor.opacity(0.28), radius: 3, x: 0, y: 0)
+                .shadow(color: dotColor.opacity(0.16), radius: 6, x: 0, y: 0)
+                .offset(y: 3)
+
+            Text("\(expression.displayName)!")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .kerning(0.4)
+                .foregroundStyle(.white.opacity(0.96))
+                .lineLimit(1)
+                .modifier(FeelingAccentShadowModifier(color: dotColor, enabled: true))
+        }
+    }
+}
+
+/// Emotion accent bullet only (small widget); styling aligned with `WidgetBulletEmotionRow` bullet.
+private struct WidgetEmotionStatusBullet: View {
+    let dotColor: Color
+
+    var body: some View {
+        Text("•")
+            .font(.system(size: 26, weight: .bold, design: .rounded))
+            .foregroundStyle(dotColor)
+            .shadow(color: dotColor.opacity(0.45), radius: 1, x: 0, y: 0)
+            .shadow(color: dotColor.opacity(0.28), radius: 3, x: 0, y: 0)
+            .shadow(color: dotColor.opacity(0.16), radius: 6, x: 0, y: 0)
+            .accessibilityLabel("Mood indicator")
+    }
+}
+
+private struct FeelingAccentShadowModifier: ViewModifier {
+    let color: Color
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        Group {
+            if enabled {
+                content
+                    .shadow(color: color.opacity(0.38), radius: 1, x: 0, y: 0)
+                    .shadow(color: color.opacity(0.22), radius: 4, x: 0, y: 0)
+            } else {
+                content
+            }
+        }
+    }
+}
+
+struct WidgetBoundSpriteCircle: View {
+    let image: UIImage?
+    let size: CGFloat
+    /// Avatar backing; accept any `ShapeStyle` so callers can pass `Color` or a `Material`.
+    var diskFill: AnyShapeStyle = AnyShapeStyle(Color.white)
+    var borderColor: Color = Color(hex: "#7FA687")
+    /// When false, no ring is drawn (sprite is still circularly clipped).
+    var showsBorder: Bool = true
+    /// When true, knocks out near-white matte/background pixels (typical for sprites on a white card).
+    var knockoutWhiteMatte: Bool = false
+    /// When true, knocks out near-black backdrop pixels in the sprite (for sprites that ship with a dark matte).
+    var knockoutDarkMatte: Bool = false
+    /// Zoom inside the circular clip before masking to the circle.
+    var spriteScale: CGFloat = 1.2
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(diskFill)
+
+            WidgetSpriteView(
+                image: image,
+                knockoutWhiteMatte: knockoutWhiteMatte,
+                knockoutDarkMatte: knockoutDarkMatte
+            )
+            .frame(width: size, height: size)
+            .scaleEffect(spriteScale)
+            .clipShape(Circle())
+        }
+        .frame(width: size, height: size)
+        .overlay {
+            if showsBorder {
+                Circle()
+                    .strokeBorder(borderColor, lineWidth: 1.6)
+            }
         }
     }
 }
@@ -172,16 +282,213 @@ struct MediumWidgetView: View {
 
 struct WidgetSpriteView: View {
     let image: UIImage?
+    /// When true, near-white matte pixels are converted to transparency without darkening colors.
+    var knockoutWhiteMatte: Bool = true
+    /// When true, near-black backdrop pixels are converted to transparency (for sprites with a dark matte).
+    var knockoutDarkMatte: Bool = false
 
     var body: some View {
-        if let image {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-        } else {
-            Text("🐾")
-                .font(.system(size: 40))
+        Group {
+            if let image {
+                if knockoutWhiteMatte || knockoutDarkMatte {
+                    spriteCore(processedImage(from: image))
+                } else {
+                    spriteCore(image)
+                }
+            } else {
+                Text("🐾")
+                    .font(.system(size: 40))
+            }
         }
+    }
+
+    private func spriteCore(_ image: UIImage) -> some View {
+        Image(uiImage: image)
+            .renderingMode(.original)
+            .resizable()
+            .interpolation(.high)
+            .antialiased(true)
+            .scaledToFit()
+    }
+
+    private func processedImage(from image: UIImage) -> UIImage {
+        var working = image
+        if knockoutWhiteMatte,
+           let knockedOut = working.knockingOutEdgeConnectedMatte(
+               matteThreshold: 0.93,
+               softness: 0.11,
+               maxChroma: 0.065
+           ) {
+            working = knockedOut
+        }
+        if knockoutDarkMatte,
+           let knockedOut = working.knockingOutNearBlack(threshold: 0.08, softness: 0.06) {
+            working = knockedOut
+        }
+        return working
+    }
+}
+
+private extension WidgetExpression {
+    var displayName: String {
+        switch self {
+        case .happy: return "Happy"
+        case .sleepy: return "Sleepy"
+        case .mad: return "Mad"
+        case .excited: return "Excited"
+        case .missesYou: return "Misses You"
+        case .judging: return "Judging"
+        }
+    }
+}
+
+private extension UIImage {
+    /// Removes **edge-connected** near-white matte: BFS from image borders through pixels that are
+    /// bright (`min(r,g,b) ≥ matteThreshold - softness`) **and** nearly achromatic
+    /// (`max(r,g,b) - min(r,g,b) ≤ maxChroma`). That stops the flood from walking into golden fur,
+    /// which shares high brightness but has real color separation across channels.
+    func knockingOutEdgeConnectedMatte(
+        matteThreshold: CGFloat,
+        softness: CGFloat,
+        maxChroma: CGFloat = 0.065
+    ) -> UIImage? {
+        guard let source = cgImage else { return nil }
+        let width = source.width
+        let height = source.height
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        let bitsPerComponent = 8
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: bitsPerComponent,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else { return nil }
+
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        context.draw(source, in: rect)
+        guard let data = context.data else { return nil }
+
+        let pixelBuffer = data.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
+        let matteFloor = max(0, matteThreshold - max(softness, 0.0001))
+        let cellCount = width * height
+
+        func pixelIndex(_ x: Int, _ y: Int) -> Int { (y * width + x) * bytesPerPixel }
+
+        func isMatteCandidate(_ x: Int, _ y: Int) -> Bool {
+            let o = pixelIndex(x, y)
+            let r = CGFloat(pixelBuffer[o]) / 255.0
+            let g = CGFloat(pixelBuffer[o + 1]) / 255.0
+            let b = CGFloat(pixelBuffer[o + 2]) / 255.0
+            let minC = min(r, g, b)
+            let maxC = max(r, g, b)
+            let chroma = maxC - minC
+            return minC >= matteFloor && chroma <= maxChroma
+        }
+
+        var visited = [Bool](repeating: false, count: cellCount)
+        var queue = [Int]()
+        queue.reserveCapacity(min(cellCount / 4, 4096))
+
+        func enqueue(_ x: Int, _ y: Int) {
+            guard x >= 0, x < width, y >= 0, y < height else { return }
+            let flat = y * width + x
+            guard !visited[flat], isMatteCandidate(x, y) else { return }
+            visited[flat] = true
+            queue.append(flat)
+        }
+
+        for x in 0..<width {
+            enqueue(x, 0)
+            enqueue(x, height - 1)
+        }
+        for y in 0..<height {
+            enqueue(0, y)
+            enqueue(width - 1, y)
+        }
+
+        var head = 0
+        while head < queue.count {
+            let flat = queue[head]
+            head += 1
+            let x = flat % width
+            let y = flat / width
+            enqueue(x + 1, y)
+            enqueue(x - 1, y)
+            enqueue(x, y + 1)
+            enqueue(x, y - 1)
+        }
+
+        for flat in 0..<cellCount where visited[flat] {
+            let o = flat * bytesPerPixel
+            pixelBuffer[o] = 0
+            pixelBuffer[o + 1] = 0
+            pixelBuffer[o + 2] = 0
+            pixelBuffer[o + 3] = 0
+        }
+
+        guard let outputCGImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: outputCGImage, scale: scale, orientation: imageOrientation)
+    }
+
+    /// Converts near-black backdrop pixels to transparent alpha.
+    func knockingOutNearBlack(threshold: CGFloat, softness: CGFloat) -> UIImage? {
+        guard let source = cgImage else { return nil }
+        let width = source.width
+        let height = source.height
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        let bitsPerComponent = 8
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: bitsPerComponent,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else { return nil }
+
+        let rect = CGRect(x: 0, y: 0, width: width, height: height)
+        context.draw(source, in: rect)
+        guard let data = context.data else { return nil }
+
+        let pixelBuffer = data.bindMemory(to: UInt8.self, capacity: width * height * bytesPerPixel)
+        let effectiveSoftness = max(softness, 0.0001)
+        let upperBound = min(1, threshold + effectiveSoftness)
+
+        for index in stride(from: 0, to: width * height * bytesPerPixel, by: bytesPerPixel) {
+            let red = CGFloat(pixelBuffer[index]) / 255.0
+            let green = CGFloat(pixelBuffer[index + 1]) / 255.0
+            let blue = CGFloat(pixelBuffer[index + 2]) / 255.0
+            let alpha = CGFloat(pixelBuffer[index + 3]) / 255.0
+
+            let maxChannel = max(red, green, blue)
+            if maxChannel >= upperBound {
+                continue
+            }
+
+            let fade: CGFloat
+            if maxChannel <= threshold {
+                fade = 0
+            } else {
+                fade = (maxChannel - threshold) / (upperBound - threshold)
+            }
+
+            pixelBuffer[index + 3] = UInt8(max(0, min(1, alpha * fade)) * 255.0)
+        }
+
+        guard let outputCGImage = context.makeImage() else { return nil }
+        return UIImage(cgImage: outputCGImage, scale: scale, orientation: imageOrientation)
     }
 }
 

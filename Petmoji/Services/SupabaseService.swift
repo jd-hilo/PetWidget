@@ -28,19 +28,140 @@ final class SupabaseService: @unchecked Sendable {
         return session.user.id
     }
 
+    /// Returns true when a persisted Supabase session exists.
+    func restoreSessionIfPresent() async -> Bool {
+        (try? await client.auth.session) != nil
+    }
+
+    func requireUserId() async throws -> UUID {
+        do {
+            return try await currentUserId()
+        } catch {
+            throw SignUpAuthError.noSession
+        }
+    }
+
+    func sendEmailOTP(email: String, shouldCreateUser: Bool) async throws {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw SignUpAuthError.unknown("Enter a valid email address.")
+        }
+        do {
+            try await client.auth.signInWithOTP(
+                email: trimmed,
+                redirectTo: nil,
+                shouldCreateUser: shouldCreateUser
+            )
+        } catch {
+#if DEBUG
+            print("[SupabaseService] sendEmailOTP failed: \(error)")
+#endif
+            throw SignUpAuthError.from(error)
+        }
+    }
+
+    @discardableResult
+    func verifyEmailOTP(email: String, token: String) async throws -> Session {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw SignUpAuthError.unknown("Enter a valid email address.")
+        }
+        let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard normalizedToken.count == SignUpOTPConfig.length else {
+            throw SignUpAuthError.invalidOTP
+        }
+        do {
+            let response = try await client.auth.verifyOTP(
+                email: trimmed,
+                token: normalizedToken,
+                type: .email,
+                redirectTo: nil
+            )
+            switch response {
+            case .session(let session):
+                return session
+            case .user:
+                if let session = try? await client.auth.session {
+                    return session
+                }
+                throw SignUpAuthError.noSession
+            }
+        } catch {
+            throw SignUpAuthError.from(error)
+        }
+    }
+
+    // MARK: - Profiles
+
+    func fetchProfile() async throws -> UserProfile? {
+        let userId = try await currentUserId()
+        let profiles: [UserProfile] = try await client
+            .from("profiles")
+            .select()
+            .eq("id", value: userId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        return profiles.first
+    }
+
+    func upsertProfile(fullName: String, email: String, phone: String?) async throws {
+        let userId = try await currentUserId()
+        let row = ProfileUpsertRow(
+            id: userId,
+            fullName: fullName.trimmingCharacters(in: .whitespacesAndNewlines),
+            email: email.trimmingCharacters(in: .whitespacesAndNewlines),
+            phone: phone
+        )
+        try await client
+            .from("profiles")
+            .upsert(row)
+            .execute()
+    }
+
     // MARK: - Pet CRUD
 
     func fetchCurrentPet() async throws -> Pet? {
+        try await fetchAllPets(limit: 1).last
+    }
+
+    func fetchAllPets(limit: Int = 2) async throws -> [Pet] {
+        MockUserSettings.logVerbose("fetchAllPets(limit: \(limit))")
         let userId = try await currentUserId()
         let pets: [Pet] = try await client
             .from("pets")
             .select()
             .eq("user_id", value: userId.uuidString)
-            .order("created_at", ascending: false)
-            .limit(1)
+            .order("created_at", ascending: true)
+            .limit(limit)
             .execute()
             .value
-        return pets.first
+        return pets
+    }
+
+    func deletePet(petId: UUID) async throws {
+        try await client
+            .from("pets")
+            .delete()
+            .eq("id", value: petId.uuidString)
+            .execute()
+    }
+
+    /// Permanently deletes the signed-in user and all associated data via edge function.
+    func deleteAccount() async throws {
+        struct DeleteAccountResponse: Decodable {
+            let success: Bool?
+            let error: String?
+        }
+
+        let response: DeleteAccountResponse = try await client.functions.invoke(
+            "delete-account",
+            options: FunctionInvokeOptions(method: .post)
+        )
+
+        if response.success != true {
+            throw SignUpAuthError.unknown(response.error ?? "Could not delete your account.")
+        }
     }
 
     func savePet(_ pet: Pet) async throws -> Pet {
@@ -147,17 +268,24 @@ final class SupabaseService: @unchecked Sendable {
 
     // MARK: - Sprite Generation (calls edge function)
 
-    func generateSprites(petId: UUID, photoURLs: [String], species: Species, gender: PetGender) async throws -> ExpressionMap {
+    /// Calls the `generate-sprites` edge function. The deployed function
+    /// returns synchronously after Stage A (the `happy` base sprite) and then
+    /// fills in the remaining 5 expressions in the background, writing them
+    /// directly to the `pets.expressions` row.
+    ///
+    /// Use `observePetExpressions(petId:)` afterwards to pick up Stage B
+    /// updates as they land.
+    func generateSprites(petId: UUID, photoURLs: [String], petName: String, species: Species) async throws -> ExpressionMap {
         struct GenerateRequest: Encodable {
             let petId: String
             let photoURLs: [String]
+            let petName: String
             let species: String
-            let gender: String
             enum CodingKeys: String, CodingKey {
                 case petId = "pet_id"
                 case photoURLs = "photo_urls"
+                case petName = "pet_name"
                 case species
-                case gender
             }
         }
         let response: ExpressionMap = try await client.functions
@@ -167,12 +295,68 @@ final class SupabaseService: @unchecked Sendable {
                     body: GenerateRequest(
                         petId: petId.uuidString,
                         photoURLs: photoURLs,
-                        species: species.rawValue,
-                        gender: gender.rawValue
+                        petName: petName,
+                        species: species.rawValue
                     )
                 )
             )
         return response
+    }
+
+    /// Fetches a single pet row by id. Subject to RLS — caller must own the row.
+    func fetchPet(by petId: UUID) async throws -> Pet? {
+        let pets: [Pet] = try await client
+            .from("pets")
+            .select()
+            .eq("id", value: petId.uuidString)
+            .limit(1)
+            .execute()
+            .value
+        return pets.first
+    }
+
+    /// Polls the `pets` row for expression updates and yields a fresh
+    /// `ExpressionMap` whenever a new expression is written by the edge
+    /// function's Stage B. Finishes when all 6 expressions are present or
+    /// the timeout elapses.
+    func observePetExpressions(
+        petId: UUID,
+        timeout: TimeInterval = 300,
+        pollInterval: TimeInterval = 3
+    ) -> AsyncThrowingStream<ExpressionMap, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                let deadline = Date().addingTimeInterval(timeout)
+                var lastCount = -1
+                while Date() < deadline {
+                    if Task.isCancelled { break }
+                    do {
+                        if let pet = try await self.fetchPet(by: petId) {
+                            let count = Self.filledExpressionCount(pet.expressions)
+                            if count != lastCount {
+                                continuation.yield(pet.expressions)
+                                lastCount = count
+                            }
+                            if count >= 6 {
+                                continuation.finish()
+                                return
+                            }
+                        }
+                    } catch {
+                        continuation.finish(throwing: error)
+                        return
+                    }
+                    try? await Task.sleep(nanoseconds: UInt64(pollInterval * 1_000_000_000))
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    private static func filledExpressionCount(_ map: ExpressionMap) -> Int {
+        [map.happy, map.sleepy, map.mad, map.excited, map.missesYou, map.judging]
+            .compactMap { $0 }.count
     }
 
     // MARK: - Device token registration (APNs)
@@ -207,8 +391,35 @@ final class SupabaseService: @unchecked Sendable {
                 "location-event",
                 options: FunctionInvokeOptions(
                     body: LocationRequest(petId: petId.uuidString, event: event)
-                )
+                ),
+                decoder: PostgrestClient.Configuration.jsonDecoder
             )
         return response
+    }
+}
+
+// MARK: - Profile upsert payload
+
+private struct ProfileUpsertRow: Encodable {
+    let id: UUID
+    let fullName: String
+    let email: String
+    let phone: String?
+    let updatedAt: String
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case fullName = "full_name"
+        case email
+        case phone
+        case updatedAt = "updated_at"
+    }
+
+    init(id: UUID, fullName: String, email: String, phone: String?) {
+        self.id = id
+        self.fullName = fullName
+        self.email = email
+        self.phone = phone?.isEmpty == true ? nil : phone
+        self.updatedAt = ISO8601DateFormatter().string(from: Date())
     }
 }

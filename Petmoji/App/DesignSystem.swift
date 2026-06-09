@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Color Palette
 
@@ -13,6 +14,33 @@ extension Color {
     static let pmTextPrimary = Color(hex: "#1A1208")
     static let pmTextSecondary = Color(hex: "#7A6E64")
     static let pmBorder = Color(hex: "#EEE0D8")
+
+    // Sage chrome (onboarding + warm green screens)
+    static let pmSageBackground = Color(hex: "#FDFEFA")
+    static let pmSageBackgroundTint = Color(hex: "#F2F4ED")
+    static let pmSageSurface = Color(hex: "#F2F4ED")
+    static let pmSageAccent = Color(hex: "#7E9C78")
+    static let pmSageAccentDark = Color(hex: "#5F7B5A")
+    static let pmSageTextPrimary = Color(hex: "#2A3128")
+    static let pmSageTextSecondary = Color(hex: "#6F7A70")
+    static let pmSageBorder = Color(hex: "#B8C7B2")
+    static let pmSageIconTint = Color(hex: "#556B52")
+    static let pmSageCardNeutral = Color(hex: "#EFECE6")
+    static let pmSagePatternSymbol = Color(hex: "#8FA287")
+    static let pmSageSegmentMuted = Color(hex: "#CDD7C8")
+    /// Light sage washes for section headers (pair with `pmSageWashDeep*` variants).
+    static let pmSageWashSoft = Color(hex: "#EEF3EC")
+    static let pmSageWashMid = Color(hex: "#E4EBE0")
+    static let pmSageWashDeep = Color(hex: "#D8E3D4")
+    static let pmSageWashAltSoft = Color(hex: "#E8EDE4")
+    static let pmSageWashAltDeep = Color(hex: "#DBE4D6")
+    /// Dark inset on expanded home cards (widget glass cut-out panels).
+    static let pmWidgetHomeInsetFill = Color(hex: "#1A1A1C")
+    /// Warm clay accent (pair with sage; use sparingly).
+    static let pmClay = Color(hex: "#B07D62")
+    static let pmClayDark = Color(hex: "#7A5344")
+    static let pmClayLight = Color(hex: "#EDD9CF")
+    static let pmClayMid = Color(hex: "#D4B8A8")
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
@@ -36,6 +64,196 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+}
+
+// MARK: - Appearance palette (Classic vs widget glass)
+
+struct PetmojiPalette: Equatable {
+    let visualStyle: AppVisualStyle
+
+    let textPrimary: Color
+    let textSecondary: Color
+    let accent: Color
+    let accentDark: Color
+    let border: Color
+    let iconTint: Color
+    let cardNeutral: Color
+    let segmentMuted: Color
+    let surface: Color
+    let washSoft: Color
+    let washMid: Color
+    let washDeep: Color
+    let washAltSoft: Color
+    let washAltDeep: Color
+    let patternSymbol: Color
+
+    let elevatedCardFill: Color
+    let elevatedCardStroke: Color
+    /// Inset panels on expanded home pet cards (sprite area, recent messages).
+    let homeInsetFill: Color
+    let sageCardFill: Color
+    let sageCardStroke: Color
+
+    let toolbarTint: Color
+    let progressActive: Color
+    let progressInactive: Color
+
+    let onboardingIconTint: Color
+    let onboardingSegmentActive: Color
+    let onboardingSegmentCompleted: Color
+    let onboardingSegmentUpcoming: Color
+
+    let chipUnselectedBg: Color
+    let chipUnselectedStroke: Color
+    let chipSelectedStroke: Color
+
+    let traitSelectedFg: Color
+    let traitUnselectedFg: Color
+    let traitSelectedBg: Color
+    let traitUnselectedBg: Color
+    let traitSelectedBorder: Color
+    let traitUnselectedBorder: Color
+
+    let chromeButtonFill: Color
+    let chromeButtonStroke: Color
+
+    let typingDot: Color
+    let bubblePetBackground: Color
+    let primaryButtonLabel: Color
+    let cardShadowOpacity: Double
+
+    static func palette(for style: AppVisualStyle) -> PetmojiPalette {
+        switch style {
+        case .classic: return classic
+        case .widgetGlass: return widgetGlass
+        }
+    }
+
+    private static let classic = PetmojiPalette(
+        visualStyle: .classic,
+        textPrimary: .pmSageTextPrimary,
+        textSecondary: .pmSageTextSecondary,
+        accent: .pmSageAccent,
+        accentDark: .pmSageAccentDark,
+        border: .pmSageBorder,
+        iconTint: .pmSageIconTint,
+        cardNeutral: .pmSageCardNeutral,
+        segmentMuted: .pmSageSegmentMuted,
+        surface: .pmSageSurface,
+        washSoft: .pmSageWashSoft,
+        washMid: .pmSageWashMid,
+        washDeep: .pmSageWashDeep,
+        washAltSoft: .pmSageWashAltSoft,
+        washAltDeep: .pmSageWashAltDeep,
+        patternSymbol: .pmSagePatternSymbol,
+        elevatedCardFill: Color.white.opacity(0.84),
+        elevatedCardStroke: Color.pmSageBorder.opacity(0.75),
+        homeInsetFill: .pmSageWashDeep,
+        sageCardFill: .white,
+        sageCardStroke: .pmSageBorder,
+        toolbarTint: .pmSageAccentDark,
+        progressActive: .black,
+        progressInactive: .pmBorder,
+        onboardingIconTint: .pmSageAccentDark,
+        onboardingSegmentActive: .pmSageAccentDark,
+        onboardingSegmentCompleted: .pmSageAccent,
+        onboardingSegmentUpcoming: .pmSageSegmentMuted,
+        chipUnselectedBg: .pmSageCardNeutral,
+        chipUnselectedStroke: Color.pmSageBorder.opacity(0.7),
+        chipSelectedStroke: Color.pmSageAccentDark.opacity(0.35),
+        traitSelectedFg: .pmSageAccentDark,
+        traitUnselectedFg: .pmSageTextPrimary,
+        traitSelectedBg: Color.pmSageAccent.opacity(0.22),
+        traitUnselectedBg: .pmSageSurface,
+        traitSelectedBorder: .pmSageAccent,
+        traitUnselectedBorder: Color.pmSageBorder.opacity(0.65),
+        chromeButtonFill: .white,
+        chromeButtonStroke: Color.pmSageBorder.opacity(0.9),
+        typingDot: .pmSageTextSecondary,
+        bubblePetBackground: .pmSageWashSoft,
+        primaryButtonLabel: .black,
+        cardShadowOpacity: 0.06
+    )
+
+    private static let widgetGlass = PetmojiPalette(
+        visualStyle: .widgetGlass,
+        textPrimary: Color.white.opacity(0.92),
+        textSecondary: Color.white.opacity(0.64),
+        accent: .pmSageAccent,
+        accentDark: Color.white.opacity(0.94),
+        border: Color.white.opacity(0.28),
+        iconTint: Color(hex: "#C5DCC0"),
+        cardNeutral: Color.white.opacity(0.16),
+        segmentMuted: Color.white.opacity(0.24),
+        surface: Color.white.opacity(0.12),
+        washSoft: Color.white.opacity(0.14),
+        washMid: Color.white.opacity(0.10),
+        washDeep: Color.white.opacity(0.07),
+        washAltSoft: Color.white.opacity(0.13),
+        washAltDeep: Color.white.opacity(0.06),
+        patternSymbol: Color.white.opacity(0.30),
+        elevatedCardFill: Color.white.opacity(0.14),
+        elevatedCardStroke: Color.white.opacity(0.24),
+        homeInsetFill: .pmWidgetHomeInsetFill,
+        sageCardFill: Color.white.opacity(0.12),
+        sageCardStroke: Color.white.opacity(0.22),
+        toolbarTint: Color.white.opacity(0.92),
+        progressActive: Color.white.opacity(0.95),
+        progressInactive: Color.white.opacity(0.32),
+        onboardingIconTint: Color.white.opacity(0.92),
+        onboardingSegmentActive: Color.white.opacity(0.92),
+        onboardingSegmentCompleted: Color(hex: "#9DB896"),
+        onboardingSegmentUpcoming: Color.white.opacity(0.28),
+        chipUnselectedBg: Color.white.opacity(0.14),
+        chipUnselectedStroke: Color.white.opacity(0.28),
+        chipSelectedStroke: Color.pmSageAccent.opacity(0.55),
+        traitSelectedFg: .white,
+        traitUnselectedFg: Color.white.opacity(0.9),
+        traitSelectedBg: Color.pmSageAccent.opacity(0.42),
+        traitUnselectedBg: Color.white.opacity(0.10),
+        traitSelectedBorder: Color.pmSageAccent,
+        traitUnselectedBorder: Color.white.opacity(0.28),
+        chromeButtonFill: Color.white.opacity(0.14),
+        chromeButtonStroke: Color.white.opacity(0.28),
+        typingDot: Color.white.opacity(0.55),
+        bubblePetBackground: Color.white.opacity(0.14),
+        primaryButtonLabel: Color.white.opacity(0.94),
+        cardShadowOpacity: 0.22
+    )
+}
+
+private struct PetmojiPaletteKey: EnvironmentKey {
+    static let defaultValue = PetmojiPalette.palette(for: .widgetGlass)
+}
+
+extension EnvironmentValues {
+    var petmojiPalette: PetmojiPalette {
+        get { self[PetmojiPaletteKey.self] }
+        set { self[PetmojiPaletteKey.self] = newValue }
+    }
+}
+
+/// Translucent material + edge decoration (paws / leaves), matching classic sage layout.
+struct PMWidgetGlassScreenBackdrop: View {
+    var body: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial)
+            PMSageEdgePattern()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+    }
+}
+
+/// Inset panel on expanded home pet cards — solid fill (no texture overlay).
+struct PMHomeInsetPanelBackground: View {
+    @Environment(\.petmojiPalette) private var palette
+    var cornerRadius: CGFloat
+
+    var body: some View {
+        palette.homeInsetFill
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 
@@ -89,9 +307,215 @@ extension View {
     }
 }
 
-// MARK: - Primary Button (Liquid Glass)
+// MARK: - Sage theme (screen chrome)
 
-struct PMPrimaryButton: View {
+/// Selected: tight shadow under the tile; unselected: soft ambient shadow.
+struct PMSageSelectableTileShadowModifier: ViewModifier {
+    let isSelected: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isSelected {
+            content
+                .shadow(color: Color.black.opacity(0.30), radius: 7, x: 0, y: 11)
+                .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 5)
+        } else {
+            content
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+        }
+    }
+}
+
+/// Decorative paw and leaf symbols along the left and right edges of the **parent** view.
+/// Uses `GeometryReader` so symbols stay proportional in sheets and nested layouts; avoid hard-coding `UIScreen` size (that forced full-screen height and broke bottom toolbars in `ChatView`).
+struct PMSageEdgePattern: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    private struct PatternSymbol {
+        let systemName: String
+        let point: CGPoint
+        let size: CGFloat
+        let opacity: Double
+        let rotation: Double
+    }
+
+    private var leftEdgeSymbols: [PatternSymbol] {
+        [
+            .init(systemName: "pawprint.fill", point: .init(x: 0.06, y: 0.04), size: 42, opacity: 0.46, rotation: -12),
+            .init(systemName: "pawprint", point: .init(x: 0.14, y: 0.09), size: 34, opacity: 0.38, rotation: 6),
+            .init(systemName: "leaf", point: .init(x: 0.05, y: 0.16), size: 40, opacity: 0.34, rotation: 22),
+            .init(systemName: "leaf.fill", point: .init(x: 0.15, y: 0.21), size: 30, opacity: 0.30, rotation: -18),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.05, y: 0.30), size: 38, opacity: 0.40, rotation: 10),
+            .init(systemName: "pawprint", point: .init(x: 0.13, y: 0.36), size: 30, opacity: 0.34, rotation: -16),
+            .init(systemName: "leaf", point: .init(x: 0.04, y: 0.45), size: 42, opacity: 0.32, rotation: 28),
+            .init(systemName: "leaf.fill", point: .init(x: 0.13, y: 0.54), size: 30, opacity: 0.30, rotation: -24),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.06, y: 0.63), size: 40, opacity: 0.42, rotation: 8),
+            .init(systemName: "pawprint", point: .init(x: 0.14, y: 0.70), size: 30, opacity: 0.34, rotation: -12),
+            .init(systemName: "leaf", point: .init(x: 0.04, y: 0.79), size: 40, opacity: 0.32, rotation: 20),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.06, y: 0.90), size: 38, opacity: 0.40, rotation: 14),
+            .init(systemName: "leaf.fill", point: .init(x: 0.15, y: 0.95), size: 30, opacity: 0.28, rotation: -18)
+        ]
+    }
+
+    private var rightEdgeSymbols: [PatternSymbol] {
+        [
+            .init(systemName: "pawprint.fill", point: .init(x: 0.94, y: 0.05), size: 40, opacity: 0.44, rotation: 14),
+            .init(systemName: "pawprint", point: .init(x: 0.86, y: 0.10), size: 32, opacity: 0.36, rotation: -8),
+            .init(systemName: "leaf", point: .init(x: 0.96, y: 0.18), size: 40, opacity: 0.32, rotation: -24),
+            .init(systemName: "leaf.fill", point: .init(x: 0.87, y: 0.23), size: 30, opacity: 0.30, rotation: 16),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.95, y: 0.32), size: 38, opacity: 0.40, rotation: -10),
+            .init(systemName: "pawprint", point: .init(x: 0.87, y: 0.39), size: 30, opacity: 0.34, rotation: 12),
+            .init(systemName: "leaf", point: .init(x: 0.96, y: 0.48), size: 42, opacity: 0.30, rotation: -18),
+            .init(systemName: "leaf.fill", point: .init(x: 0.87, y: 0.57), size: 30, opacity: 0.28, rotation: 26),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.94, y: 0.66), size: 38, opacity: 0.40, rotation: -8),
+            .init(systemName: "pawprint", point: .init(x: 0.86, y: 0.74), size: 30, opacity: 0.34, rotation: 10),
+            .init(systemName: "leaf", point: .init(x: 0.95, y: 0.83), size: 40, opacity: 0.32, rotation: -22),
+            .init(systemName: "pawprint.fill", point: .init(x: 0.93, y: 0.92), size: 38, opacity: 0.40, rotation: 10),
+            .init(systemName: "leaf.fill", point: .init(x: 0.86, y: 0.97), size: 28, opacity: 0.26, rotation: 20)
+        ]
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            ZStack {
+                ForEach(Array(leftEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
+                    decorativeSymbol(
+                        symbol.systemName,
+                        at: symbol.point,
+                        in: size,
+                        size: symbol.size,
+                        opacity: symbol.opacity,
+                        rotation: symbol.rotation
+                    )
+                }
+
+                ForEach(Array(rightEdgeSymbols.enumerated()), id: \.offset) { _, symbol in
+                    decorativeSymbol(
+                        symbol.systemName,
+                        at: symbol.point,
+                        in: size,
+                        size: symbol.size,
+                        opacity: symbol.opacity,
+                        rotation: symbol.rotation
+                    )
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func decorativeSymbol(
+        _ systemName: String,
+        at relativePoint: CGPoint,
+        in size: CGSize,
+        size iconSize: CGFloat,
+        opacity: Double,
+        rotation: Double
+    ) -> some View {
+        let absoluteX = size.width * relativePoint.x
+        let absoluteY = size.height * relativePoint.y
+
+        return Image(systemName: systemName)
+            .font(.system(size: iconSize, weight: .medium))
+            .foregroundStyle(palette.patternSymbol.opacity(opacity))
+            .rotationEffect(.degrees(rotation))
+            .position(x: absoluteX, y: absoluteY)
+    }
+}
+
+/// Full-screen sage gradient plus edge decoration (paws / leaves), or widget-style glass.
+struct PMSageScreenBackdrop: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    var body: some View {
+        ZStack {
+            if palette.visualStyle == .classic {
+                LinearGradient(
+                    colors: [Color.pmSageBackground, Color.pmSageBackgroundTint],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            } else {
+                Rectangle().fill(.ultraThinMaterial)
+            }
+            PMSageEdgePattern()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
+    }
+}
+
+extension View {
+    func pmSageSelectableTileShadow(isSelected: Bool) -> some View {
+        modifier(PMSageSelectableTileShadowModifier(isSelected: isSelected))
+    }
+
+    /// Full-screen sage gradient plus edge decoration (paws / leaves).
+    func pmSageScreenBackground() -> some View {
+        background {
+            PMSageScreenBackdrop()
+        }
+    }
+}
+
+struct PMSageCard: ViewModifier {
+    @Environment(\.petmojiPalette) private var palette
+    var cornerRadius: CGFloat = 24
+
+    func body(content: Content) -> some View {
+        content
+            .background(palette.sageCardFill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(palette.sageCardStroke, lineWidth: 1.5)
+            )
+            .shadow(color: Color.black.opacity(palette.cardShadowOpacity), radius: 16, x: 0, y: 4)
+    }
+}
+
+extension View {
+    func pmSageCard(cornerRadius: CGFloat = 24) -> some View {
+        modifier(PMSageCard(cornerRadius: cornerRadius))
+    }
+}
+
+struct PMAuthErrorBanner: View {
+    let message: String
+
+    private let errorForeground = Color.red.opacity(0.9)
+    private let errorBackground = Color.red.opacity(0.08)
+    private let errorBorder = Color.red.opacity(0.22)
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(errorForeground)
+                .padding(.top, 1)
+
+            Text(message)
+                .font(.bodyM)
+                .foregroundStyle(errorForeground)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(errorBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(errorBorder, lineWidth: 1.5)
+        )
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+}
+
+struct PMSageCTAButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let title: String
     let action: () -> Void
     var isEnabled: Bool = true
@@ -100,7 +524,39 @@ struct PMPrimaryButton: View {
         Button(action: action) {
             Text(title)
                 .font(.buttonFont)
-                .foregroundStyle(isEnabled ? Color.black : Color.pmTextSecondary)
+                .foregroundStyle(.white.opacity(isEnabled ? 1 : 0.75))
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(isEnabled ? palette.accent : palette.accent.opacity(0.45))
+                )
+                .shadow(
+                    color: isEnabled ? palette.accentDark.opacity(palette.visualStyle == .widgetGlass ? 0.45 : 0.28) : .clear,
+                    radius: 10,
+                    x: 0,
+                    y: 6
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+    }
+}
+
+// MARK: - Primary Button (Liquid Glass)
+
+struct PMPrimaryButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let title: String
+    let action: () -> Void
+    var isEnabled: Bool = true
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.buttonFont)
+                .foregroundStyle(isEnabled ? palette.primaryButtonLabel : palette.textSecondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 58)
                 .background {
@@ -136,6 +592,8 @@ struct PMPrimaryButton: View {
 // MARK: - Trait Pill
 
 struct PMTraitPill: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let trait: PersonalityTrait
     let isSelected: Bool
     let action: () -> Void
@@ -148,25 +606,27 @@ struct PMTraitPill: View {
         }) {
             Text(trait.displayName)
                 .font(.bodyM)
-                .foregroundStyle(isSelected ? Color.pmSecondary : Color(hex: "#5B45C9"))
+                .foregroundStyle(isSelected ? palette.traitSelectedFg : palette.traitUnselectedFg)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(
-                    isSelected ? Color.pmSecondary.opacity(0.2) : Color.pmSecondaryLight,
+                    isSelected ? palette.traitSelectedBg : palette.traitUnselectedBg,
                     in: Capsule()
                 )
                 .overlay(
                     Capsule()
-                        .strokeBorder(isSelected ? Color.pmSecondary : Color.clear, lineWidth: 1.5)
+                        .strokeBorder(isSelected ? palette.traitSelectedBorder : palette.traitUnselectedBorder, lineWidth: 1.5)
                 )
         }
         .buttonStyle(SpringButtonStyle())
     }
 }
 
-// MARK: - Enemy / Mood Chip
+// MARK: - Trigger / Mood Chip
 
 struct PMChip: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let label: String
     let isSelected: Bool
     let action: () -> Void
@@ -180,7 +640,7 @@ struct PMChip: View {
             HStack {
                 Text(label)
                     .font(.bodyM)
-                    .foregroundStyle(isSelected ? .white : Color.pmTextPrimary)
+                    .foregroundStyle(isSelected ? .white : palette.textPrimary)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
@@ -190,7 +650,14 @@ struct PMChip: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .background(isSelected ? Color.black : Color.pmCardAlt, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(
+                isSelected ? palette.accent : palette.chipUnselectedBg,
+                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(isSelected ? palette.chipSelectedStroke : palette.chipUnselectedStroke, lineWidth: 1)
+            )
         }
         .buttonStyle(SpringButtonStyle())
     }
@@ -299,6 +766,8 @@ struct SpeechBubble: View {
 // MARK: - Progress Dots
 
 struct PMProgressDots: View {
+    @Environment(\.petmojiPalette) private var palette
+
     let total: Int
     let current: Int
 
@@ -307,16 +776,136 @@ struct PMProgressDots: View {
             ForEach(0..<total, id: \.self) { i in
                 if i == current {
                     Capsule()
-                        .fill(Color.black)
+                        .fill(palette.progressActive)
                         .frame(width: 24, height: 8)
                 } else {
                     Circle()
-                        .fill(Color.pmBorder)
+                        .fill(palette.progressInactive)
                         .frame(width: 8, height: 8)
                 }
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: current)
+    }
+}
+
+// MARK: - Onboarding icon progress (icons + connectors)
+
+/// Icons with capsules between them; the segment for the current step is darkest, completed segments are mid sage, upcoming are light.
+struct PMOnboardingIconProgressBar: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let total: Int
+    let current: Int
+
+    /// First half of steps use bone icons, second half use fish-bone icons (matches 4-step onboarding: photo → personality → reveal → widget).
+    private let boneOutlineAsset = "boneIcon"
+    private let boneFillAsset = "bonefillIcon"
+    private let fishOutlineAsset = "fishBoneIcon"
+    private let fishFillAsset = "fishBoneFillIcon"
+
+    private let iconSide: CGFloat = 28
+    private let connectorWidth: CGFloat = 56
+    private let connectorHeight: CGFloat = 5
+    private let stackSpacing: CGFloat = 8
+
+    private var iconTint: Color { palette.onboardingIconTint }
+    private var segmentActive: Color { palette.onboardingSegmentActive }
+    private var segmentCompleted: Color { palette.onboardingSegmentCompleted }
+    private var segmentUpcoming: Color { palette.onboardingSegmentUpcoming }
+
+    var body: some View {
+        HStack(spacing: stackSpacing) {
+            ForEach(0..<total, id: \.self) { i in
+                progressIcon(at: i)
+
+                if i < total - 1 {
+                    Capsule(style: .continuous)
+                        .fill(segmentColor(forSegmentLeadingFromStep: i))
+                        .frame(width: connectorWidth, height: connectorHeight)
+                }
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: current)
+    }
+
+    private func iconAssetName(for index: Int) -> String {
+        let fishStartIndex = (total + 1) / 2
+        let useFish = index >= fishStartIndex
+        let useFill = index == current
+        if useFish {
+            return useFill ? fishFillAsset : fishOutlineAsset
+        }
+        return useFill ? boneFillAsset : boneOutlineAsset
+    }
+
+    @ViewBuilder
+    private func progressIcon(at index: Int) -> some View {
+        let name = iconAssetName(for: index)
+        if let uiImage = UIImage(named: name) {
+            Image(uiImage: uiImage)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: iconSide, height: iconSide)
+                .foregroundStyle(iconTint)
+        } else {
+            Image(systemName: index >= (total + 1) / 2 ? "fish.fill" : "dog.fill")
+                .font(.system(size: iconSide * 0.55, weight: .semibold))
+                .foregroundStyle(iconTint)
+        }
+    }
+
+    private func segmentColor(forSegmentLeadingFromStep index: Int) -> Color {
+        // Segment `index` connects step `index` → `index + 1`.
+        if current == total - 1 {
+            return segmentActive
+        }
+        if index < current {
+            return segmentCompleted
+        }
+        if index == current {
+            return segmentActive
+        }
+        return segmentUpcoming
+    }
+}
+
+// MARK: - Onboarding navigation bar (centered progress)
+
+struct PMOnboardingToolbarModifier: ViewModifier {
+    let total: Int
+    let current: Int
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    PMOnboardingIconProgressBar(total: total, current: current)
+                }
+            }
+    }
+}
+
+extension View {
+    /// Progress in the nav bar principal slot.
+    func pmOnboardingToolbar(total: Int, current: Int) -> some View {
+        modifier(PMOnboardingToolbarModifier(total: total, current: current))
+    }
+}
+
+/// Transparent text cancel for add-pet onboarding — place directly under the primary bottom CTA.
+struct PMOnboardingCancelButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let action: () -> Void
+
+    var body: some View {
+        Button("Cancel", action: action)
+            .font(.bodyM)
+            .foregroundStyle(palette.textSecondary)
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
     }
 }
 

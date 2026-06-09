@@ -67,6 +67,10 @@ targets:
           - remote-notification
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false
+        CFBundleURLTypes:
+          - CFBundleURLName: com.petmoji.app
+            CFBundleURLSchemes:
+              - petmoji
     entitlements:
       path: Petmoji/Petmoji.entitlements
       properties:
@@ -81,7 +85,7 @@ targets:
       - package: Supabase
         product: Supabase
       - target: PetmojiWidget
-        embed: false
+        embed: true
 
   PetmojiWidget:
     type: app-extension
@@ -102,8 +106,9 @@ targets:
           - group.com.petmoji.app
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app.widget
         INFOPLIST_FILE: PetmojiWidget/Info.plist
-    dependencies:
-      - package: Supabase
-        product: Supabase
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.hilollcpetmoji.app.widget
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app.widget

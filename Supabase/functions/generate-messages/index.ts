@@ -227,7 +227,7 @@ async function callClaude(
   triggerType: string,
   recentMessages: string
 ): Promise<{ message: string; expression: string }> {
-  const systemPrompt = `You are ${pet.name}, a ${pet.species}. Your personality: ${pet.personality_traits.join(", ")}. Energy level: ${pet.energy_level} out of 10. Your arch nemesis: ${pet.biggest_enemy}. Your general vibe: ${pet.base_mood}. Speak in first person. Be short, dry, and a little dramatic. Max 80 characters total. Never break character.`;
+  const systemPrompt = `You are ${pet.name}, a ${pet.species}. Your personality: ${pet.personality_traits.join(", ")}. Energy level: ${pet.energy_level} out of 10. Things that set you off: ${pet.biggest_enemy}. Your general vibe: ${pet.base_mood}. Speak in first person. Be short, dry, and a little dramatic. Max 80 characters total. Never break character.`;
 
   const userPrompt = `Time of day: ${timeLabel}
 ${weather ? `Weather: ${weather}` : ""}

@@ -34,14 +34,49 @@ enum TriggerType: String, Codable {
 struct ClaudeMessageResponse: Codable {
     let message: String
     let expression: PetExpression
+    let id: UUID?
+    let petId: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case message
+        case expression
+        case id
+        case petId = "pet_id"
+    }
+
+    func asPetMessage(fallbackPetId: UUID, timestamp: Date = Date()) -> PetMessage {
+        PetMessage(
+            id: id ?? UUID(),
+            petId: petId ?? fallbackPetId,
+            content: message,
+            expression: expression,
+            triggerType: .chatReply,
+            scheduledFor: timestamp,
+            sentAt: timestamp
+        )
+    }
 }
 
-// MARK: - Chat message (in-memory, not persisted)
+// MARK: - Chat message (persisted via `ChatHistoryStore`)
 
-struct ChatMessage: Identifiable {
-    let id = UUID()
+struct ChatMessage: Codable, Identifiable, Equatable {
+    let id: UUID
     let content: String
     let isFromPet: Bool
     let expression: PetExpression?
-    let timestamp = Date()
+    let timestamp: Date
+
+    init(
+        id: UUID = UUID(),
+        content: String,
+        isFromPet: Bool,
+        expression: PetExpression?,
+        timestamp: Date = Date()
+    ) {
+        self.id = id
+        self.content = content
+        self.isFromPet = isFromPet
+        self.expression = expression
+        self.timestamp = timestamp
+    }
 }

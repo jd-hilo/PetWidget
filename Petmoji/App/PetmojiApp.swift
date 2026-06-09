@@ -10,20 +10,37 @@ struct PetmojiApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
-                .preferredColorScheme(.light)
+                .onOpenURL { url in
+                    guard url.scheme?.lowercased() == "petmoji" else { return }
+                    if url.host?.lowercased() == "chat" {
+                        let petId = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                            .queryItems?
+                            .first(where: { $0.name == "petId" })?
+                            .value
+                            .flatMap(UUID.init(uuidString:))
+                        appState.pendingWidgetDeepLink = .openChat(petId: petId)
+                    }
+                }
         }
     }
 }
 
 // MARK: - App Delegate (APNs registration)
 
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificationCenterDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        BeenGoneBackgroundScheduler.registerHandlers()
         return true
+    }
+
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        Task { @MainActor in
+            await PetMessageDelivery.refreshWidgetFromServer()
+        }
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
@@ -51,65 +68,677 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
     @MainActor
     private func refreshWidgetData() async {
-        // Fetch latest message and update shared UserDefaults for widget
-        guard let pet = try? await SupabaseService.shared.fetchCurrentPet(),
-              let message = try? await SupabaseService.shared.fetchLatestMessage(for: pet.id) else {
-            WidgetReloader.reload()
-            return
-        }
+        await PetMessageDelivery.refreshWidgetFromServer()
+    }
 
-        let sharedDefaults = UserDefaults(suiteName: "group.com.petmoji.app")
-        sharedDefaults?.set(pet.name, forKey: "pet_name")
-        sharedDefaults?.set(message.content, forKey: "widget_message")
-        sharedDefaults?.set(message.expression.rawValue, forKey: "widget_expression")
-        sharedDefaults?.set(pet.expressions[message.expression], forKey: "widget_sprite_url")
-
-        WidgetReloader.reload()
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound, .list])
     }
 }
 
 struct RootView: View {
     @EnvironmentObject var appState: AppState
+    @StateObject private var debugDraft = OnboardingDraft()
+
+    private var shouldSkipOnboardingToReveal: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipOnboardingToReveal")
+#else
+        false
+#endif
+    }
+
+    private var shouldUseMockSprites: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-mockSprites")
+#else
+        false
+#endif
+    }
+
+    private var shouldSkipOnboardingToWidgetSetup: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipOnboardingToWidgetSetup")
+#else
+        false
+#endif
+    }
+
+    private var shouldSkipSignUp: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipSignUp")
+#else
+        false
+#endif
+    }
 
     var body: some View {
         Group {
-            if appState.currentPet != nil {
+            if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
+                NavigationStack {
+                    WidgetSetupView {
+#if DEBUG
+                        appState.setPet(makeDebugRogerPet(useMockSprites: shouldUseMockSprites))
+#endif
+                        appState.setHasCompletedOnboarding(true)
+                    }
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .pmOnboardingToolbar(total: 4, current: 3)
+                    .navigationBarBackButtonHidden(true)
+                }
+            } else if shouldSkipOnboardingToReveal {
+                DebugRevealFlowView(
+                    draft: debugDraft,
+                    onSetPet: appState.setPet(_:),
+                    useMockSprites: shouldUseMockSprites
+                )
+            } else if appState.isBootstrapping || appState.isLoading {
+                BrandLandingView(mode: .loading)
+            } else if !appState.isAuthenticated && !shouldSkipSignUp {
+                if !appState.hasSeenWelcome {
+                    BrandLandingView(mode: .welcome) {
+                        appState.setHasSeenWelcome(true)
+                    }
+                } else {
+                    AuthCoordinator()
+                }
+            } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
                 NavigationStack {
                     PetHomeView()
                 }
-            } else {
+            } else if appState.isAuthenticated {
                 OnboardingCoordinator()
+            } else {
+                AuthCoordinator()
             }
         }
+        .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
+        .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
-            await appState.loadCurrentPet()
+            let skipNormalBootstrap = shouldSkipOnboardingToReveal || shouldSkipOnboardingToWidgetSetup
+#if DEBUG
+            let wantsTestNotifications = !debugTestPetMessageEvents.isEmpty
+#else
+            let wantsTestNotifications = false
+#endif
+
+            if !skipNormalBootstrap || wantsTestNotifications {
+#if DEBUG
+                if shouldForceSignOut {
+                    await appState.signOut()
+                }
+#endif
+                await appState.bootstrap()
+#if DEBUG
+                await runDebugTestNotificationsIfNeeded()
+#endif
+            } else {
+                appState.markBootstrapComplete()
+            }
+        }
+    }
+
+#if DEBUG
+    private var debugTestPetMessageEvents: [String] {
+        DebugLaunchArgs.testPetMessageEvents
+    }
+
+    @MainActor
+    private func runDebugTestNotificationsIfNeeded() async {
+        guard !debugTestPetMessageEvents.isEmpty else { return }
+
+        guard appState.isAuthenticated else {
+            print("[Debug] Test notification skipped — sign in first.")
+            return
+        }
+
+        guard !appState.pets.isEmpty else {
+            print("[Debug] Test notification skipped — no pets loaded.")
+            return
+        }
+
+        for (index, event) in debugTestPetMessageEvents.enumerated() {
+            if index > 0 {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+            }
+            do {
+                let content = try await PetMessageDelivery.sendTestMessage(appState: appState, event: event)
+                print("[Debug] Test notification (\(event)): \"\(content)\"")
+            } catch {
+                print("[Debug] Test notification failed (\(event)): \(debugErrorDescription(error))")
+            }
+        }
+    }
+
+    private var shouldForceSignOut: Bool {
+        ProcessInfo.processInfo.arguments.contains("-forceSignOut")
+    }
+
+    private func debugErrorDescription(_ error: Error) -> String {
+        if case DecodingError.dataCorrupted(let context) = error {
+            return "Decode error: \(context.debugDescription)"
+        }
+        if case DecodingError.keyNotFound(let key, let context) = error {
+            return "Missing key \"\(key.stringValue)\": \(context.debugDescription)"
+        }
+        if case DecodingError.typeMismatch(let type, let context) = error {
+            return "Type mismatch for \(type): \(context.debugDescription)"
+        }
+        if case DecodingError.valueNotFound(let type, let context) = error {
+            return "Missing value for \(type): \(context.debugDescription)"
+        }
+        return error.localizedDescription
+    }
+
+    private func makeDebugRogerPet(useMockSprites: Bool) -> Pet {
+        Pet(
+            id: UUID(),
+            userId: UUID(),
+            name: "Roger",
+            species: .dog,
+            gender: .boy,
+            expressions: useMockSprites ? debugTesterExpressions() : ExpressionMap(),
+            personalityTraits: [.dramatic, .mischievous, .sweet],
+            energyLevel: 7,
+            triggers: [.vacuumCleaner],
+            customTrigger: nil,
+            baseMood: .mildlySuspicious,
+            homeLat: nil,
+            homeLng: nil,
+            timezone: TimeZone.current.identifier,
+            createdAt: Date()
+        )
+    }
+
+    private func debugTesterExpressions() -> ExpressionMap {
+        let bundled = ExpressionMap(
+            happy: debugBundleSpriteURL(named: "tester_happy"),
+            sleepy: debugBundleSpriteURL(named: "tester_sleepy"),
+            mad: debugBundleSpriteURL(named: "tester_mad"),
+            excited: debugBundleSpriteURL(named: "tester_excited"),
+            missesYou: debugBundleSpriteURL(named: "tester_misses_you"),
+            judging: debugBundleSpriteURL(named: "tester_judging")
+        )
+        let hasAllBundled = [
+            bundled.happy, bundled.sleepy, bundled.mad,
+            bundled.excited, bundled.missesYou, bundled.judging
+        ].allSatisfy { $0 != nil }
+        guard hasAllBundled else {
+            return ExpressionMap(
+                happy: "https://placehold.co/400x400/CDE6C8/2F5D46?text=happy",
+                sleepy: "https://placehold.co/400x400/DCE9D7/2F5D46?text=sleepy",
+                mad: "https://placehold.co/400x400/BBD8B3/2F5D46?text=mad",
+                excited: "https://placehold.co/400x400/CDE6C8/2F5D46?text=excited",
+                missesYou: "https://placehold.co/400x400/DCE9D7/2F5D46?text=misses+you",
+                judging: "https://placehold.co/400x400/BBD8B3/2F5D46?text=judging"
+            )
+        }
+        return bundled
+    }
+
+    private func debugBundleSpriteURL(named resourceName: String) -> String? {
+        if let pngURL = Bundle.main.url(forResource: resourceName, withExtension: "png") {
+            return pngURL.absoluteString
+        }
+        if let jpgURL = Bundle.main.url(forResource: resourceName, withExtension: "jpg") {
+            return jpgURL.absoluteString
+        }
+        if let jpegURL = Bundle.main.url(forResource: resourceName, withExtension: "jpeg") {
+            return jpegURL.absoluteString
+        }
+        if let webpURL = Bundle.main.url(forResource: resourceName, withExtension: "webp") {
+            return webpURL.absoluteString
+        }
+        return nil
+    }
+#endif
+}
+
+private struct DebugRevealFlowView: View {
+    @EnvironmentObject private var appState: AppState
+    @ObservedObject var draft: OnboardingDraft
+    let onSetPet: (Pet) -> Void
+    let useMockSprites: Bool
+
+    @State private var path: [Step] = []
+
+    private enum Step: Hashable {
+        case widgetSetup
+    }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            ExpressionRevealView(
+                draft: draft,
+                onComplete: { pet in
+                    onSetPet(pet)
+                    path.append(.widgetSetup)
+                },
+                skipGenerationForDebug: true,
+                useMockSpritesForDebug: useMockSprites
+            )
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .pmOnboardingToolbar(total: 4, current: 2)
+            .navigationBarBackButtonHidden(true)
+            .navigationDestination(for: Step.self) { step in
+                switch step {
+                case .widgetSetup:
+                    WidgetSetupView {
+                        if let pet = draft.completedPet {
+                            onSetPet(pet)
+                        }
+                        appState.setHasCompletedOnboarding(true)
+                    }
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .pmOnboardingToolbar(total: 4, current: 3)
+                    .navigationBarBackButtonHidden(true)
+                }
+            }
         }
     }
 }
 
+enum PendingWidgetDeepLink: Equatable {
+    case none
+    case openChat(petId: UUID?)
+}
+
 @MainActor
 final class AppState: ObservableObject {
+    static let maxPets = 2
+
     @Published var currentPet: Pet?
+    @Published private(set) var pets: [Pet] = []
+    @Published var widgetPetId: UUID?
     @Published var isLoading = false
+    @Published private(set) var isBootstrapping = true
+    @Published private(set) var isAuthenticated = false
+    @Published var pendingWidgetDeepLink = PendingWidgetDeepLink.none
+
+    // MARK: - User account cache (profiles + local prefs)
+
+    @Published var settingsPersona: SettingsPersona = .pet
+    @Published var hasCompletedSignUp: Bool = false
+    @Published var hasCompletedOnboarding: Bool = false
+    @Published var hasSeenWelcome: Bool = false
+    @Published var userDisplayName: String = ""
+    @Published var userEmail: String = ""
+    @Published var userPhone: String = ""
+
+    @Published var visualStyle: AppVisualStyle = .widgetGlass
 
     private let supabase = SupabaseService.shared
+    private var expressionSyncTask: Task<Void, Never>?
 
-    func loadCurrentPet() async {
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            currentPet = try await supabase.fetchCurrentPet()
-        } catch {
-            // No pet yet — show onboarding
+    /// While set, Stage B may still be writing expressions for this pet — used for Settings thumbnails.
+    @Published private(set) var expressionSyncPetId: UUID?
+
+    init() {
+        loadUserSettingsFromUserDefaults()
+        loadAppearanceFromUserDefaults()
+    }
+
+    private func loadAppearanceFromUserDefaults() {
+        let d = UserDefaults.standard
+        if d.object(forKey: MockUserSettings.Keys.darkMode) != nil {
+            visualStyle = d.bool(forKey: MockUserSettings.Keys.darkMode) ? .widgetGlass : .classic
+            return
         }
+        if let raw = d.string(forKey: MockUserSettings.legacyVisualStyleKey),
+           let style = AppVisualStyle(rawValue: raw) {
+            visualStyle = style
+            d.set(style == .widgetGlass, forKey: MockUserSettings.Keys.darkMode)
+            d.removeObject(forKey: MockUserSettings.legacyVisualStyleKey)
+            return
+        }
+        visualStyle = .widgetGlass
+    }
+
+    func setVisualStyle(_ value: AppVisualStyle) {
+        visualStyle = value
+        UserDefaults.standard.set(value == .widgetGlass, forKey: MockUserSettings.Keys.darkMode)
+    }
+
+    var isDarkModeEnabled: Bool {
+        visualStyle == .widgetGlass
+    }
+
+    func setDarkModeEnabled(_ enabled: Bool) {
+        setVisualStyle(enabled ? .widgetGlass : .classic)
+    }
+
+    private func loadUserSettingsFromUserDefaults() {
+        let d = UserDefaults.standard
+        if let raw = d.string(forKey: MockUserSettings.Keys.persona) {
+            settingsPersona = SettingsPersona(storedRawValue: raw)
+        } else {
+            settingsPersona = .pet
+        }
+        hasCompletedSignUp = d.bool(forKey: MockUserSettings.Keys.signupCompleted)
+        hasCompletedOnboarding = d.bool(forKey: MockUserSettings.Keys.onboardingCompleted)
+        hasSeenWelcome = d.bool(forKey: MockUserSettings.Keys.hasSeenWelcome)
+        userDisplayName = d.string(forKey: MockUserSettings.Keys.displayName) ?? ""
+        userEmail = d.string(forKey: MockUserSettings.Keys.email) ?? ""
+        userPhone = d.string(forKey: MockUserSettings.Keys.phone) ?? ""
+        if let raw = d.string(forKey: MockUserSettings.Keys.widgetPetId) {
+            widgetPetId = UUID(uuidString: raw)
+        }
+    }
+
+    func setUserDisplayName(_ value: String) {
+        userDisplayName = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.displayName)
+    }
+
+    func setUserEmail(_ value: String) {
+        userEmail = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.email)
+    }
+
+    func setUserPhone(_ value: String) {
+        userPhone = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.phone)
+    }
+
+    func setSettingsPersona(_ value: SettingsPersona) {
+        settingsPersona = value
+        UserDefaults.standard.set(value.rawValue, forKey: MockUserSettings.Keys.persona)
+    }
+
+    func refreshProfileIfNeeded() async {
+        if let profile = try? await supabase.fetchProfile() {
+            applyProfileCache(profile)
+        }
+    }
+
+    func setHasCompletedSignUp(_ value: Bool) {
+        hasCompletedSignUp = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.signupCompleted)
+    }
+
+    func setHasCompletedOnboarding(_ value: Bool) {
+        hasCompletedOnboarding = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.onboardingCompleted)
+    }
+
+    func setHasSeenWelcome(_ value: Bool) {
+        hasSeenWelcome = value
+        UserDefaults.standard.set(value, forKey: MockUserSettings.Keys.hasSeenWelcome)
+    }
+
+    func markBootstrapComplete() {
+        isBootstrapping = false
+    }
+
+    func bootstrap() async {
+        defer { isBootstrapping = false }
+        if await supabase.restoreSessionIfPresent() {
+            isAuthenticated = true
+            await restoreAuthenticatedSession()
+        } else {
+            applyUnauthenticatedState()
+        }
+    }
+
+    /// Clears in-memory app data when there is no Supabase session (stale UserDefaults must not unlock the app).
+    func applyUnauthenticatedState() {
+        isAuthenticated = false
+        stopSyncingExpressions()
+        currentPet = nil
+        pets = []
+        setWidgetPetId(nil)
+        setHasCompletedSignUp(false)
+    }
+
+    /// After sign-in or session restore: fetch pets first (routes to home when present), then profile cache.
+    func restoreAuthenticatedSession(showLoading: Bool = true) async {
+        isAuthenticated = true
+        await loadPets(showLoading: showLoading)
+        await hydrateFromProfile()
+    }
+
+    func hydrateFromProfile() async {
+        if let profile = try? await supabase.fetchProfile() {
+            applyProfileCache(profile)
+            setHasCompletedSignUp(true)
+            return
+        }
+        if let session = try? await supabase.client.auth.session,
+           let email = session.user.email, !email.isEmpty {
+            setUserEmail(email)
+            setHasCompletedSignUp(true)
+        }
+    }
+
+    private func applyProfileCache(_ profile: UserProfile) {
+        setUserDisplayName(profile.fullName)
+        setUserEmail(profile.email)
+        if let phone = profile.phone {
+            setUserPhone(phone)
+        }
+    }
+
+    func completeSignUp(from draft: SignUpDraft) async {
+        isAuthenticated = true
+        let name = draft.name.trimmingCharacters(in: .whitespaces)
+        let email = draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        setUserDisplayName(name)
+        setUserEmail(email)
+        setUserPhone(draft.phoneDigitsOnly)
+        setHasCompletedSignUp(true)
+    }
+
+    func loadPets(showLoading: Bool = true) async {
+        if showLoading { isLoading = true }
+        defer { if showLoading { isLoading = false } }
+        do {
+            let previousCurrentId = currentPet?.id
+            let fetched = try await supabase.fetchAllPets(limit: Self.maxPets)
+            pets = fetched
+            if let previousCurrentId,
+               let kept = fetched.first(where: { $0.id == previousCurrentId }) {
+                currentPet = kept
+            } else {
+                currentPet = fetched.first
+            }
+            resolveWidgetPetId()
+            if !fetched.isEmpty {
+                setHasCompletedOnboarding(true)
+            }
+            syncHomeGeofenceFromCurrentPet()
+            await syncWidgetSnapshot()
+            await PetMessageDelivery.refreshWidgetFromServer()
+        } catch {
+            // No pets yet — show onboarding
+        }
+    }
+
+    private func resolveWidgetPetId() {
+        if let widgetPetId,
+           pets.contains(where: { $0.id == widgetPetId }) {
+            return
+        }
+        if let firstPet = pets.first {
+            setWidgetPetId(firstPet.id)
+        } else {
+            setWidgetPetId(nil)
+        }
+    }
+
+    private func setWidgetPetId(_ id: UUID?) {
+        widgetPetId = id
+        if let id {
+            UserDefaults.standard.set(id.uuidString, forKey: MockUserSettings.Keys.widgetPetId)
+        } else {
+            UserDefaults.standard.removeObject(forKey: MockUserSettings.Keys.widgetPetId)
+        }
+    }
+
+    var widgetPet: Pet? {
+        guard let widgetPetId else { return pets.first }
+        return pets.first { $0.id == widgetPetId } ?? pets.first
+    }
+
+    var canAddPet: Bool { pets.count < Self.maxPets }
+
+    var availablePets: [Pet] { pets }
+
+    func setWidgetPet(_ pet: Pet) {
+        setWidgetPetId(pet.id)
+        Task { await syncWidgetSnapshot() }
+    }
+
+    func syncWidgetSnapshot() async {
+        guard let pet = widgetPet else { return }
+        if let message = try? await supabase.fetchLatestMessage(for: pet.id) {
+            WidgetSnapshotSync.writeFromPet(pet, message: message)
+        }
+    }
+
+    func registerNewPet(_ pet: Pet) {
+        var next = pets.filter { $0.id != pet.id }
+        next.append(pet)
+        next.sort { $0.createdAt < $1.createdAt }
+        pets = Array(next.prefix(Self.maxPets))
+        mergePet(pet)
+        startSyncingExpressions(petId: pet.id)
+    }
+
+    private func mergePet(_ pet: Pet) {
+        if var current = currentPet, current.id == pet.id {
+            current = pet
+            currentPet = current
+        }
+        if let index = pets.firstIndex(where: { $0.id == pet.id }) {
+            pets[index] = pet
+        }
+    }
+
+    func updateCurrentPetHome(lat: Double, lng: Double) {
+        guard let petId = currentPet?.id else { return }
+        updatePetHome(petId: petId, lat: lat, lng: lng)
+    }
+
+    func updatePetHome(petId: UUID, lat: Double, lng: Double) {
+        guard var pet = pets.first(where: { $0.id == petId }) else { return }
+        pet.homeLat = lat
+        pet.homeLng = lng
+        mergePet(pet)
+        if currentPet?.id == petId {
+            syncHomeGeofenceFromCurrentPet()
+        }
+    }
+
+    func syncHomeGeofenceFromCurrentPet() {
+        guard let pet = currentPet,
+              let lat = pet.homeLat,
+              let lng = pet.homeLng else { return }
+        LocationService.shared.syncHomeGeofence(
+            lat: lat,
+            lng: lng,
+            petId: pet.id,
+            petName: pet.name
+        )
     }
 
     func setPet(_ pet: Pet) {
         currentPet = pet
+        if let index = pets.firstIndex(where: { $0.id == pet.id }) {
+            pets[index] = pet
+        } else if pets.count < Self.maxPets {
+            pets.append(pet)
+            pets.sort { $0.createdAt < $1.createdAt }
+        }
     }
 
-    func resetForOnboarding() async {
-        try? await SupabaseService.shared.client.auth.signOut()
-        currentPet = nil
+    func removePetLocally(petId: UUID) {
+        pets.removeAll { $0.id == petId }
+        if currentPet?.id == petId {
+            currentPet = pets.first
+        }
+        resolveWidgetPetId()
+    }
+
+    func deletePet(_ pet: Pet) async {
+        if expressionSyncPetId == pet.id {
+            stopSyncingExpressions()
+        }
+        try? await supabase.deletePet(petId: pet.id)
+        ChatHistoryStore.clearHistory(for: pet.id)
+        removePetLocally(petId: pet.id)
+        await syncWidgetSnapshot()
+    }
+
+    func selectPet(_ pet: Pet) {
+        currentPet = pet
+    }
+
+    /// Clears session, pet, and cached profile so the app returns to sign-in.
+    func signOut() async {
+        stopSyncingExpressions()
+        MessageScheduler.shared.cancelBeenGoneNotifications()
+        try? await SupabaseService.shared.client.auth.signOut(scope: .global)
+        applyUnauthenticatedState()
+        setHasCompletedOnboarding(false)
+        setUserDisplayName("")
+        setUserEmail("")
+        setUserPhone("")
+        WidgetSnapshotSync.clear()
+    }
+
+    /// Permanently deletes the account on the server and clears all local state.
+    func deleteAccount() async throws {
+        let petIds = pets.map(\.id)
+        stopSyncingExpressions()
+        MessageScheduler.shared.cancelBeenGoneNotifications()
+        try await supabase.deleteAccount()
+        for petId in petIds {
+            ChatHistoryStore.clearHistory(for: petId)
+        }
+        try? await SupabaseService.shared.client.auth.signOut(scope: .global)
+        applyUnauthenticatedState()
+        setHasCompletedOnboarding(false)
+        setUserDisplayName("")
+        setUserEmail("")
+        setUserPhone("")
+        WidgetSnapshotSync.clear()
+    }
+
+    /// After kicking off `generate-sprites`, the edge function returns once
+    /// the `happy` base sprite is ready and continues to fill in the other 5
+    /// expressions in the background (writing each to `pets.expressions`).
+    /// This polls the row and merges new expressions into `currentPet` as they
+    /// arrive, so the UI updates without a manual refresh.
+    func startSyncingExpressions(petId: UUID) {
+        expressionSyncTask?.cancel()
+        expressionSyncPetId = petId
+        expressionSyncTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            defer { self.expressionSyncPetId = nil }
+            do {
+                for try await partial in self.supabase.observePetExpressions(petId: petId) {
+                    if Task.isCancelled { return }
+                    if var pet = self.pets.first(where: { $0.id == petId }) {
+                        pet.expressions = partial
+                        self.mergePet(pet)
+                    }
+                }
+            } catch {
+                print("[AppState] expression sync ended with error: \(error)")
+            }
+        }
+    }
+
+    func stopSyncingExpressions() {
+        expressionSyncTask?.cancel()
+        expressionSyncTask = nil
+        expressionSyncPetId = nil
     }
 }

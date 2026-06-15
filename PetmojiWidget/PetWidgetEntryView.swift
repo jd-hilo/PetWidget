@@ -46,7 +46,8 @@ struct SmallWidgetView: View {
                     showsBorder: false,
                     knockoutWhiteMatte: true,
                     knockoutDarkMatte: true,
-                    spriteScale: 1.28
+                    clipsToCircle: false,
+                    spriteScale: 1.0
                 )
                 Spacer(minLength: 0)
             }
@@ -92,7 +93,7 @@ struct MediumWidgetView: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .top, spacing: 6) {
             WidgetBoundSpriteCircle(
                 image: entry.spriteImage,
                 size: 136,
@@ -100,10 +101,11 @@ struct MediumWidgetView: View {
                 showsBorder: false,
                 knockoutWhiteMatte: true,
                 knockoutDarkMatte: true,
-                spriteScale: 1.24
+                clipsToCircle: false,
+                spriteScale: 1.0
             )
             .padding(.leading, 4)
-            .padding(.vertical, 4)
+            .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 6) {
                 WidgetBulletEmotionRow(
@@ -251,13 +253,17 @@ struct WidgetBoundSpriteCircle: View {
     var knockoutWhiteMatte: Bool = false
     /// When true, knocks out near-black backdrop pixels in the sprite (for sprites that ship with a dark matte).
     var knockoutDarkMatte: Bool = false
-    /// Zoom inside the circular clip before masking to the circle.
+    /// When false, the sprite is not masked to a circle (shows full square bounds).
+    var clipsToCircle: Bool = true
+    /// Zoom inside the clip bounds before masking.
     var spriteScale: CGFloat = 1.2
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(diskFill)
+            if clipsToCircle {
+                Circle()
+                    .fill(diskFill)
+            }
 
             WidgetSpriteView(
                 image: image,
@@ -266,7 +272,7 @@ struct WidgetBoundSpriteCircle: View {
             )
             .frame(width: size, height: size)
             .scaleEffect(spriteScale)
-            .clipShape(Circle())
+            .modifier(WidgetSpriteClipModifier(enabled: clipsToCircle))
         }
         .frame(width: size, height: size)
         .overlay {
@@ -274,6 +280,18 @@ struct WidgetBoundSpriteCircle: View {
                 Circle()
                     .strokeBorder(borderColor, lineWidth: 1.6)
             }
+        }
+    }
+}
+
+private struct WidgetSpriteClipModifier: ViewModifier {
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.clipShape(Circle())
+        } else {
+            content
         }
     }
 }

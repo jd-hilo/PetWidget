@@ -49,6 +49,8 @@ struct PetHomeView: View {
                     HomeHeader(
                         greeting: greeting,
                         petCount: pets.count,
+                        canAddPet: appState.canAddPet,
+                        onAddPet: { showAddPetOnboarding = true },
                         onShowSettings: { showSettings = true }
                     )
                     .padding(.horizontal, horizontalInset)
@@ -109,13 +111,6 @@ struct PetHomeView: View {
                                         value: isExpanded
                                     )
                                     .frame(maxWidth: .infinity)
-                                }
-
-                                if appState.canAddPet {
-                                    PMSageCTAButton(title: "add another pet") {
-                                        showAddPetOnboarding = true
-                                    }
-                                    .padding(.top, 4)
                                 }
                             }
                         }
@@ -301,11 +296,37 @@ struct PetHomeView: View {
     }
 }
 
+private struct HomeChromeIconButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let systemName: String
+    let accessibilityLabel: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(palette.iconTint)
+                .frame(width: 56, height: 56)
+                .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(palette.chromeButtonStroke, lineWidth: 1.25)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
 private struct HomeHeader: View {
     @Environment(\.petmojiPalette) private var palette
 
     let greeting: String
     let petCount: Int
+    let canAddPet: Bool
+    let onAddPet: () -> Void
     let onShowSettings: () -> Void
 
     private var checkInText: String {
@@ -330,18 +351,20 @@ private struct HomeHeader: View {
                     .minimumScaleFactor(0.9)
             }
             Spacer(minLength: 8)
-            Button(action: onShowSettings) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(palette.iconTint)
-                    .frame(width: 56, height: 56)
-                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(palette.chromeButtonStroke, lineWidth: 1.25)
+            HStack(spacing: 8) {
+                if canAddPet {
+                    HomeChromeIconButton(
+                        systemName: "plus",
+                        accessibilityLabel: "add another pet",
+                        action: onAddPet
                     )
+                }
+                HomeChromeIconButton(
+                    systemName: "gearshape.fill",
+                    accessibilityLabel: "settings",
+                    action: onShowSettings
+                )
             }
-            .buttonStyle(.plain)
         }
     }
 }

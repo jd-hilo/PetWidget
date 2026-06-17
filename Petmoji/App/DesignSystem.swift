@@ -164,7 +164,7 @@ struct PetmojiPalette: Equatable {
         chipSelectedStroke: Color.pmSageAccentDark.opacity(0.35),
         traitSelectedFg: .pmSageAccentDark,
         traitUnselectedFg: .pmSageTextPrimary,
-        traitSelectedBg: Color.pmSageAccent.opacity(0.22),
+        traitSelectedBg: Color.pmSageAccent.opacity(0.40),
         traitUnselectedBg: .pmSageSurface,
         traitSelectedBorder: .pmSageAccent,
         traitUnselectedBorder: Color.pmSageBorder.opacity(0.65),
@@ -210,7 +210,7 @@ struct PetmojiPalette: Equatable {
         chipSelectedStroke: Color.pmSageAccent.opacity(0.55),
         traitSelectedFg: .white,
         traitUnselectedFg: Color.white.opacity(0.9),
-        traitSelectedBg: Color.pmSageAccent.opacity(0.42),
+        traitSelectedBg: Color.pmSageAccent.opacity(0.55),
         traitUnselectedBg: Color.white.opacity(0.10),
         traitSelectedBorder: Color.pmSageAccent,
         traitUnselectedBorder: Color.white.opacity(0.28),
@@ -615,8 +615,13 @@ struct PMTraitPill: View {
         }) {
             Text(trait.displayName)
                 .font(.bodyM)
+                .fontWeight(isSelected ? .bold : .regular)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
                 .foregroundStyle(isSelected ? palette.traitSelectedFg : palette.traitUnselectedFg)
-                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
+                .padding(.leading, 12)
+                .padding(.trailing, 22)
                 .padding(.vertical, 10)
                 .background(
                     isSelected ? palette.traitSelectedBg : palette.traitUnselectedBg,
@@ -624,8 +629,19 @@ struct PMTraitPill: View {
                 )
                 .overlay(
                     Capsule()
-                        .strokeBorder(isSelected ? palette.traitSelectedBorder : palette.traitUnselectedBorder, lineWidth: 1.5)
+                        .strokeBorder(
+                            isSelected ? palette.traitSelectedBorder : palette.traitUnselectedBorder,
+                            lineWidth: isSelected ? 2 : 1.5
+                        )
                 )
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(palette.traitSelectedFg)
+                        .padding(.trailing, 8)
+                        .opacity(isSelected ? 1 : 0)
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(SpringButtonStyle())
     }

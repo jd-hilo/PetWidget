@@ -213,6 +213,8 @@ enum PetTrigger: String, Codable, CaseIterable, Hashable {
     case carRides = "car rides"
     case birds
     case foodDelivery = "food delivery"
+    case separationAnxiety = "separation anxiety"
+    case loneliness
 
     var displayName: String { rawValue.capitalized }
 

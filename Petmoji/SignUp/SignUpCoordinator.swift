@@ -24,7 +24,6 @@ struct SignUpCoordinator: View {
     private var scrollAnchorID: String {
         switch step {
         case .otp: return "signup-active-otp"
-        case .phone: return "signup-active-phone"
         case .email: return "signup-active-email"
         case .name: return "signup-active-name"
         }
@@ -134,13 +133,13 @@ struct SignUpCoordinator: View {
     private var ctaTitle: String {
         if isSubmitting {
             switch step {
-            case .phone: return "sending code…"
+            case .email: return "sending code…"
             case .otp: return "verifying…"
             default: return "continue →"
             }
         }
         switch step {
-        case .phone: return "send code →"
+        case .email: return "send code →"
         case .otp: return "verify →"
         default: return "continue →"
         }
@@ -164,7 +163,7 @@ struct SignUpCoordinator: View {
     private func goToStep(_ target: SignUpStep) {
         focusedStep = nil
         authError = nil
-        if target.rawValue <= SignUpStep.phone.rawValue {
+        if target.rawValue <= SignUpStep.email.rawValue {
             draft.clearOTP()
             stopResendCooldown()
         }
@@ -180,7 +179,7 @@ struct SignUpCoordinator: View {
         authError = nil
 
         switch step {
-        case .phone:
+        case .email:
             Task { await sendOTPAndAdvance() }
         case .otp:
             Task { await verifyOTPAndComplete() }
@@ -235,7 +234,7 @@ struct SignUpCoordinator: View {
             try await supabase.upsertProfile(
                 fullName: draft.name,
                 email: trimmedEmail,
-                phone: draft.phoneDigitsOnly
+                phone: nil
             )
             await appState.completeSignUp(from: draft)
         } catch {

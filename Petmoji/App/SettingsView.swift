@@ -12,6 +12,8 @@ struct SettingsView: View {
     @State private var regenerateError: String?
     @State private var regenerateSuccess = false
     @State private var showRegenerateConfirm = false
+    @State private var regenerateButtonFrame: CGRect = .zero
+    @State private var regeneratePopoverArrowEdge: Edge = .top
     @State private var showDeletePetConfirm = false
     @State private var isDeletingPet = false
     @State private var deletePetError: String?
@@ -370,14 +372,19 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     Button("regenerate sprites") {
+                        regeneratePopoverArrowEdge = AdaptivePopoverPlacement.arrowEdge(
+                            anchorFrame: regenerateButtonFrame,
+                            estimatedPopoverHeight: RegenerateSpritesConfirmPopover.estimatedHeight
+                        )
                         showRegenerateConfirm = true
                     }
                     .font(.bodyL)
                     .foregroundStyle(palette.accentDark)
+                    .reportGlobalFrame($regenerateButtonFrame)
                     .popover(
                         isPresented: $showRegenerateConfirm,
                         attachmentAnchor: .rect(.bounds),
-                        arrowEdge: .top
+                        arrowEdge: regeneratePopoverArrowEdge
                     ) {
                         RegenerateSpritesConfirmPopover(
                             isPresented: $showRegenerateConfirm,
@@ -524,11 +531,69 @@ private struct ClassicDarkModeToggleRow: View {
 
 // MARK: - Anchored confirm popovers (near the triggering button)
 
+private struct GlobalFrameKey: PreferenceKey {
+    static let defaultValue: CGRect = .zero
+
+    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
+        value = nextValue()
+    }
+}
+
+private extension View {
+    func reportGlobalFrame(_ frame: Binding<CGRect>) -> some View {
+        background {
+            GeometryReader { geo in
+                Color.clear
+                    .preference(key: GlobalFrameKey.self, value: geo.frame(in: .global))
+            }
+        }
+        .onPreferenceChange(GlobalFrameKey.self) { frame.wrappedValue = $0 }
+    }
+}
+
+private enum AdaptivePopoverPlacement {
+    @MainActor
+    static func arrowEdge(
+        anchorFrame: CGRect,
+        estimatedPopoverHeight: CGFloat,
+        margin: CGFloat = 12
+    ) -> Edge {
+        guard anchorFrame != .zero else { return .top }
+
+        let insets = currentSafeAreaInsets
+        let screenHeight = UIScreen.main.bounds.height
+        let visibleTop = insets.top
+        let visibleBottom = screenHeight - insets.bottom
+
+        let spaceBelow = visibleBottom - anchorFrame.maxY
+        let spaceAbove = anchorFrame.minY - visibleTop
+
+        if spaceBelow >= estimatedPopoverHeight + margin {
+            return .top
+        }
+        if spaceAbove >= estimatedPopoverHeight + margin {
+            return .bottom
+        }
+        return spaceBelow >= spaceAbove ? .top : .bottom
+    }
+
+    @MainActor
+    private static var currentSafeAreaInsets: UIEdgeInsets {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first else {
+            return .zero
+        }
+        return window.safeAreaInsets
+    }
+}
+
 private struct RegenerateSpritesConfirmPopover: View {
     @Environment(\.petmojiPalette) private var palette
 
     @Binding var isPresented: Bool
     let onConfirm: () -> Void
+
+    static let estimatedHeight: CGFloat = 210
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {

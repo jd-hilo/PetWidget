@@ -12,12 +12,11 @@ enum SignUpOTPConfig {
 enum SignUpStep: Int, CaseIterable, Hashable {
     case name = 0
     case email = 1
-    case phone = 2
-    case otp = 3
+    case otp = 2
 
     var progressIndex: Int { rawValue }
 
-    static let fieldSteps: [SignUpStep] = [.name, .email, .phone]
+    static let fieldSteps: [SignUpStep] = [.name, .email]
 }
 
 // MARK: - Sign-up draft
@@ -26,12 +25,7 @@ enum SignUpStep: Int, CaseIterable, Hashable {
 final class SignUpDraft: ObservableObject {
     @Published var name: String = ""
     @Published var email: String = ""
-    @Published var phone: String = ""
     @Published var otpCode: String = ""
-
-    var phoneDigitsOnly: String {
-        phone.filter(\.isNumber)
-    }
 
     var isNameValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -42,10 +36,6 @@ final class SignUpDraft: ObservableObject {
         return trimmed.contains("@") && trimmed.contains(".")
     }
 
-    var isPhoneValid: Bool {
-        phoneDigitsOnly.count >= 10
-    }
-
     var isOTPValid: Bool {
         otpCode.count == SignUpOTPConfig.length && otpCode.allSatisfy(\.isNumber)
     }
@@ -54,7 +44,6 @@ final class SignUpDraft: ObservableObject {
         switch step {
         case .name: return isNameValid
         case .email: return isEmailValid
-        case .phone: return isPhoneValid
         case .otp: return isOTPValid
         }
     }
@@ -67,8 +56,6 @@ final class SignUpDraft: ObservableObject {
         case .email:
             let trimmed = email.trimmingCharacters(in: .whitespaces)
             return trimmed.isEmpty ? nil : trimmed
-        case .phone:
-            return phoneDigitsOnly.count >= 10 ? phone : nil
         case .otp:
             return isOTPValid ? String(repeating: "•", count: SignUpOTPConfig.length) : nil
         }
@@ -76,9 +63,8 @@ final class SignUpDraft: ObservableObject {
 
     func summaryLabel(for step: SignUpStep) -> String {
         switch step {
-        case .name: return "full name"
+        case .name: return "name"
         case .email: return "email"
-        case .phone: return "phone"
         case .otp: return "verification code"
         }
     }

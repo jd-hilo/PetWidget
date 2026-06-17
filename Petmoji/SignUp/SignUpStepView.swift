@@ -83,7 +83,7 @@ struct SignUpCompletedSummaryList: View {
     private func summaryValueFont(for step: SignUpStep) -> Font {
         switch step {
         case .name: return .titleL
-        case .email, .phone, .otp: return .bodyL
+        case .email, .otp: return .bodyL
         }
     }
 }
@@ -111,18 +111,16 @@ struct SignUpActiveStepView: View {
 
     private var headline: String {
         switch step {
-        case .name: return "what's your full name?"
+        case .name: return "what's your name?"
         case .email: return "what's your email?"
-        case .phone: return "what's your phone number?"
         case .otp: return ""
         }
     }
 
     private var placeholder: String {
         switch step {
-        case .name: return "enter full name..."
+        case .name: return "enter name..."
         case .email: return "enter email..."
-        case .phone: return "enter phone..."
         case .otp: return ""
         }
     }
@@ -169,18 +167,6 @@ struct SignUpActiveStepView: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .focused($focusedStep, equals: .email)
-                .submitLabel(.continue)
-                .tint(palette.accent)
-                .pmSignUpFieldChrome()
-
-        case .phone:
-            TextField(placeholder, text: $draft.phone)
-                .font(.titleL)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(palette.textPrimary)
-                .keyboardType(.phonePad)
-                .textContentType(.telephoneNumber)
-                .focused($focusedStep, equals: .phone)
                 .submitLabel(.continue)
                 .tint(palette.accent)
                 .pmSignUpFieldChrome()

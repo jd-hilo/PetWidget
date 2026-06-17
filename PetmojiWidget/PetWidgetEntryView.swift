@@ -46,8 +46,7 @@ struct SmallWidgetView: View {
                     showsBorder: false,
                     knockoutWhiteMatte: true,
                     knockoutDarkMatte: true,
-                    clipsToCircle: false,
-                    spriteScale: 1.0
+                    spriteScale: 1.28
                 )
                 Spacer(minLength: 0)
             }

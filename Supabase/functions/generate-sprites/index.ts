@@ -26,49 +26,54 @@ const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Photo fidelity — never invent traits not visible in the reference image.
-const IDENTITY_PRESERVE =
+const MEMOJI_IDENTITY_RULES =
   `Preserve this pet's identity from the reference image: exact fur color and markings, ` +
   `eye color and iris color as in the photo, nose color, ear shape and size, breed silhouette. ` +
-  `Match the reference photo's eye color exactly — if eyes are amber or light, keep them amber or light in cartoon form. ` +
-  `Do not darken pupils or irises beyond what appears in the photo. ` +
+  `Match the reference photo's eye color exactly — if eyes are amber or light, keep them amber or light. ` +
+  `Keep pupil and iris brightness matching the photo — no darkening beyond what appears in the photo. ` +
   `Only include markings visible in the photo. ` +
-  `Do NOT add accessories, collars, hats, extra markings, heterochromia, or color changes not in the photo. ` +
-  `Stylize into cartoon proportions but keep the same colors the pet actually has.`;
+  `No accessories, collars, hats, extra markings, heterochromia, or color changes not in the photo. ` +
+  `Recognizably THIS specific pet, not a generic template.`;
 
-// Memoji aesthetic without forcing eye color or generic template features.
-const MEMOJI_STYLE_DESCRIPTION =
-  `Apple iOS animal emoji style, official Apple Memoji animal sticker aesthetic, ` +
-  `3D rendered cartoon character like the Apple dog/cat/bear emoji, ` +
-  `soft matte 3D surface with gentle subsurface scattering (NOT shiny plastic, NOT wet), ` +
-  `chibi proportions: oversized head, tiny or no body, ` +
-  `large expressive cartoon eyes scaled up from the photo's actual eye color, subtle white catchlights only, ` +
-  `simplified stylized fur (smooth volumetric shapes, no individual hair strands), ` +
-  `tiny cute nose, small expressive mouth, perky simplified ears, ` +
-  `bright saturated cartoon colors matching the pet's real colors, soft even cartoon lighting, ` +
-  `Pixar 3D animation quality, front-facing centered portrait headshot, no shoulders, ` +
-  `pure flat white background, fully isolated subject`;
+// Positive-only Memoji style anchors (Flux/Kontext does not use negative prompts).
+// Repeated, explicit "not a cartoon" contrasts because the model's training
+// distribution skews heavily toward cute cartoon/illustration pets, which is
+// the failure mode we're steering away from.
+const MEMOJI_STYLE_ANCHOR =
+  `Apple iOS Messages animal Memoji 3D emoji sticker, EXACTLY like the official Apple animal emoji ` +
+  `set (the dog face emoji, cat face emoji, bear face emoji, fox face emoji from iOS Messages). ` +
+  `This is a 3D rendered emoji sticker with a soft matte clay/vinyl material and gentle subsurface ` +
+  `scattering, photographed with soft studio lighting and soft shadows, giving it real depth and ` +
+  `volume. It is NOT a cartoon illustration, NOT a vector cartoon character, NOT a Disney or Pixar ` +
+  `style cartoon animal, NOT a children's book illustration, NOT a flat 2D drawing with bold outlines, ` +
+  `NOT anime, NOT chibi, NOT painterly digital art. ` +
+  `Surfaces are smooth simplified 3D forms with soft shading gradients, not flat color fills, and ` +
+  `there are no hard black cartoon outline strokes anywhere on the character.`;
 
-const MEMOJI_NEGATIVE =
-  `realistic photo, photographic, photo-real fur, individual hair strands, ` +
-  `wet glossy plastic, oily skin, harsh specular highlights, plastic shine, ` +
-  `wrong eye color, black eyes when photo has light eyes, darkened pupils, invented eye color, ` +
-  `added markings, added accessories, collar, hat, heterochromia, extra spots, ` +
-  `identical expression to input, subtle expression change, same face as before, ` +
-  `flat 2D illustration, sticker outline, painterly, watercolor, sketch, line art, ` +
-  `anime style, manga style, ` +
-  `realistic proportions, small head, full body, shoulders, neck, ` +
-  `busy background, gradient background, dark background, shadows on background, ` +
-  `text, watermark, border, frame, multiple characters`;
+const MEMOJI_VISUAL_TRAITS =
+  `Soft matte powder finish with gentle subsurface scattering, no glossy plastic shine, no wet oily surface. ` +
+  `Rounded puffy sculpt forms, simplified fur as smooth color masses with no individual hair strands. ` +
+  `Oversized round head filling 75 to 85 percent of frame, tiny or no body, no shoulders, no neck. ` +
+  `Large expressive eyes using the pet's actual eye color from the photo, subtle white catchlights only. ` +
+  `Tiny cute nose, small expressive mouth, perky simplified ears. ` +
+  `Bright saturated colors matching the pet's real fur colors. ` +
+  `Soft even studio lighting with subtle 3D shading and soft contact shadow, on flat pure white ` +
+  `background (#FFFFFF), fully isolated single subject. ` +
+  `The shading and lighting must read as a real rendered 3D object, not as flat cartoon cel-shading.`;
 
-// Stage B rules applied around each expression-specific instruction.
-const EXPRESSION_EDIT_RULES =
-  `PRESERVE EXACTLY: fur colors, markings, eye color, iris color, nose, head shape, pose, ` +
-  `matte 3D art style, pure white background. Do not change eye color or fur color. ` +
-  `This must look clearly different from a happy/neutral face at a glance.`;
+// Stage B — what must stay unchanged during expression edits.
+const MEMOJI_STYLE_LOCK =
+  `Keep the exact same Apple iOS Memoji 3D character — same fur colors, markings, eye color, ` +
+  `head shape, soft matte clay-like 3D sculpt material with subsurface scattering and soft shading, ` +
+  `and pure white background. Do not flatten the shading into a cartoon illustration style.`;
 
 const BASE_EXPRESSION = "happy" as const;
 
-const EXPRESSION_EDITS: Array<{ key: string; emotion: string; instruction: string }> = [
+const EXPRESSION_EDITS: Array<{
+  key: string;
+  emotion: string;
+  instruction: string;
+}> = [
   { key: "happy", emotion: "happy", instruction: "" /* base */ },
   {
     key: "sleepy",
@@ -139,7 +144,10 @@ Deno.serve(async (req: Request) => {
   });
 
   try {
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await userClient.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -151,19 +159,28 @@ Deno.serve(async (req: Request) => {
     const { pet_id, photo_urls, pet_name, species } = body;
 
     if (!pet_id || !photo_urls?.length) {
-      return new Response(JSON.stringify({ error: "pet_id and photo_urls required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "pet_id and photo_urls required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { data: petRow, error: petAccessError } = await userClient
-      .from("pets").select("id").eq("id", pet_id).single();
+      .from("pets")
+      .select("id")
+      .eq("id", pet_id)
+      .single();
     if (petAccessError || !petRow) {
-      return new Response(JSON.stringify({ error: "Pet not found or access denied" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Pet not found or access denied" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
     }
 
     const primaryPhotoURL = photo_urls[0];
@@ -171,14 +188,28 @@ Deno.serve(async (req: Request) => {
 
     // Stage A — generate base, store, write to DB immediately so the client
     // gets a usable sprite without waiting for all 5 expressions.
-    const baseRawURL = await generateBaseMemoji(primaryPhotoURL, pet_name, species, pet_id);
+    const baseRawURL = await generateBaseMemoji(
+      primaryPhotoURL,
+      pet_name,
+      species,
+      pet_id,
+    );
     const baseCutoutURL = await removeBackground(baseRawURL);
-    const baseStoredURL = await storeSprite(pet_id, BASE_EXPRESSION, baseCutoutURL);
+    const baseStoredURL = await storeSprite(
+      pet_id,
+      BASE_EXPRESSION,
+      baseCutoutURL,
+    );
     console.log(`[generate-sprites] base ready -> ${baseStoredURL}`);
 
     const { error: baseUpdateError } = await supabase
-      .from("pets").update({ expressions: { [BASE_EXPRESSION]: baseStoredURL } }).eq("id", pet_id);
-    if (baseUpdateError) throw new Error(`Failed to write base expression: ${baseUpdateError.message}`);
+      .from("pets")
+      .update({ expressions: { [BASE_EXPRESSION]: baseStoredURL } })
+      .eq("id", pet_id);
+    if (baseUpdateError)
+      throw new Error(
+        `Failed to write base expression: ${baseUpdateError.message}`,
+      );
 
     // Stage B — run all 5 expression edits in parallel via waitUntil so this
     // response returns immediately after Stage A. Each expression updates the DB
@@ -205,9 +236,18 @@ Deno.serve(async (req: Request) => {
           // Safe here because expressions are staggered 600ms apart so true
           // concurrent writes to the same row are extremely unlikely.
           const { data: current } = await supabase
-            .from("pets").select("expressions").eq("id", pet_id).single();
-          const merged = { ...(current?.expressions ?? {}), [expr.key]: storedURL };
-          await supabase.from("pets").update({ expressions: merged }).eq("id", pet_id);
+            .from("pets")
+            .select("expressions")
+            .eq("id", pet_id)
+            .single();
+          const merged = {
+            ...(current?.expressions ?? {}),
+            [expr.key]: storedURL,
+          };
+          await supabase
+            .from("pets")
+            .update({ expressions: merged })
+            .eq("id", pet_id);
           console.log(`[generate-sprites] "${expr.key}" done -> ${storedURL}`);
           return expr.key;
         }),
@@ -217,21 +257,27 @@ Deno.serve(async (req: Request) => {
       const failed = results.filter((r) => r.status === "rejected").length;
       results.forEach((r, i) => {
         if (r.status === "rejected") {
-          const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+          const msg =
+            r.reason instanceof Error ? r.reason.message : String(r.reason);
           console.error(`[generate-sprites] "${edits[i].key}" failed: ${msg}`);
         }
       });
-      console.log(`[generate-sprites] stage-B done pet=${pet_id} ok=${ok}/5 failed=${failed}`);
+      console.log(
+        `[generate-sprites] stage-B done pet=${pet_id} ok=${ok}/5 failed=${failed}`,
+      );
     };
 
     // Keep the function alive for Stage B even after the response is sent.
     // deno-lint-ignore no-explicit-any
     (globalThis as any).EdgeRuntime?.waitUntil(stageB());
 
-    return new Response(JSON.stringify({ [BASE_EXPRESSION]: baseStoredURL, generating: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ [BASE_EXPRESSION]: baseStoredURL, generating: true }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   } catch (err) {
     console.error("[generate-sprites] fatal:", err);
     return new Response(JSON.stringify({ error: String(err) }), {
@@ -254,16 +300,13 @@ async function generateBaseMemoji(
   const seed = stableSeed(`${petId}:base`);
 
   const prompt =
-    `Stylize this ${species}${petName ? ` named ${petName}` : ""} from the reference photo ` +
-    `into an Apple iOS animal Memoji emoji sticker — that exact 3D cartoon style, ` +
-    `but recognizably THIS specific pet, not a generic template. ` +
-    `${IDENTITY_PRESERVE} ` +
-    `${MEMOJI_STYLE_DESCRIPTION}. ` +
-    `Render the head dramatically larger than realistic (chibi cartoon proportions). ` +
-    `Surface is soft matte 3D — NOT shiny, NOT wet, NOT plastic-looking. ` +
-    `Happy gentle smile, mouth slightly open or closed softly. ` +
-    `One single character, centered headshot, pure white background. ` +
-    `AVOID: ${MEMOJI_NEGATIVE}.`;
+    `Transform this ${species}${petName ? ` named ${petName}` : ""} from the reference photo ` +
+    `into an Apple iOS animal Memoji 3D emoji portrait. ` +
+    `${MEMOJI_STYLE_ANCHOR}. ${MEMOJI_VISUAL_TRAITS}. ` +
+    `${MEMOJI_IDENTITY_RULES}. ` +
+    `Front-facing centered headshot, gentle happy smile, single character, pure white background. ` +
+    `The final render must look like an official Apple emoji asset — a 3D rendered sticker — ` +
+    `not fan art, not a cartoon mascot, not a greeting card illustration, not a flat drawing.`;
 
   try {
     return await runReplicate("black-forest-labs/flux-kontext-pro", {
@@ -272,6 +315,10 @@ async function generateBaseMemoji(
       aspect_ratio: "1:1",
       output_format: "png",
       prompt_upsampling: false,
+      // Higher guidance than the Stage-B edits: Stage A is a full restyle and
+      // needs to adhere strongly to the detailed Memoji-vs-cartoon language,
+      // otherwise the model tends to default to a generic cute cartoon pet.
+      guidance_scale: 7,
       safety_tolerance: 2,
       seed,
     });
@@ -298,13 +345,15 @@ async function generateBaseMemoji(
     {
       image: photoURL,
       prompt:
-        `cute cartoon ${species} portrait, Memoji style, clean rounded cartoon, soft matte shading, ` +
-        `expressive face, simplified but recognizable features from the reference photo, ` +
-        `preserve exact fur color, markings, and eye color from photo, ` +
-        `transparent background, sticker art, gentle happy smile`,
+        `Apple iOS animal Memoji 3D emoji portrait of this ${species}, official Apple Messages animal sticker aesthetic, ` +
+        `soft matte vinyl clay sculpt with subsurface scattering and soft 3D shading, rounded puffy forms, ` +
+        `simplified fur as smooth color masses, oversized round head, large expressive eyes with exact eye color ` +
+        `from reference photo, preserve exact fur color and markings from photo, gentle happy smile, ` +
+        `pure white background, front-facing centered headshot, 3D rendered sticker, not a flat cartoon drawing`,
       negative_prompt:
-        `realistic, photograph, blurry, ugly, text, watermark, wrong eye color, dark eyes, ` +
-        `added accessories, invented markings, glossy plastic`,
+        `realistic photograph, blurry, text, watermark, glossy plastic, wrong eye color, dark eyes, ` +
+        `added accessories, invented markings, anime, Pixar, flat illustration, cartoon, vector art, ` +
+        `cel shading, hard black outlines, children's book illustration, chibi`,
       steps: 20,
       style: "Sticker",
       upscale: false,
@@ -327,11 +376,9 @@ async function editExpression(
   expressionKey: string,
 ): Promise<string> {
   const prompt =
-    `Edit this character to show a ${emotion} expression. ` +
-    `${instruction} ` +
-    `${EXPRESSION_EDIT_RULES} ` +
-    `Keep the IDENTICAL soft matte 3D Apple-Memoji style — NOT shiny, NOT plastic. ` +
-    `AVOID: ${MEMOJI_NEGATIVE}.`;
+    `${MEMOJI_STYLE_LOCK} ` +
+    `Change ONLY the facial expression to ${emotion}: ${instruction} ` +
+    `The new expression must be clearly distinct from a happy/neutral face.`;
 
   return await runReplicate("black-forest-labs/flux-kontext-pro", {
     prompt,
@@ -339,6 +386,7 @@ async function editExpression(
     aspect_ratio: "match_input_image",
     output_format: "png",
     prompt_upsampling: false,
+    guidance_scale: 4.5,
     safety_tolerance: 2,
     seed: stableSeed(`${petId}:${expressionKey}`),
   });
@@ -359,7 +407,10 @@ async function removeBackground(imageURL: string): Promise<string> {
       preserve_alpha: true,
     });
   } catch (err) {
-    console.warn("[generate-sprites] bria background-remover failed, trying birefnet:", err);
+    console.warn(
+      "[generate-sprites] bria background-remover failed, trying birefnet:",
+      err,
+    );
   }
 
   try {
@@ -377,7 +428,10 @@ async function removeBackground(imageURL: string): Promise<string> {
       { image: imageURL, format: "png", background_type: "rgba" },
     );
   } catch (err) {
-    console.warn("[generate-sprites] all background removers failed, keeping original:", err);
+    console.warn(
+      "[generate-sprites] all background removers failed, keeping original:",
+      err,
+    );
     return imageURL;
   }
 }
@@ -407,9 +461,9 @@ async function runReplicate(
       startRes = await fetch(url, {
         method: "POST",
         headers: {
-          "Authorization": `Token ${REPLICATE_API_TOKEN}`,
+          Authorization: `Token ${REPLICATE_API_TOKEN}`,
           "Content-Type": "application/json",
-          "Prefer": "wait=30",
+          Prefer: "wait=30",
         },
         body: JSON.stringify(body),
       });
@@ -419,7 +473,10 @@ async function runReplicate(
       continue;
     }
     if (startRes.status === 429) {
-      const retryAfter = parseInt(startRes.headers.get("retry-after") ?? "15", 10);
+      const retryAfter = parseInt(
+        startRes.headers.get("retry-after") ?? "15",
+        10,
+      );
       console.log(`[runReplicate] 429 rate-limited, waiting ${retryAfter}s`);
       await sleep((retryAfter + 2) * 1000);
       continue;
@@ -430,26 +487,36 @@ async function runReplicate(
     throw new Error("Replicate start failed after retries (network)");
   }
   if (!startRes.ok) {
-    throw new Error(`Replicate start failed (${startRes.status}): ${await startRes.text()}`);
+    throw new Error(
+      `Replicate start failed (${startRes.status}): ${await startRes.text()}`,
+    );
   }
 
   const prediction = await startRes.json();
-  if (prediction.status === "succeeded") return extractOutput(prediction.output);
+  if (prediction.status === "succeeded")
+    return extractOutput(prediction.output);
   if (prediction.status === "failed" || prediction.status === "canceled") {
-    throw new Error(`Replicate prediction failed: ${prediction.error ?? prediction.status}`);
+    throw new Error(
+      `Replicate prediction failed: ${prediction.error ?? prediction.status}`,
+    );
   }
 
   const predictionId = prediction.id;
   const maxAttempts = 90; // ~3 minutes
   for (let i = 0; i < maxAttempts; i++) {
     await sleep(2000);
-    const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
-      headers: { "Authorization": `Token ${REPLICATE_API_TOKEN}` },
-    });
+    const pollRes = await fetch(
+      `https://api.replicate.com/v1/predictions/${predictionId}`,
+      {
+        headers: { Authorization: `Token ${REPLICATE_API_TOKEN}` },
+      },
+    );
     const status = await pollRes.json();
     if (status.status === "succeeded") return extractOutput(status.output);
     if (status.status === "failed" || status.status === "canceled") {
-      throw new Error(`Replicate prediction failed: ${status.error ?? status.status}`);
+      throw new Error(
+        `Replicate prediction failed: ${status.error ?? status.status}`,
+      );
     }
   }
   throw new Error("Replicate prediction timed out");
@@ -457,7 +524,12 @@ async function runReplicate(
 
 function extractOutput(output: unknown): string {
   if (typeof output === "string") return output;
-  if (Array.isArray(output) && output.length > 0 && typeof output[0] === "string") return output[0];
+  if (
+    Array.isArray(output) &&
+    output.length > 0 &&
+    typeof output[0] === "string"
+  )
+    return output[0];
   throw new Error("Replicate returned empty output");
 }
 
@@ -465,7 +537,11 @@ function extractOutput(output: unknown): string {
 // Storage
 // ============================================================
 
-async function storeSprite(petId: string, expression: string, imageURL: string): Promise<string> {
+async function storeSprite(
+  petId: string,
+  expression: string,
+  imageURL: string,
+): Promise<string> {
   const res = await fetch(imageURL);
   if (!res.ok) throw new Error(`Failed to download sprite: ${res.statusText}`);
   const imageData = await res.arrayBuffer();

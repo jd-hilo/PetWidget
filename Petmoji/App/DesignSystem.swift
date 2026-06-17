@@ -415,12 +415,21 @@ struct PMSageEdgePattern: View {
     ) -> some View {
         let absoluteX = size.width * relativePoint.x
         let absoluteY = size.height * relativePoint.y
+        let effectiveOpacity = patternSymbolOpacity(for: systemName, base: opacity)
 
         return Image(systemName: systemName)
             .font(.system(size: iconSize, weight: .medium))
-            .foregroundStyle(palette.patternSymbol.opacity(opacity))
+            .foregroundStyle(palette.patternSymbol.opacity(effectiveOpacity))
             .rotationEffect(.degrees(rotation))
             .position(x: absoluteX, y: absoluteY)
+    }
+
+    /// Filled symbols read heavier than outlines on the light sage backdrop.
+    private func patternSymbolOpacity(for systemName: String, base: Double) -> Double {
+        guard palette.visualStyle == .classic, systemName.hasSuffix(".fill") else {
+            return base
+        }
+        return base * 0.62
     }
 }
 

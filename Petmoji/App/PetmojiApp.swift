@@ -531,7 +531,6 @@ final class AppState: ObservableObject {
         let email = draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
         setUserDisplayName(name)
         setUserEmail(email)
-        setUserPhone(draft.phoneDigitsOnly)
         setHasCompletedSignUp(true)
     }
 

@@ -16,8 +16,11 @@ struct PersonalityBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
+    var initialActiveStep: Int = 0
+    var initialIsReviewScreen: Bool = false
     let onNext: () -> Void
     var onCancel: (() -> Void)?
+    var onProgressChange: ((_ activeStep: Int, _ isReview: Bool) -> Void)? = nil
 
     private static let totalSteps = 5
 
@@ -48,6 +51,10 @@ struct PersonalityBuilderView: View {
             bottomBarPadded
         }
         .pmSageScreenBackground()
+        .onAppear {
+            activeStep = initialActiveStep
+            isReviewScreen = initialIsReviewScreen
+        }
     }
 
     @ViewBuilder
@@ -58,6 +65,7 @@ struct PersonalityBuilderView: View {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                         isReviewScreen = false
                         activeStep = step
+                        notifyProgressChange()
                     }
                 }
                 .transition(.asymmetric(
@@ -171,6 +179,7 @@ struct PersonalityBuilderView: View {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                         isReviewScreen = false
                         activeStep = Self.totalSteps - 1
+                        notifyProgressChange()
                     }
                 } label: {
                         Text("back to last step")
@@ -194,6 +203,7 @@ struct PersonalityBuilderView: View {
                     if activeStep > 0 {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
                             activeStep -= 1
+                            notifyProgressChange()
                         }
                     } else {
                         dismiss()
@@ -223,12 +233,18 @@ struct PersonalityBuilderView: View {
         if activeStep < Self.totalSteps - 1 {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) {
                 activeStep += 1
+                notifyProgressChange()
             }
         } else {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
                 isReviewScreen = true
+                notifyProgressChange()
             }
         }
+    }
+
+    private func notifyProgressChange() {
+        onProgressChange?(activeStep, isReviewScreen)
     }
 }
 

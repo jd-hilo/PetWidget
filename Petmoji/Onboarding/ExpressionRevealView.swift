@@ -7,8 +7,10 @@ struct ExpressionRevealView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.petmojiPalette) private var palette
     var context: OnboardingContext = .firstPet
+    var initialPetName: String = ""
     let onComplete: (Pet) -> Void
     var onCancel: (() -> Void)?
+    var onProgressChange: ((_ petName: String) -> Void)? = nil
     var skipGenerationForDebug: Bool = false
     var useMockSpritesForDebug: Bool = false
 
@@ -22,6 +24,7 @@ struct ExpressionRevealView: View {
     @State private var thumbnailsVisible = [Bool](repeating: false, count: 6)
     @State private var createdPetId: UUID?
     @State private var nameDebounceTask: Task<Void, Never>?
+    @State private var progressDebounceTask: Task<Void, Never>?
     @State private var expressionSyncTask: Task<Void, Never>?
     @FocusState private var isNameFieldFocused: Bool
 
@@ -66,6 +69,9 @@ struct ExpressionRevealView: View {
         }
         .navigationBarBackButtonHidden(isGenerating)
         .task {
+            if !initialPetName.isEmpty, name.isEmpty {
+                name = initialPetName
+            }
             if skipGenerationForDebug {
                 if useMockSpritesForDebug {
 #if DEBUG
@@ -79,6 +85,15 @@ struct ExpressionRevealView: View {
             }
         }
         .onChange(of: name) { _, newName in
+            progressDebounceTask?.cancel()
+            progressDebounceTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    onProgressChange?(newName)
+                }
+            }
+
             guard let petId = createdPetId else { return }
             nameDebounceTask?.cancel()
             nameDebounceTask = Task {
@@ -89,6 +104,7 @@ struct ExpressionRevealView: View {
         }
         .onDisappear {
             expressionSyncTask?.cancel()
+            progressDebounceTask?.cancel()
         }
     }
 
@@ -246,6 +262,11 @@ struct ExpressionRevealView: View {
     // MARK: - Generation Logic
 
     private func startGeneration() async {
+        if let existingPet = draft.completedPet, existingPet.expressions.happy != nil {
+            await resumeFromExistingPet(existingPet)
+            return
+        }
+
         UIApplication.shared.isIdleTimerDisabled = true
         defer { UIApplication.shared.isIdleTimerDisabled = false }
 
@@ -253,14 +274,20 @@ struct ExpressionRevealView: View {
             // 1. Use the authenticated user from sign-up / sign-in
             let userId = try await SupabaseService.shared.requireUserId()
 
-            // 2. Create initial pet record
+            // 2. Create initial pet record (or reuse if restored without expressions)
             generationState = .uploading
-            let pet = try await createInitialPet(userId: userId)
+            let pet: Pet
+            if let existingPet = draft.completedPet {
+                pet = existingPet
+            } else {
+                pet = try await createInitialPet(userId: userId)
+            }
 
             // Store pet immediately so name saves work during generation
             await MainActor.run {
                 draft.completedPet = pet
                 createdPetId = pet.id
+                onProgressChange?(name)
             }
 
             // 3. Upload photos
@@ -303,6 +330,22 @@ struct ExpressionRevealView: View {
         } catch {
             generationState = .error(error.localizedDescription)
         }
+    }
+
+    @MainActor
+    private func resumeFromExistingPet(_ pet: Pet) {
+        createdPetId = pet.id
+        expressions = pet.expressions
+        draft.generatedExpressions = pet.expressions
+        if !initialPetName.isEmpty {
+            name = initialPetName
+        } else if pet.name != "unnamed" {
+            name = pet.name
+        }
+        generationState = .done
+        spriteVisible = true
+        onProgressChange?(name)
+        startExpressionSync(petId: pet.id)
     }
 
     /// Polls the pet row and merges newly-written expressions into local state

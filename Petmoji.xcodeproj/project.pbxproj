@@ -36,6 +36,7 @@
 		F7AEEFDA2F9D45A5006EDD07 /* tester_misses_you.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */; };
 		F7AEEFDC2F9D45A8006EDD07 /* tester_judging.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */; };
 		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
+		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
 		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
 		F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */; };
 		F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */; };
@@ -111,6 +112,7 @@
 		F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_misses_you.png; sourceTree = "<group>"; };
 		F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_judging.png; sourceTree = "<group>"; };
 		F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
+		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
 		F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUserSettings.swift; sourceTree = "<group>"; };
 		F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthCoordinator.swift; sourceTree = "<group>"; };
 		F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 				B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */,
 				9C1681768AB9E46038876ECF /* SupabaseService.swift */,
 				F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */,
+				F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */,
 				F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */,
 			);
 			path = Services;
@@ -400,6 +403,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */,
+				F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */,
 				A1B2C3D52F9E8D7C006EDD01 /* AppearanceSettings.swift in Sources */,
 				DF1DBFC7F677BE13230E3B1D /* ChatView.swift in Sources */,
 				C27BE570BDD95B90810F3FFF /* ClaudeService.swift in Sources */,

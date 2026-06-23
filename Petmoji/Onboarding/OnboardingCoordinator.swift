@@ -27,8 +27,13 @@ struct OnboardingCoordinator: View {
     @State private var path: [OnboardingStep] = []
     @State private var showDiscardPetConfirm = false
     @State private var isDiscardingPet = false
+    @State private var personalityActiveStep = 0
+    @State private var personalityIsReview = false
+    @State private var persistedPetName = ""
+    @State private var didRestore = false
 
     var context: OnboardingContext = .firstPet
+    var shouldRestoreDraft: Bool = true
 
     enum OnboardingStep: Hashable {
         case personality
@@ -40,6 +45,10 @@ struct OnboardingCoordinator: View {
         draft.completedPet?.id
     }
 
+    private var persistedContext: PersistedOnboardingContext {
+        context.isAdditionalPet ? .additionalPet : .firstPet
+    }
+
     private var additionalPetCancelAction: (() -> Void)? {
         guard context.isAdditionalPet else { return nil }
         return { handleCancelTapped() }
@@ -49,8 +58,12 @@ struct OnboardingCoordinator: View {
         NavigationStack(path: $path) {
             PhotoPickerView(
                 draft: draft,
-                onNext: { path.append(.personality) },
-                onCancel: additionalPetCancelAction
+                onNext: {
+                    path.append(.personality)
+                    persistProgress(topStep: .personality)
+                },
+                onCancel: additionalPetCancelAction,
+                onProgressChange: { persistProgress(topStep: .photo) }
             )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
@@ -60,8 +73,18 @@ struct OnboardingCoordinator: View {
                 case .personality:
                     PersonalityBuilderView(
                         draft: draft,
-                        onNext: { path.append(.spriteReveal) },
-                        onCancel: additionalPetCancelAction
+                        initialActiveStep: personalityActiveStep,
+                        initialIsReviewScreen: personalityIsReview,
+                        onNext: {
+                            path.append(.spriteReveal)
+                            persistProgress(topStep: .spriteReveal)
+                        },
+                        onCancel: additionalPetCancelAction,
+                        onProgressChange: { activeStep, isReview in
+                            personalityActiveStep = activeStep
+                            personalityIsReview = isReview
+                            persistProgress(topStep: .personality)
+                        }
                     )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
@@ -72,8 +95,13 @@ struct OnboardingCoordinator: View {
                     ExpressionRevealView(
                         draft: draft,
                         context: context,
+                        initialPetName: persistedPetName,
                         onComplete: handleRevealComplete,
-                        onCancel: additionalPetCancelAction
+                        onCancel: additionalPetCancelAction,
+                        onProgressChange: { petName in
+                            persistedPetName = petName
+                            persistProgress(topStep: .spriteReveal, petName: petName)
+                        }
                     )
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
@@ -88,6 +116,9 @@ struct OnboardingCoordinator: View {
                     .navigationTitle("")
                     .navigationBarTitleDisplayMode(.inline)
                     .navigationBarBackButtonHidden(true)
+                    .onAppear {
+                        persistProgress(topStep: .widgetSetup)
+                    }
                 }
             }
         }
@@ -101,12 +132,54 @@ struct OnboardingCoordinator: View {
             Text("Your new pet will be removed and you'll return home.")
         }
         .disabled(isDiscardingPet)
+        .task {
+            await restoreProgressIfNeeded()
+        }
+    }
+
+    private func persistProgress(
+        topStep: PersistedOnboardingTopStep,
+        petName: String? = nil
+    ) {
+        OnboardingDraftStore.save(
+            draft: draft,
+            context: persistedContext,
+            topStep: topStep,
+            personalityActiveStep: personalityActiveStep,
+            personalityIsReview: personalityIsReview,
+            petName: petName ?? persistedPetName
+        )
+    }
+
+    @MainActor
+    private func restoreProgressIfNeeded() async {
+        guard !didRestore else { return }
+        didRestore = true
+
+        guard shouldRestoreDraft,
+              let progress = OnboardingDraftStore.load(),
+              progress.context == persistedContext else {
+            return
+        }
+
+        OnboardingDraftStore.apply(progress, to: draft)
+        personalityActiveStep = progress.personalityActiveStep
+        personalityIsReview = progress.personalityIsReview
+        persistedPetName = progress.petName
+        path = OnboardingDraftStore.navigationPath(for: progress.topStep)
+
+        if let petId = progress.pendingPetId,
+           let pet = try? await SupabaseService.shared.fetchPet(by: petId) {
+            draft.completedPet = pet
+            draft.generatedExpressions = pet.expressions
+        }
     }
 
     private func handleCancelTapped() {
         if pendingPetId != nil {
             showDiscardPetConfirm = true
         } else {
+            OnboardingDraftStore.clear()
             dismissFlow()
         }
     }
@@ -118,18 +191,21 @@ struct OnboardingCoordinator: View {
     private func handleRevealComplete(_ pet: Pet) {
         draft.completedPet = pet
         if context.isAdditionalPet {
+            OnboardingDraftStore.clear()
             Task {
                 await appState.loadPets(showLoading: false)
                 context.dismissAdditionalPet()
             }
         } else {
             path.append(.widgetSetup)
+            persistProgress(topStep: .widgetSetup)
         }
     }
 
     @MainActor
     private func discardPendingPetAndDismiss() async {
         guard let petId = pendingPetId else {
+            OnboardingDraftStore.clear()
             dismissFlow()
             return
         }
@@ -138,6 +214,7 @@ struct OnboardingCoordinator: View {
         try? await SupabaseService.shared.deletePet(petId: petId)
         appState.removePetLocally(petId: petId)
         draft.completedPet = nil
+        OnboardingDraftStore.clear()
         isDiscardingPet = false
         dismissFlow()
     }
@@ -147,6 +224,7 @@ struct OnboardingCoordinator: View {
             appState.setPet(pet)
             appState.startSyncingExpressions(petId: pet.id)
         }
+        OnboardingDraftStore.clear()
         appState.setHasCompletedOnboarding(true)
     }
 }
@@ -171,5 +249,70 @@ final class OnboardingDraft: ObservableObject {
     var isPhotoStepValid: Bool { !photos.isEmpty }
     var isPersonalityStepValid: Bool {
         selectedTraits.count == 3 && isTriggersStepValid
+    }
+}
+
+// MARK: - Resume prompt copy
+
+enum OnboardingResumePrompt {
+    static func title(isSecondPet: Bool) -> String {
+        isSecondPet
+            ? "looks like your second pet isn't done!"
+            : "looks like your pet isn't done!"
+    }
+
+    static let message = "Pick up where you left off and finish creating your pet."
+}
+
+// MARK: - First pet onboarding gate (resume vs restart)
+
+struct FirstPetOnboardingGateView: View {
+    @EnvironmentObject var appState: AppState
+    @State private var gateResolved = !OnboardingDraftStore.hasPendingFirstPetDraft
+    @State private var shouldRestoreDraft = true
+    @State private var showResumePrompt = false
+    @State private var coordinatorID = UUID()
+
+    private var showsOnboarding: Bool {
+        gateResolved || !OnboardingDraftStore.hasPendingFirstPetDraft
+    }
+
+    var body: some View {
+        Group {
+            if showsOnboarding {
+                OnboardingCoordinator(shouldRestoreDraft: shouldRestoreDraft)
+                    .id(coordinatorID)
+            } else {
+                BrandLandingView(mode: .loading)
+            }
+        }
+        .onAppear { presentResumePromptIfNeeded() }
+        .alert(
+            OnboardingResumePrompt.title(isSecondPet: false),
+            isPresented: $showResumePrompt
+        ) {
+            Button("Continue") {
+                shouldRestoreDraft = true
+                gateResolved = true
+            }
+            Button("Restart", role: .destructive) {
+                Task { await restartOnboarding() }
+            }
+        } message: {
+            Text(OnboardingResumePrompt.message)
+        }
+    }
+
+    private func presentResumePromptIfNeeded() {
+        guard OnboardingDraftStore.hasPendingFirstPetDraft, !gateResolved else { return }
+        showResumePrompt = true
+    }
+
+    @MainActor
+    private func restartOnboarding() async {
+        await appState.abandonPendingOnboardingDraft()
+        shouldRestoreDraft = false
+        coordinatorID = UUID()
+        gateResolved = true
     }
 }

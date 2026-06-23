@@ -18,6 +18,9 @@ struct PetHomeView: View {
     @State private var showAddPetOnboarding = false
     @State private var selectedPetForChatRoom: Pet?
     @State private var showChatRoom = false
+    @State private var showResumeSecondPetPrompt = false
+    @State private var didShowResumePrompt = false
+    @State private var declinedResumeOnce = false
     @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
     private var pets: [Pet] { appState.availablePets }
@@ -50,7 +53,7 @@ struct PetHomeView: View {
                         greeting: greeting,
                         petCount: pets.count,
                         canAddPet: appState.canAddPet,
-                        onAddPet: { showAddPetOnboarding = true },
+                        onAddPet: handleAddPetTapped,
                         onShowSettings: { showSettings = true }
                     )
                     .padding(.horizontal, horizontalInset)
@@ -163,7 +166,51 @@ struct PetHomeView: View {
             if case .openChat = appState.pendingWidgetDeepLink {
                 openDeepLinkedChat()
             }
+            presentResumeSecondPetPromptIfNeeded()
         }
+        .alert(OnboardingResumePrompt.title(isSecondPet: true), isPresented: $showResumeSecondPetPrompt) {
+            Button("Continue") {
+                declinedResumeOnce = false
+                showAddPetOnboarding = true
+            }
+            Button("Not now", role: .cancel) {
+                handleResumeDeclined()
+            }
+        } message: {
+            Text(OnboardingResumePrompt.message)
+        }
+    }
+
+    private func handleAddPetTapped() {
+        guard appState.canAddPet else { return }
+        if OnboardingDraftStore.hasPendingAdditionalPetDraft {
+            showResumeSecondPetPrompt = true
+        } else {
+            showAddPetOnboarding = true
+        }
+    }
+
+    private func handleResumeDeclined() {
+        if declinedResumeOnce {
+            declinedResumeOnce = false
+            Task { await abandonPendingAdditionalPetDraft() }
+        } else {
+            declinedResumeOnce = true
+        }
+    }
+
+    @MainActor
+    private func abandonPendingAdditionalPetDraft() async {
+        await appState.abandonPendingOnboardingDraft()
+    }
+
+    private func presentResumeSecondPetPromptIfNeeded() {
+        guard !didShowResumePrompt,
+              OnboardingDraftStore.hasPendingAdditionalPetDraft else {
+            return
+        }
+        didShowResumePrompt = true
+        showResumeSecondPetPrompt = true
     }
 
     private func openDeepLinkedChat() {

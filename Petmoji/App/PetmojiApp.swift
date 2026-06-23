@@ -152,7 +152,7 @@ struct RootView: View {
                     PetHomeView()
                 }
             } else if appState.isAuthenticated {
-                OnboardingCoordinator()
+                FirstPetOnboardingGateView()
             } else {
                 AuthCoordinator()
             }
@@ -548,8 +548,13 @@ final class AppState: ObservableObject {
                 currentPet = fetched.first
             }
             resolveWidgetPetId()
-            if !fetched.isEmpty {
+            if !fetched.isEmpty, OnboardingDraftStore.load()?.context != .firstPet {
                 setHasCompletedOnboarding(true)
+            }
+            if let displayable = displayablePets.first(where: { $0.id == currentPet?.id }) {
+                currentPet = displayable
+            } else {
+                currentPet = displayablePets.first ?? currentPet
             }
             syncHomeGeofenceFromCurrentPet()
             await syncWidgetSnapshot()
@@ -561,11 +566,14 @@ final class AppState: ObservableObject {
 
     private func resolveWidgetPetId() {
         if let widgetPetId,
-           pets.contains(where: { $0.id == widgetPetId }) {
+           displayablePets.contains(where: { $0.id == widgetPetId }) {
             return
         }
-        if let firstPet = pets.first {
+        if let firstPet = displayablePets.first {
             setWidgetPetId(firstPet.id)
+        } else if displayablePets.isEmpty, !pets.isEmpty {
+            // Keep widget pet if only hidden incomplete pets remain.
+            return
         } else {
             setWidgetPetId(nil)
         }
@@ -585,9 +593,19 @@ final class AppState: ObservableObject {
         return pets.first { $0.id == widgetPetId } ?? pets.first
     }
 
-    var canAddPet: Bool { pets.count < Self.maxPets }
+    var canAddPet: Bool { displayablePets.count < Self.maxPets }
 
-    var availablePets: [Pet] { pets }
+    var displayablePets: [Pet] {
+        let pendingId = OnboardingDraftStore.pendingPetId
+        return pets.filter { pet in
+            guard pet.name == "unnamed", let pendingId, pet.id == pendingId else {
+                return true
+            }
+            return false
+        }
+    }
+
+    var availablePets: [Pet] { displayablePets }
 
     func setWidgetPet(_ pet: Pet) {
         setWidgetPetId(pet.id)
@@ -679,11 +697,22 @@ final class AppState: ObservableObject {
         currentPet = pet
     }
 
+    /// Clears in-progress onboarding draft and any incomplete server pet row.
+    func abandonPendingOnboardingDraft() async {
+        if let petId = OnboardingDraftStore.pendingPetId {
+            stopSyncingExpressions()
+            try? await supabase.deletePet(petId: petId)
+            removePetLocally(petId: petId)
+        }
+        OnboardingDraftStore.clear()
+    }
+
     /// Clears session, pet, and cached profile so the app returns to sign-in.
     func signOut() async {
         stopSyncingExpressions()
         MessageScheduler.shared.cancelBeenGoneNotifications()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
+        OnboardingDraftStore.clear()
         applyUnauthenticatedState()
         setHasCompletedOnboarding(false)
         setUserDisplayName("")
@@ -701,6 +730,7 @@ final class AppState: ObservableObject {
         for petId in petIds {
             ChatHistoryStore.clearHistory(for: petId)
         }
+        OnboardingDraftStore.clear()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         applyUnauthenticatedState()
         setHasCompletedOnboarding(false)

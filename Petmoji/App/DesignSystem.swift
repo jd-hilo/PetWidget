@@ -605,6 +605,7 @@ struct PMTraitPill: View {
 
     let trait: PersonalityTrait
     let isSelected: Bool
+    var isProminent: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -614,15 +615,15 @@ struct PMTraitPill: View {
             action()
         }) {
             Text(trait.displayName)
-                .font(.bodyM)
+                .font(isProminent ? .bodyL : .bodyM)
                 .fontWeight(isSelected ? .bold : .regular)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .foregroundStyle(isSelected ? palette.traitSelectedFg : palette.traitUnselectedFg)
                 .frame(maxWidth: .infinity)
-                .padding(.leading, 12)
-                .padding(.trailing, 22)
-                .padding(.vertical, 10)
+                .padding(.leading, isProminent ? 14 : 12)
+                .padding(.trailing, isProminent ? 26 : 22)
+                .padding(.vertical, isProminent ? 13 : 10)
                 .background(
                     isSelected ? palette.traitSelectedBg : palette.traitUnselectedBg,
                     in: Capsule()
@@ -636,9 +637,9 @@ struct PMTraitPill: View {
                 )
                 .overlay(alignment: .trailing) {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: isProminent ? 11 : 9, weight: .bold))
                         .foregroundStyle(palette.traitSelectedFg)
-                        .padding(.trailing, 8)
+                        .padding(.trailing, isProminent ? 10 : 8)
                         .opacity(isSelected ? 1 : 0)
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
@@ -654,6 +655,7 @@ struct PMChip: View {
 
     let label: String
     let isSelected: Bool
+    var isProminent: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -664,23 +666,23 @@ struct PMChip: View {
         }) {
             HStack {
                 Text(label)
-                    .font(.bodyM)
+                    .font(isProminent ? .bodyL : .bodyM)
                     .foregroundStyle(isSelected ? .white : palette.textPrimary)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: isProminent ? 14 : 12, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, isProminent ? 18 : 16)
+            .padding(.vertical, isProminent ? 17 : 14)
             .background(
                 isSelected ? palette.accent : palette.chipUnselectedBg,
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                in: RoundedRectangle(cornerRadius: isProminent ? 18 : 16, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: isProminent ? 18 : 16, style: .continuous)
                     .strokeBorder(isSelected ? palette.chipSelectedStroke : palette.chipUnselectedStroke, lineWidth: 1)
             )
         }

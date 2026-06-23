@@ -243,7 +243,7 @@ struct RootView: View {
             species: .dog,
             gender: .boy,
             expressions: useMockSprites ? debugTesterExpressions() : ExpressionMap(),
-            personalityTraits: [.dramatic, .mischievous, .sweet],
+            personalityTraits: [.dramatic, .sneaky, .sweet],
             energyLevel: 7,
             triggers: [.vacuumCleaner],
             customTrigger: nil,

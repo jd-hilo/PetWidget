@@ -1,5 +1,15 @@
 import SwiftUI
 
+// MARK: - Onboarding layout
+
+private enum OnboardingLayout {
+    static let horizontalPadding: CGFloat = 16
+    static let cardPadding: CGFloat = 18
+    static let cardCornerRadius: CGFloat = 22
+    static let contentSpacing: CGFloat = 8
+    static let sectionSpacing: CGFloat = 10
+}
+
 // MARK: - Personality Builder View (step wizard)
 
 struct PersonalityBuilderView: View {
@@ -18,39 +28,58 @@ struct PersonalityBuilderView: View {
         VStack(alignment: .leading, spacing: 0) {
             stepHeader
 
-            Group {
-                if isReviewScreen {
-                    PersonalityReviewSummary(draft: draft) { step in
-                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
-                            isReviewScreen = false
-                            activeStep = step
-                        }
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        mainStepContent
+                            .padding(.horizontal, OnboardingLayout.horizontalPadding)
+                        Spacer(minLength: 0)
                     }
+                    .frame(minHeight: geo.size.height)
+                }
+                .scrollDismissesKeyboard(.interactively)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: activeStep)
+            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: isReviewScreen)
+        }
+        .safeAreaInset(edge: .bottom) {
+            bottomBarPadded
+        }
+        .pmSageScreenBackground()
+    }
+
+    @ViewBuilder
+    private var mainStepContent: some View {
+        Group {
+            if isReviewScreen {
+                PersonalityReviewSummary(draft: draft) { step in
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
+                        isReviewScreen = false
+                        activeStep = step
+                    }
+                }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+            } else {
+                currentStepCard
+                    .id(activeStep)
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                } else {
-                    currentStepCard
-                        .id(activeStep)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                }
             }
-            .frame(maxHeight: .infinity, alignment: .top)
-            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: activeStep)
-            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: isReviewScreen)
         }
-        .padding(.top, 8)
-        .safeAreaInset(edge: .bottom) {
-            bottomBar
-                .padding(.horizontal, 24)
-                .padding(.bottom, onCancel != nil ? 10 : 34)
-                .background(Color.clear)
-        }
-        .pmSageScreenBackground()
+    }
+
+    private var bottomBarPadded: some View {
+        bottomBar
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, onCancel != nil ? 10 : 34)
     }
 
     // MARK: - Step header
@@ -69,7 +98,8 @@ struct PersonalityBuilderView: View {
             }
         }
         .padding(.horizontal, 24)
-        .padding(.bottom, 12)
+        .padding(.top, 28)
+        .padding(.bottom, 10)
     }
 
     private var currentScreenTitle: String {
@@ -104,7 +134,7 @@ struct PersonalityBuilderView: View {
                 EnergySliderView(value: $draft.energyLevel)
             }
         case 3:
-            PersonalitySection(showsScrollFade: true) {
+            PersonalitySection {
                 TriggerSelectorView(
                     selectedTriggers: $draft.selectedTriggers,
                     customTrigger: $draft.customTrigger
@@ -217,8 +247,7 @@ private struct PersonalityReviewSummary: View {
             reviewRow(title: "triggers", value: draft.triggersReviewSummary, step: 3)
             reviewRow(title: "vibe", value: draft.baseMood.displayName, step: 4, showDivider: false)
         }
-        .pmSageCard(cornerRadius: 20)
-        .padding(.horizontal, 16)
+        .pmSageCard(cornerRadius: OnboardingLayout.cardCornerRadius)
     }
 
     private var traitSummary: String {
@@ -233,7 +262,7 @@ private struct PersonalityReviewSummary: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.bodyS)
+                        .font(.bodyM)
                         .foregroundStyle(palette.textSecondary)
                     Text(value)
                         .font(.bodyL)
@@ -244,12 +273,12 @@ private struct PersonalityReviewSummary: View {
                 Button("edit") {
                     onEditStep(step)
                 }
-                .font(.bodyS)
+                .font(.bodyM)
                 .bold()
                 .foregroundStyle(palette.accent)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
             .contentShape(Rectangle())
 
             if showDivider {
@@ -264,41 +293,13 @@ private struct PersonalityReviewSummary: View {
 // MARK: - Section Container
 
 struct PersonalitySection<Content: View>: View {
-    @Environment(\.petmojiPalette) private var palette
-
-    var showsScrollFade: Bool
     @ViewBuilder let content: () -> Content
 
-    init(showsScrollFade: Bool = false, @ViewBuilder content: @escaping () -> Content) {
-        self.showsScrollFade = showsScrollFade
-        self.content = content
-    }
-
     var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollView {
-                content()
-                    .padding(20)
-                    .padding(.bottom, showsScrollFade ? 8 : 0)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .pmSageCard(cornerRadius: 20)
-                    .padding(.horizontal, 16)
-            }
-            .scrollIndicators(showsScrollFade ? .visible : .automatic)
-            .scrollDismissesKeyboard(.interactively)
-
-            if showsScrollFade {
-                LinearGradient(
-                    colors: [palette.sageCardFill.opacity(0), palette.sageCardFill.opacity(0.9)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 24)
-                .allowsHitTesting(false)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 4)
-            }
-        }
+        content()
+            .padding(OnboardingLayout.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .pmSageCard(cornerRadius: OnboardingLayout.cardCornerRadius)
     }
 }
 
@@ -310,11 +311,12 @@ struct TraitGridView: View {
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
+        LazyVGrid(columns: columns, spacing: OnboardingLayout.contentSpacing) {
             ForEach(PersonalityTrait.allCases, id: \.self) { trait in
                 PMTraitPill(
                     trait: trait,
-                    isSelected: selectedTraits.contains(trait)
+                    isSelected: selectedTraits.contains(trait),
+                    isProminent: true
                 ) {
                     if selectedTraits.contains(trait) {
                         selectedTraits.remove(trait)
@@ -334,10 +336,11 @@ struct EnergySliderView: View {
     @Binding var value: Double
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: OnboardingLayout.sectionSpacing) {
             Slider(value: $value, in: 1...10, step: 1) {
                 EmptyView()
             }
+            .controlSize(.large)
             .tint(
                 LinearGradient(
                     colors: [Color.pmSageAccent, Color.pmSageAccentDark, Color.pmClay],
@@ -348,14 +351,15 @@ struct EnergySliderView: View {
 
             HStack {
                 Text("professional napper")
-                    .font(.bodyS)
+                    .font(.bodyM)
                     .foregroundStyle(palette.textSecondary)
                 Spacer()
                 Text("absolute chaos")
-                    .font(.bodyS)
+                    .font(.bodyM)
                     .foregroundStyle(palette.textSecondary)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -364,6 +368,15 @@ struct EnergySliderView: View {
 private enum TriggerSelectorConfig {
     static let maxPresetSelections = 3
     static let maxCustomLength = 40
+
+    static let featuredTriggers: [PetTrigger] = [
+        .doorbell,
+        .strangers,
+        .otherPets,
+        .beingIgnored,
+        .loneliness,
+        .bathTime,
+    ]
 }
 
 struct TriggerSelectorView: View {
@@ -371,34 +384,58 @@ struct TriggerSelectorView: View {
     @Binding var selectedTriggers: Set<PetTrigger>
     @Binding var customTrigger: String
 
+    @State private var showsAllTriggers = false
+
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
+    private var visibleTriggers: [PetTrigger] {
+        showsAllTriggers ? Array(PetTrigger.allCases) : TriggerSelectorConfig.featuredTriggers
+    }
+
+    private var hiddenSelectedTriggers: Bool {
+        let featured = Set(TriggerSelectorConfig.featuredTriggers)
+        return selectedTriggers.contains { !featured.contains($0) }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: OnboardingLayout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: OnboardingLayout.contentSpacing) {
                 Text("pick up to \(TriggerSelectorConfig.maxPresetSelections)")
-                    .font(.bodyM)
+                    .font(.bodyL)
                     .bold()
                     .foregroundStyle(palette.accentDark)
 
-                LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(PetTrigger.allCases, id: \.self) { trigger in
+                LazyVGrid(columns: columns, spacing: OnboardingLayout.contentSpacing) {
+                    ForEach(visibleTriggers, id: \.self) { trigger in
                         PMChip(
                             label: trigger.displayName,
-                            isSelected: selectedTriggers.contains(trigger)
+                            isSelected: selectedTriggers.contains(trigger),
+                            isProminent: true
                         ) {
                             toggleTrigger(trigger)
                         }
                     }
                 }
+
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
+                        showsAllTriggers.toggle()
+                    }
+                } label: {
+                    Text(showsAllTriggers ? "collapse" : "expand to show more")
+                        .font(.bodyL)
+                        .foregroundStyle(palette.accent)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
             }
 
             Divider()
                 .background(palette.border.opacity(0.5))
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: OnboardingLayout.contentSpacing) {
                 Text("something else?")
-                    .font(.bodyM)
+                    .font(.bodyL)
                     .bold()
                     .foregroundStyle(palette.accentDark)
 
@@ -413,18 +450,26 @@ struct TriggerSelectorView: View {
                             customTrigger = String(newValue.prefix(TriggerSelectorConfig.maxCustomLength))
                         }
                     }
-                    .padding(14)
-                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(16)
+                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .strokeBorder(palette.border, lineWidth: 1.5)
                     )
 
                 Text("\(customTrigger.count)/\(TriggerSelectorConfig.maxCustomLength)")
-                    .font(.bodyS)
+                    .font(.bodyM)
                     .foregroundStyle(palette.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
+        }
+        .onAppear { expandIfNeeded() }
+        .onChange(of: selectedTriggers) { _, _ in expandIfNeeded() }
+    }
+
+    private func expandIfNeeded() {
+        if hiddenSelectedTriggers {
+            showsAllTriggers = true
         }
     }
 
@@ -443,16 +488,19 @@ struct GenderPickerView: View {
     @Binding var selectedGender: PetGender
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: OnboardingLayout.contentSpacing) {
             ForEach(PetGender.allCases, id: \.self) { gender in
                 PMChip(
                     label: gender.displayName,
-                    isSelected: selectedGender == gender
+                    isSelected: selectedGender == gender,
+                    isProminent: true
                 ) {
                     selectedGender = gender
                 }
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -462,15 +510,18 @@ struct MoodSelectorView: View {
     @Binding var selectedMood: BaseMood
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: OnboardingLayout.contentSpacing) {
             ForEach(BaseMood.allCases, id: \.self) { mood in
                 PMChip(
                     label: mood.displayName,
-                    isSelected: selectedMood == mood
+                    isSelected: selectedMood == mood,
+                    isProminent: true
                 ) {
                     selectedMood = mood
                 }
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }

@@ -30,7 +30,9 @@ struct OnboardingCoordinator: View {
     @State private var personalityActiveStep = 0
     @State private var personalityIsReview = false
     @State private var persistedPetName = ""
+    @State private var isSpriteRevealReady = false
     @State private var didRestore = false
+    @State private var isDraftReady = false
 
     var context: OnboardingContext = .firstPet
     var shouldRestoreDraft: Bool = true
@@ -96,11 +98,20 @@ struct OnboardingCoordinator: View {
                         draft: draft,
                         context: context,
                         initialPetName: persistedPetName,
+                        initialSpriteRevealReady: isSpriteRevealReady,
+                        isDraftReady: isDraftReady,
                         onComplete: handleRevealComplete,
                         onCancel: additionalPetCancelAction,
-                        onProgressChange: { petName in
+                        onProgressChange: { petName, spriteRevealReady in
                             persistedPetName = petName
-                            persistProgress(topStep: .spriteReveal, petName: petName)
+                            if spriteRevealReady {
+                                isSpriteRevealReady = true
+                            }
+                            persistProgress(
+                                topStep: .spriteReveal,
+                                petName: petName,
+                                isSpriteRevealReady: spriteRevealReady ? true : isSpriteRevealReady
+                            )
                         }
                     )
                     .navigationTitle("")
@@ -139,7 +150,8 @@ struct OnboardingCoordinator: View {
 
     private func persistProgress(
         topStep: PersistedOnboardingTopStep,
-        petName: String? = nil
+        petName: String? = nil,
+        isSpriteRevealReady: Bool? = nil
     ) {
         OnboardingDraftStore.save(
             draft: draft,
@@ -147,12 +159,15 @@ struct OnboardingCoordinator: View {
             topStep: topStep,
             personalityActiveStep: personalityActiveStep,
             personalityIsReview: personalityIsReview,
-            petName: petName ?? persistedPetName
+            petName: petName ?? persistedPetName,
+            isSpriteRevealReady: isSpriteRevealReady ?? self.isSpriteRevealReady
         )
     }
 
     @MainActor
     private func restoreProgressIfNeeded() async {
+        defer { isDraftReady = true }
+
         guard !didRestore else { return }
         didRestore = true
 
@@ -166,13 +181,18 @@ struct OnboardingCoordinator: View {
         personalityActiveStep = progress.personalityActiveStep
         personalityIsReview = progress.personalityIsReview
         persistedPetName = progress.petName
-        path = OnboardingDraftStore.navigationPath(for: progress.topStep)
+        isSpriteRevealReady = progress.isSpriteRevealReady
 
         if let petId = progress.pendingPetId,
            let pet = try? await SupabaseService.shared.fetchPet(by: petId) {
             draft.completedPet = pet
             draft.generatedExpressions = pet.expressions
+            if progress.isSpriteRevealReady || pet.expressions.happy != nil {
+                isSpriteRevealReady = true
+            }
         }
+
+        path = OnboardingDraftStore.navigationPath(for: progress.topStep)
     }
 
     private func handleCancelTapped() {

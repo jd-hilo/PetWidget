@@ -8,9 +8,11 @@ struct ExpressionRevealView: View {
     @Environment(\.petmojiPalette) private var palette
     var context: OnboardingContext = .firstPet
     var initialPetName: String = ""
+    var initialSpriteRevealReady: Bool = false
+    var isDraftReady: Bool = true
     let onComplete: (Pet) -> Void
     var onCancel: (() -> Void)?
-    var onProgressChange: ((_ petName: String) -> Void)? = nil
+    var onProgressChange: ((_ petName: String, _ isSpriteRevealReady: Bool) -> Void)? = nil
     var skipGenerationForDebug: Bool = false
     var useMockSpritesForDebug: Bool = false
 
@@ -50,6 +52,11 @@ struct ExpressionRevealView: View {
         return filled < 6
     }
 
+    private var isRevealComplete: Bool {
+        if case .done = generationState { return true }
+        return false
+    }
+
     var body: some View {
         ZStack {
             PMSageScreenBackdrop()
@@ -68,7 +75,8 @@ struct ExpressionRevealView: View {
             }
         }
         .navigationBarBackButtonHidden(isGenerating)
-        .task {
+        .task(id: isDraftReady) {
+            guard isDraftReady else { return }
             if !initialPetName.isEmpty, name.isEmpty {
                 name = initialPetName
             }
@@ -90,7 +98,7 @@ struct ExpressionRevealView: View {
                 try? await Task.sleep(nanoseconds: 300_000_000)
                 guard !Task.isCancelled else { return }
                 await MainActor.run {
-                    onProgressChange?(newName)
+                    onProgressChange?(newName, isRevealComplete)
                 }
             }
 
@@ -262,8 +270,37 @@ struct ExpressionRevealView: View {
     // MARK: - Generation Logic
 
     private func startGeneration() async {
+        await resolvePendingPetIfNeeded()
+
+        if initialSpriteRevealReady, let pet = draft.completedPet {
+            await resumeFromExistingPet(pet)
+            return
+        }
+
         if let existingPet = draft.completedPet, existingPet.expressions.happy != nil {
             await resumeFromExistingPet(existingPet)
+            return
+        }
+
+        if let existingPet = draft.completedPet {
+            await resumeInProgressGeneration(for: existingPet)
+            return
+        }
+
+        if OnboardingDraftStore.pendingPetId != nil {
+            // A server row exists for this draft — never create another pet.
+            if let petId = OnboardingDraftStore.pendingPetId,
+               let pet = try? await SupabaseService.shared.fetchPet(by: petId) {
+                await MainActor.run {
+                    draft.completedPet = pet
+                    draft.generatedExpressions = pet.expressions
+                }
+                if pet.expressions.happy != nil {
+                    await resumeFromExistingPet(pet)
+                } else {
+                    await resumeInProgressGeneration(for: pet)
+                }
+            }
             return
         }
 
@@ -274,20 +311,15 @@ struct ExpressionRevealView: View {
             // 1. Use the authenticated user from sign-up / sign-in
             let userId = try await SupabaseService.shared.requireUserId()
 
-            // 2. Create initial pet record (or reuse if restored without expressions)
+            // 2. Create initial pet record
             generationState = .uploading
-            let pet: Pet
-            if let existingPet = draft.completedPet {
-                pet = existingPet
-            } else {
-                pet = try await createInitialPet(userId: userId)
-            }
+            let pet = try await createInitialPet(userId: userId)
 
             // Store pet immediately so name saves work during generation
             await MainActor.run {
                 draft.completedPet = pet
                 createdPetId = pet.id
-                onProgressChange?(name)
+                onProgressChange?(name, false)
             }
 
             // 3. Upload photos
@@ -324,12 +356,37 @@ struct ExpressionRevealView: View {
                 draft.completedPet = snapshot
             }
             generationState = .done
+            markSpriteRevealReady()
 
             // Start polling for the remaining 5 expressions written by Stage B.
             startExpressionSync(petId: pet.id)
         } catch {
             generationState = .error(error.localizedDescription)
         }
+    }
+
+    private func resolvePendingPetIfNeeded() async {
+        guard draft.completedPet == nil else { return }
+        guard let petId = OnboardingDraftStore.pendingPetId else { return }
+        guard let pet = try? await SupabaseService.shared.fetchPet(by: petId) else { return }
+        await MainActor.run {
+            draft.completedPet = pet
+            draft.generatedExpressions = pet.expressions
+        }
+    }
+
+    @MainActor
+    private func resumeInProgressGeneration(for pet: Pet) async {
+        createdPetId = pet.id
+        expressions = pet.expressions
+        draft.generatedExpressions = pet.expressions
+        generationState = .generating
+        startExpressionSync(petId: pet.id, revealWhenHappyArrives: true)
+    }
+
+    @MainActor
+    private func markSpriteRevealReady() {
+        onProgressChange?(name, true)
     }
 
     @MainActor
@@ -344,13 +401,13 @@ struct ExpressionRevealView: View {
         }
         generationState = .done
         spriteVisible = true
-        onProgressChange?(name)
+        markSpriteRevealReady()
         startExpressionSync(petId: pet.id)
     }
 
     /// Polls the pet row and merges newly-written expressions into local state
     /// so the UI fills in thumbnails as Stage B completes.
-    private func startExpressionSync(petId: UUID) {
+    private func startExpressionSync(petId: UUID, revealWhenHappyArrives: Bool = false) {
         expressionSyncTask?.cancel()
         expressionSyncTask = Task {
             do {
@@ -362,6 +419,11 @@ struct ExpressionRevealView: View {
                         if var snapshot = draft.completedPet {
                             snapshot.expressions = partial
                             draft.completedPet = snapshot
+                        }
+                        if revealWhenHappyArrives, partial.happy != nil, !isRevealComplete {
+                            generationState = .done
+                            spriteVisible = true
+                            markSpriteRevealReady()
                         }
                     }
                 }

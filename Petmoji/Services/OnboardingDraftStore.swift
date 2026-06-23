@@ -30,7 +30,64 @@ struct PersistedOnboardingProgress: Codable {
     var photoFileNames: [String]
     var pendingPetId: UUID?
     var petName: String
+    var isSpriteRevealReady: Bool
     var savedAt: Date
+
+    init(
+        context: PersistedOnboardingContext,
+        topStep: PersistedOnboardingTopStep,
+        personalityActiveStep: Int,
+        personalityIsReview: Bool,
+        species: Species,
+        gender: PetGender,
+        selectedTraits: [PersonalityTrait],
+        energyLevel: Double,
+        selectedTriggers: [PetTrigger],
+        customTrigger: String,
+        baseMood: BaseMood,
+        photoFileNames: [String],
+        pendingPetId: UUID?,
+        petName: String,
+        isSpriteRevealReady: Bool = false,
+        savedAt: Date
+    ) {
+        self.context = context
+        self.topStep = topStep
+        self.personalityActiveStep = personalityActiveStep
+        self.personalityIsReview = personalityIsReview
+        self.species = species
+        self.gender = gender
+        self.selectedTraits = selectedTraits
+        self.energyLevel = energyLevel
+        self.selectedTriggers = selectedTriggers
+        self.customTrigger = customTrigger
+        self.baseMood = baseMood
+        self.photoFileNames = photoFileNames
+        self.pendingPetId = pendingPetId
+        self.petName = petName
+        self.isSpriteRevealReady = isSpriteRevealReady
+        self.savedAt = savedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        context = try container.decode(PersistedOnboardingContext.self, forKey: .context)
+        topStep = try container.decode(PersistedOnboardingTopStep.self, forKey: .topStep)
+        personalityActiveStep = try container.decode(Int.self, forKey: .personalityActiveStep)
+        personalityIsReview = try container.decode(Bool.self, forKey: .personalityIsReview)
+        species = try container.decode(Species.self, forKey: .species)
+        gender = try container.decode(PetGender.self, forKey: .gender)
+        selectedTraits = try container.decode([PersonalityTrait].self, forKey: .selectedTraits)
+        energyLevel = try container.decode(Double.self, forKey: .energyLevel)
+        selectedTriggers = try container.decode([PetTrigger].self, forKey: .selectedTriggers)
+        customTrigger = try container.decode(String.self, forKey: .customTrigger)
+        baseMood = try container.decode(BaseMood.self, forKey: .baseMood)
+        photoFileNames = try container.decode([String].self, forKey: .photoFileNames)
+        pendingPetId = try container.decodeIfPresent(UUID.self, forKey: .pendingPetId)
+        petName = try container.decode(String.self, forKey: .petName)
+        isSpriteRevealReady = try container.decodeIfPresent(Bool.self, forKey: .isSpriteRevealReady) ?? false
+        savedAt = try container.decode(Date.self, forKey: .savedAt)
+    }
 }
 
 // MARK: - Store
@@ -72,7 +129,8 @@ enum OnboardingDraftStore {
         topStep: PersistedOnboardingTopStep,
         personalityActiveStep: Int,
         personalityIsReview: Bool,
-        petName: String = ""
+        petName: String = "",
+        isSpriteRevealReady: Bool = false
     ) {
         let photoFileNames = savePhotos(draft.photoData)
         let progress = PersistedOnboardingProgress(
@@ -90,6 +148,7 @@ enum OnboardingDraftStore {
             photoFileNames: photoFileNames,
             pendingPetId: draft.completedPet?.id,
             petName: petName,
+            isSpriteRevealReady: isSpriteRevealReady,
             savedAt: Date()
         )
 

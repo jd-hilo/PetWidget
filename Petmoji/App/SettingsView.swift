@@ -7,6 +7,12 @@ struct SettingsView: View {
     @Environment(\.petmojiPalette) private var palette
 
     @State private var petName: String = ""
+    @State private var committedPetName: String = ""
+    @State private var pendingPetName: String = ""
+    @State private var showRenamePetConfirm = false
+    @State private var isSavingPetName = false
+    @State private var petNameError: String?
+    @FocusState private var isPetNameFocused: Bool
     @State private var notificationsEnabled = UserDefaults.standard.bool(forKey: "notifications_enabled")
     @State private var isRegenerating = false
     @State private var regenerateError: String?
@@ -21,7 +27,6 @@ struct SettingsView: View {
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: String?
     @State private var showSignOutConfirm = false
-    @State private var nameUpdateTask: Task<Void, Never>?
     @State private var isUpdatingHome = false
     @State private var homeLocationError: String?
     @ObservedObject private var locationService = LocationService.shared
@@ -34,7 +39,9 @@ struct SettingsView: View {
             set: { id in
                 guard let selected = appState.pets.first(where: { $0.id == id }) else { return }
                 appState.selectPet(selected)
+                committedPetName = selected.name
                 petName = selected.name
+                petNameError = nil
             }
         )
     }
@@ -55,17 +62,6 @@ struct SettingsView: View {
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    }
-
-    private var formattedPhone: String {
-        let digits = appState.userPhone.filter(\.isNumber)
-        guard digits.count == 10 else {
-            return appState.userPhone.isEmpty ? "—" : appState.userPhone
-        }
-        let area = digits.prefix(3)
-        let mid = digits.dropFirst(3).prefix(3)
-        let last = digits.suffix(4)
-        return "(\(area)) \(mid)-\(last)"
     }
 
     var body: some View {
@@ -111,11 +107,11 @@ struct SettingsView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .tint(palette.accentDark)
         .onAppear {
-            petName = pet?.name ?? ""
+            syncPetNameFieldsFromCurrentPet()
             Task { await appState.refreshProfileIfNeeded() }
         }
         .onChange(of: appState.currentPet?.id) { _, _ in
-            petName = pet?.name ?? ""
+            syncPetNameFieldsFromCurrentPet()
         }
         .alert("Delete \(pet?.name ?? "this pet")?", isPresented: $showDeletePetConfirm) {
             Button("Delete", role: .destructive) {
@@ -133,20 +129,15 @@ struct SettingsView: View {
         } message: {
             Text("Are you sure? All of your pets, messages, photos, and profile data will be permanently deleted. This can't be undone.")
         }
-        .onChange(of: petName) { _, newName in
-            guard let petId = pet?.id else { return }
-            nameUpdateTask?.cancel()
-            nameUpdateTask = Task {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                guard !Task.isCancelled else { return }
-                try? await SupabaseService.shared.updatePetName(petId: petId, name: newName)
-                await MainActor.run {
-                    if var updated = appState.currentPet {
-                        updated.name = newName
-                        appState.setPet(updated)
-                    }
-                }
+        .alert("Change pet name?", isPresented: $showRenamePetConfirm) {
+            Button("Change name") {
+                Task { await applyPetNameChange() }
             }
+            Button("Cancel", role: .cancel) {
+                petName = committedPetName
+            }
+        } message: {
+            Text("Change \(committedPetName)'s name to \(pendingPetName)?")
         }
         .sheet(isPresented: $isRegenerating) {
             RegeneratingModal(
@@ -176,10 +167,6 @@ struct SettingsView: View {
                     AccountInfoRow(
                         label: "email",
                         value: appState.userEmail
-                    )
-                    AccountInfoRow(
-                        label: "phone",
-                        value: formattedPhone
                     )
 
                     LocationTrackingToggleRow()
@@ -226,7 +213,10 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var petSettingsContent: some View {
-        SettingsSageSection(title: "pet profile") {
+        SettingsSageSection(
+            title: "pet profile",
+            footer: "Press return to save. You'll be asked to confirm before the name changes."
+        ) {
             if appState.pets.count > 1 {
                 Picker("Pet profile", selection: settingsPetSelection) {
                     ForEach(appState.pets) { listedPet in
@@ -247,15 +237,33 @@ struct SettingsView: View {
                         Circle().strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25)
                     )
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     TextField("pet name", text: $petName)
                         .font(.bodyL)
                         .foregroundStyle(palette.textPrimary)
+                        .focused($isPetNameFocused)
+                        .submitLabel(.done)
+                        .disabled(isSavingPetName)
+                        .onSubmit { requestPetNameChange() }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .strokeBorder(palette.border, lineWidth: 1.5)
+                        )
 
                     if let pet {
                         Text(pet.species.displayName)
                             .font(.bodyS)
                             .foregroundStyle(palette.textSecondary)
+                    }
+
+                    if let petNameError {
+                        Text(petNameError)
+                            .font(.bodyS)
+                            .foregroundStyle(.red.opacity(0.9))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -434,6 +442,60 @@ struct SettingsView: View {
         }
     }
 
+    private func syncPetNameFieldsFromCurrentPet() {
+        let name = pet?.name ?? ""
+        committedPetName = name
+        petName = name
+        petNameError = nil
+    }
+
+    private func requestPetNameChange() {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            petName = committedPetName
+            petNameError = "Enter a name first."
+            return
+        }
+        guard trimmed != committedPetName else {
+            isPetNameFocused = false
+            return
+        }
+        petNameError = nil
+        pendingPetName = trimmed
+        isPetNameFocused = false
+        showRenamePetConfirm = true
+    }
+
+    @MainActor
+    private func applyPetNameChange() async {
+        guard let pet else { return }
+        let trimmed = pendingPetName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            petName = committedPetName
+            return
+        }
+
+        isSavingPetName = true
+        petNameError = nil
+        defer { isSavingPetName = false }
+
+        do {
+            try await SupabaseService.shared.updatePetName(petId: pet.id, name: trimmed)
+            var updated = pet
+            updated.name = trimmed
+            appState.setPet(updated)
+            if appState.widgetPetId == pet.id {
+                MessageScheduler.shared.savePetMetadata(name: trimmed, petId: pet.id.uuidString)
+                await appState.syncWidgetSnapshot()
+            }
+            committedPetName = trimmed
+            petName = trimmed
+        } catch {
+            petName = committedPetName
+            petNameError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
     private func updateHomeLocation() {
         guard let pet else {
             homeLocationError = "No pet loaded."
@@ -462,7 +524,7 @@ struct SettingsView: View {
         isDeletingPet = true
         deletePetError = nil
         await appState.deletePet(pet)
-        petName = appState.currentPet?.name ?? ""
+        syncPetNameFieldsFromCurrentPet()
         isDeletingPet = false
     }
 

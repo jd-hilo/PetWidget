@@ -13,6 +13,7 @@ enum PersistedOnboardingTopStep: String, Codable {
     case personality
     case spriteReveal
     case widgetSetup
+    case locationTracking
 }
 
 struct PersistedOnboardingProgress: Codable {
@@ -190,6 +191,8 @@ enum OnboardingDraftStore {
             return [.personality, .spriteReveal]
         case .widgetSetup:
             return [.personality, .spriteReveal, .widgetSetup]
+        case .locationTracking:
+            return [.personality, .spriteReveal, .widgetSetup, .locationTracking]
         }
     }
 

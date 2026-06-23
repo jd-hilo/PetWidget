@@ -21,6 +21,10 @@ struct PetHomeView: View {
     @State private var showResumeSecondPetPrompt = false
     @State private var didShowResumePrompt = false
     @State private var declinedResumeOnce = false
+#if DEBUG
+    @State private var showDebugWidgetSetup = false
+    @State private var debugWidgetSetupPath: [DebugWidgetSetupStep] = []
+#endif
     @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
     private var pets: [Pet] { appState.availablePets }
@@ -57,6 +61,17 @@ struct PetHomeView: View {
                         onShowSettings: { showSettings = true }
                     )
                     .padding(.horizontal, horizontalInset)
+
+#if DEBUG
+                    Button("widget setup") {
+                        debugWidgetSetupPath = []
+                        showDebugWidgetSetup = true
+                    }
+                    .font(.bodyS)
+                    .foregroundStyle(palette.textSecondary)
+                    .padding(.horizontal, horizontalInset)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+#endif
 
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 14) {
@@ -131,6 +146,27 @@ struct PetHomeView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) { SettingsView() }
+#if DEBUG
+        .fullScreenCover(isPresented: $showDebugWidgetSetup) {
+            NavigationStack(path: $debugWidgetSetupPath) {
+                WidgetSetupView(onNext: { debugWidgetSetupPath.append(.locationTracking) })
+                    .toolbar { debugWidgetSetupCloseButton }
+                    .navigationDestination(for: DebugWidgetSetupStep.self) { step in
+                        switch step {
+                        case .locationTracking:
+                            HomeLocationSetupView(
+                                pet: appState.currentPet ?? pets.first,
+                                onDone: { showDebugWidgetSetup = false }
+                            )
+                            .toolbar { debugWidgetSetupCloseButton }
+                        }
+                    }
+            }
+            .environmentObject(appState)
+            .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
+            .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
+        }
+#endif
         .fullScreenCover(isPresented: $showAddPetOnboarding) {
             OnboardingCoordinator(context: .additionalPet {
                 showAddPetOnboarding = false
@@ -180,6 +216,23 @@ struct PetHomeView: View {
             Text(OnboardingResumePrompt.message)
         }
     }
+
+#if DEBUG
+    private enum DebugWidgetSetupStep: Hashable {
+        case locationTracking
+    }
+
+    @ToolbarContentBuilder
+    private var debugWidgetSetupCloseButton: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            Button("close") {
+                showDebugWidgetSetup = false
+                debugWidgetSetupPath = []
+            }
+            .font(.bodyM)
+        }
+    }
+#endif
 
     private func handleAddPetTapped() {
         guard appState.canAddPet else { return }

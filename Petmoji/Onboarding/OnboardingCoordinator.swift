@@ -41,6 +41,7 @@ struct OnboardingCoordinator: View {
         case personality
         case spriteReveal
         case widgetSetup
+        case locationTracking
     }
 
     private var pendingPetId: UUID? {
@@ -120,15 +121,26 @@ struct OnboardingCoordinator: View {
 
                 case .widgetSetup:
                     WidgetSetupView(
-                        pet: draft.completedPet,
-                        onDone: finishWidgetSetup,
+                        onNext: {
+                            path.append(.locationTracking)
+                            persistProgress(topStep: .locationTracking)
+                        },
                         onCancel: additionalPetCancelAction
                     )
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
                     .navigationBarBackButtonHidden(true)
                     .onAppear {
                         persistProgress(topStep: .widgetSetup)
+                    }
+
+                case .locationTracking:
+                    HomeLocationSetupView(
+                        pet: draft.completedPet,
+                        onDone: finishOnboarding,
+                        onCancel: additionalPetCancelAction
+                    )
+                    .navigationBarBackButtonHidden(true)
+                    .onAppear {
+                        persistProgress(topStep: .locationTracking)
                     }
                 }
             }
@@ -239,7 +251,7 @@ struct OnboardingCoordinator: View {
         dismissFlow()
     }
 
-    private func finishWidgetSetup() {
+    private func finishOnboarding() {
         if appState.currentPet == nil, let pet = draft.completedPet {
             appState.setPet(pet)
             appState.startSyncingExpressions(petId: pet.id)

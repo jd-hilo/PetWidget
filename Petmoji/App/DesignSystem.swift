@@ -825,7 +825,7 @@ struct PMOnboardingIconProgressBar: View {
     let total: Int
     let current: Int
 
-    /// First half of steps use bone icons, second half use fish-bone icons (matches 4-step onboarding: photo → personality → reveal → widget).
+    /// First half of steps use bone icons, second half use fish-bone icons (matches 5-step onboarding: photo → personality → reveal → widget → location).
     private let boneOutlineAsset = "boneIcon"
     private let boneFillAsset = "bonefillIcon"
     private let fishOutlineAsset = "fishBoneIcon"
@@ -918,6 +918,30 @@ extension View {
     /// Progress in the nav bar principal slot.
     func pmOnboardingToolbar(total: Int, current: Int) -> some View {
         modifier(PMOnboardingToolbarModifier(total: total, current: current))
+    }
+
+    /// Large onboarding screen title in the nav bar principal slot.
+    func pmOnboardingScreenTitle(_ title: String) -> some View {
+        modifier(PMOnboardingScreenTitleModifier(title: title))
+    }
+}
+
+struct PMOnboardingScreenTitleModifier: ViewModifier {
+    @Environment(\.petmojiPalette) private var palette
+
+    let title: String
+
+    func body(content: Content) -> some View {
+        content
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(title)
+                        .font(.titleL)
+                        .foregroundStyle(palette.accentDark)
+                }
+            }
     }
 }
 

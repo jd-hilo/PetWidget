@@ -119,18 +119,11 @@ struct RootView: View {
     var body: some View {
         Group {
             if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
-                NavigationStack {
-                    WidgetSetupView {
-#if DEBUG
-                        appState.setPet(makeDebugRogerPet(useMockSprites: shouldUseMockSprites))
-#endif
-                        appState.setHasCompletedOnboarding(true)
-                    }
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3)
-                    .navigationBarBackButtonHidden(true)
-                }
+                DebugWidgetSetupFlowView(
+                    pet: makeDebugRogerPet(useMockSprites: shouldUseMockSprites),
+                    onSetPet: appState.setPet(_:),
+                    onComplete: { appState.setHasCompletedOnboarding(true) }
+                )
             } else if shouldSkipOnboardingToReveal {
                 DebugRevealFlowView(
                     draft: debugDraft,
@@ -309,6 +302,7 @@ private struct DebugRevealFlowView: View {
 
     private enum Step: Hashable {
         case widgetSetup
+        case locationTracking
     }
 
     var body: some View {
@@ -324,23 +318,56 @@ private struct DebugRevealFlowView: View {
             )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .pmOnboardingToolbar(total: 4, current: 2)
+            .pmOnboardingToolbar(total: 5, current: 2)
             .navigationBarBackButtonHidden(true)
             .navigationDestination(for: Step.self) { step in
                 switch step {
                 case .widgetSetup:
-                    WidgetSetupView {
+                    WidgetSetupView(
+                        onNext: { path.append(.locationTracking) }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                case .locationTracking:
+                    HomeLocationSetupView(
+                        pet: draft.completedPet
+                    ) {
                         if let pet = draft.completedPet {
                             onSetPet(pet)
                         }
                         appState.setHasCompletedOnboarding(true)
                     }
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3)
                     .navigationBarBackButtonHidden(true)
                 }
             }
+        }
+    }
+}
+
+private struct DebugWidgetSetupFlowView: View {
+    let pet: Pet
+    let onSetPet: (Pet) -> Void
+    let onComplete: () -> Void
+
+    @State private var path: [Step] = []
+
+    private enum Step: Hashable {
+        case locationTracking
+    }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            WidgetSetupView(onNext: { path.append(.locationTracking) })
+                .navigationBarBackButtonHidden(true)
+                .navigationDestination(for: Step.self) { step in
+                    switch step {
+                    case .locationTracking:
+                        HomeLocationSetupView(pet: pet) {
+                            onSetPet(pet)
+                            onComplete()
+                        }
+                        .navigationBarBackButtonHidden(true)
+                    }
+                }
         }
     }
 }

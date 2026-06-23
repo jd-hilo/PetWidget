@@ -85,14 +85,6 @@ struct SignUpCoordinator: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    PMOnboardingIconProgressBar(
-                        total: SignUpStep.allCases.count,
-                        current: step.progressIndex
-                    )
-                }
-            }
             .safeAreaInset(edge: .bottom) {
                 PMSageCTAButton(
                     title: ctaTitle,

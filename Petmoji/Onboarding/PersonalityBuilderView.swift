@@ -12,7 +12,7 @@ private enum OnboardingLayout {
 
 // MARK: - Personality Builder View (step wizard)
 
-struct PersonalityBuilderView: View {
+                                                                                                                                                                                                                          struct PersonalityBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft

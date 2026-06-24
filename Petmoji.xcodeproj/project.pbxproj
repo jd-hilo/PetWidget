@@ -13,6 +13,8 @@
 		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
 		F7WIDGET022F9E8D7C006EDD01 /* WidgetSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */; };
 		F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */ = {isa = PBXBuildFile; fileRef = F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */; };
+		F7NOTIF0V22F9E8D7C006EDD01 /* NotificationDemo.mov in Resources */ = {isa = PBXBuildFile; fileRef = F7NOTIF0V12F9E8D7C006EDD01 /* NotificationDemo.mov */; };
+		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
 		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
 		78A053739147FE7EDE5153B9 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAC105A00465289B0DF46CE /* Pet.swift */; };
@@ -103,6 +105,8 @@
 		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
 		F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSetupView.swift; sourceTree = "<group>"; };
 		F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = WidgetScreenDemo.mov; sourceTree = "<group>"; };
+		F7NOTIF0V12F9E8D7C006EDD01 /* NotificationDemo.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = NotificationDemo.mov; sourceTree = "<group>"; };
+		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
 		C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpressionRevealView.swift; sourceTree = "<group>"; };
 		C9EFEE996E1C4B444F152178 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CEE58751CCD8E8C6589EE39C /* PetmojiWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetmojiWidget.entitlements; sourceTree = "<group>"; };
@@ -175,6 +179,7 @@
 			children = (
 				C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */,
 				F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */,
+				F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */,
 				ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */,
 				0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */,
 				5DDE954FC301ECD9DB480C00 /* PhotoPickerView.swift */,
@@ -265,6 +270,7 @@
 			children = (
 				05D7681EDDDE782F2D2CA814 /* Assets.xcassets */,
 				F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */,
+				F7NOTIF0V12F9E8D7C006EDD01 /* NotificationDemo.mov */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -391,6 +397,7 @@
 				F7AEEFD22F9D451B006EDD07 /* tester_happy.png in Resources */,
 				F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */,
 				F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */,
+				F7NOTIF0V22F9E8D7C006EDD01 /* NotificationDemo.mov in Resources */,
 				F7AEEFD62F9D459A006EDD07 /* tester_mad.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -423,6 +430,7 @@
 				F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,
 				F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */,
+				F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */,
 				ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */,
 				F7BGONE012F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift in Sources */,
 				F7DELIV012F9E8D7C006EDD01 /* PetMessageDelivery.swift in Sources */,

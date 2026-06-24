@@ -921,8 +921,8 @@ extension View {
     }
 
     /// Large onboarding screen title in the nav bar principal slot.
-    func pmOnboardingScreenTitle(_ title: String) -> some View {
-        modifier(PMOnboardingScreenTitleModifier(title: title))
+    func pmOnboardingScreenTitle(_ title: String, titleTopPadding: CGFloat = 0) -> some View {
+        modifier(PMOnboardingScreenTitleModifier(title: title, titleTopPadding: titleTopPadding))
     }
 }
 
@@ -930,6 +930,7 @@ struct PMOnboardingScreenTitleModifier: ViewModifier {
     @Environment(\.petmojiPalette) private var palette
 
     let title: String
+    var titleTopPadding: CGFloat = 0
 
     func body(content: Content) -> some View {
         content
@@ -940,6 +941,11 @@ struct PMOnboardingScreenTitleModifier: ViewModifier {
                     Text(title)
                         .font(.titleL)
                         .foregroundStyle(palette.accentDark)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.9)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, titleTopPadding)
                 }
             }
     }

@@ -94,12 +94,21 @@ final class LocationService: NSObject, ObservableObject {
         }
     }
 
+    // MARK: - Onboarding permissions
+
+    /// Requests When In Use location, then immediately prompts for notifications.
+    func requestOnboardingLocationThenNotifications() async throws {
+        try await ensureWhenInUseAuthorized()
+        _ = await MessageScheduler.shared.requestNotificationPermission()
+    }
+
     // MARK: - Home setup (GPS → Supabase → geofence)
 
-    /// Captures current GPS, saves to pet row, starts geofence, then prompts for Always.
+    /// Captures current GPS, saves to pet row, starts geofence, then optionally prompts for Always.
     func saveCurrentLocationAsHome(
         petId: UUID,
         petName: String,
+        requestPermissions: Bool = true,
         onPetHomeUpdated: ((Double, Double) -> Void)? = nil
     ) async throws {
         try await ensureWhenInUseAuthorized()
@@ -113,13 +122,16 @@ final class LocationService: NSObject, ObservableObject {
         }
         setHomeLocation(lat: lat, lng: lng)
         MessageScheduler.shared.savePetMetadata(name: petName, petId: petId.uuidString)
-        _ = await MessageScheduler.shared.requestNotificationPermission()
         onPetHomeUpdated?(lat, lng)
 
-        if authorizationStatus == .notDetermined {
-            requestAlwaysPermission()
-        } else if authorizationStatus == .authorizedWhenInUse {
-            requestAlwaysPermission()
+        if requestPermissions {
+            _ = await MessageScheduler.shared.requestNotificationPermission()
+
+            if authorizationStatus == .notDetermined {
+                requestAlwaysPermission()
+            } else if authorizationStatus == .authorizedWhenInUse {
+                requestAlwaysPermission()
+            }
         }
         configureBackgroundLocationIfAuthorized()
     }

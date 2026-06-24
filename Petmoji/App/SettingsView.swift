@@ -18,8 +18,6 @@ struct SettingsView: View {
     @State private var regenerateError: String?
     @State private var regenerateSuccess = false
     @State private var showRegenerateConfirm = false
-    @State private var regenerateButtonFrame: CGRect = .zero
-    @State private var regeneratePopoverArrowEdge: Edge = .top
     @State private var showDeletePetConfirm = false
     @State private var isDeletingPet = false
     @State private var deletePetError: String?
@@ -138,6 +136,16 @@ struct SettingsView: View {
             }
         } message: {
             Text("Change \(committedPetName)'s name to \(pendingPetName)?")
+        }
+        .alert("Regenerate sprites?", isPresented: $showRegenerateConfirm) {
+            Button("Regenerate") {
+                isRegenerating = true
+                regenerateError = nil
+                regenerateSuccess = false
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This re-runs AI on your saved photos (about 30 seconds). Your current sprites will be replaced.")
         }
         .sheet(isPresented: $isRegenerating) {
             RegeneratingModal(
@@ -380,29 +388,10 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading, spacing: 12) {
                     Button("regenerate sprites") {
-                        regeneratePopoverArrowEdge = AdaptivePopoverPlacement.arrowEdge(
-                            anchorFrame: regenerateButtonFrame,
-                            estimatedPopoverHeight: RegenerateSpritesConfirmPopover.estimatedHeight
-                        )
                         showRegenerateConfirm = true
                     }
                     .font(.bodyL)
                     .foregroundStyle(palette.accentDark)
-                    .reportGlobalFrame($regenerateButtonFrame)
-                    .popover(
-                        isPresented: $showRegenerateConfirm,
-                        attachmentAnchor: .rect(.bounds),
-                        arrowEdge: regeneratePopoverArrowEdge
-                    ) {
-                        RegenerateSpritesConfirmPopover(
-                            isPresented: $showRegenerateConfirm,
-                            onConfirm: {
-                                isRegenerating = true
-                                regenerateError = nil
-                                regenerateSuccess = false
-                            }
-                        )
-                    }
 
                     if let error = regenerateError {
                         Text(error)
@@ -591,98 +580,7 @@ private struct ClassicDarkModeToggleRow: View {
     }
 }
 
-// MARK: - Anchored confirm popovers (near the triggering button)
-
-private struct GlobalFrameKey: PreferenceKey {
-    static let defaultValue: CGRect = .zero
-
-    static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
-        value = nextValue()
-    }
-}
-
-private extension View {
-    func reportGlobalFrame(_ frame: Binding<CGRect>) -> some View {
-        background {
-            GeometryReader { geo in
-                Color.clear
-                    .preference(key: GlobalFrameKey.self, value: geo.frame(in: .global))
-            }
-        }
-        .onPreferenceChange(GlobalFrameKey.self) { frame.wrappedValue = $0 }
-    }
-}
-
-private enum AdaptivePopoverPlacement {
-    @MainActor
-    static func arrowEdge(
-        anchorFrame: CGRect,
-        estimatedPopoverHeight: CGFloat,
-        margin: CGFloat = 12
-    ) -> Edge {
-        guard anchorFrame != .zero else { return .top }
-
-        let insets = currentSafeAreaInsets
-        let screenHeight = UIScreen.main.bounds.height
-        let visibleTop = insets.top
-        let visibleBottom = screenHeight - insets.bottom
-
-        let spaceBelow = visibleBottom - anchorFrame.maxY
-        let spaceAbove = anchorFrame.minY - visibleTop
-
-        if spaceBelow >= estimatedPopoverHeight + margin {
-            return .top
-        }
-        if spaceAbove >= estimatedPopoverHeight + margin {
-            return .bottom
-        }
-        return spaceBelow >= spaceAbove ? .top : .bottom
-    }
-
-    @MainActor
-    private static var currentSafeAreaInsets: UIEdgeInsets {
-        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first else {
-            return .zero
-        }
-        return window.safeAreaInsets
-    }
-}
-
-private struct RegenerateSpritesConfirmPopover: View {
-    @Environment(\.petmojiPalette) private var palette
-
-    @Binding var isPresented: Bool
-    let onConfirm: () -> Void
-
-    static let estimatedHeight: CGFloat = 210
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Regenerate sprites?")
-                .font(.titleL)
-                .foregroundStyle(palette.accentDark)
-            Text("This re-runs AI on your saved photos (about 30 seconds). Your current sprites will be replaced.")
-                .font(.bodyM)
-                .foregroundStyle(palette.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 12) {
-                Button("Cancel") { isPresented = false }
-                    .buttonStyle(.bordered)
-                    .tint(palette.accentDark)
-                Button("Regenerate") {
-                    isPresented = false
-                    onConfirm()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(palette.accent)
-            }
-        }
-        .padding(20)
-        .frame(minWidth: 300)
-        .presentationCompactAdaptation(.popover)
-    }
-}
+// MARK: - Sign out
 
 private struct SignOutPillButton: View {
     @Environment(\.petmojiPalette) private var palette

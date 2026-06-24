@@ -53,9 +53,11 @@ const MEMOJI_STYLE_ANCHOR =
 const MEMOJI_VISUAL_TRAITS =
   `Soft matte powder finish with gentle subsurface scattering, no glossy plastic shine, no wet oily surface. ` +
   `Rounded puffy sculpt forms, simplified fur as smooth color masses with no individual hair strands. ` +
-  `Oversized round head filling 75 to 85 percent of frame, tiny or no body, no shoulders, no neck. ` +
+  `Oversized round head with tiny or no body, no shoulders, no neck. ` +
   `Large expressive eyes using the pet's actual eye color from the photo, subtle white catchlights only. ` +
   `Tiny cute nose, small expressive mouth, perky simplified ears. ` +
+  `Entire head and both ears fully visible inside the square frame with at least 10 percent empty margin ` +
+  `on every side — ears must not touch or extend past the image boundary, even for large or tall ears. ` +
   `Bright saturated colors matching the pet's real fur colors. ` +
   `Soft even studio lighting with subtle 3D shading and soft contact shadow, on flat pure white ` +
   `background (#FFFFFF), fully isolated single subject. ` +

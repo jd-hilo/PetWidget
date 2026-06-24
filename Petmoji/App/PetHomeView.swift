@@ -22,8 +22,7 @@ struct PetHomeView: View {
     @State private var didShowResumePrompt = false
     @State private var declinedResumeOnce = false
 #if DEBUG
-    @State private var showDebugWidgetSetup = false
-    @State private var debugWidgetSetupPath: [DebugWidgetSetupStep] = []
+    @State private var showDebugLocationTracking = false
 #endif
     @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
@@ -63,9 +62,8 @@ struct PetHomeView: View {
                     .padding(.horizontal, horizontalInset)
 
 #if DEBUG
-                    Button("widget setup") {
-                        debugWidgetSetupPath = []
-                        showDebugWidgetSetup = true
+                    Button("location tracking") {
+                        showDebugLocationTracking = true
                     }
                     .font(.bodyS)
                     .foregroundStyle(palette.textSecondary)
@@ -147,20 +145,13 @@ struct PetHomeView: View {
         }
         .navigationDestination(isPresented: $showSettings) { SettingsView() }
 #if DEBUG
-        .fullScreenCover(isPresented: $showDebugWidgetSetup) {
-            NavigationStack(path: $debugWidgetSetupPath) {
-                WidgetSetupView(onNext: { debugWidgetSetupPath.append(.locationTracking) })
-                    .toolbar { debugWidgetSetupCloseButton }
-                    .navigationDestination(for: DebugWidgetSetupStep.self) { step in
-                        switch step {
-                        case .locationTracking:
-                            HomeLocationSetupView(
-                                pet: appState.currentPet ?? pets.first,
-                                onDone: { showDebugWidgetSetup = false }
-                            )
-                            .toolbar { debugWidgetSetupCloseButton }
-                        }
-                    }
+        .fullScreenCover(isPresented: $showDebugLocationTracking) {
+            NavigationStack {
+                HomeLocationSetupView(
+                    pet: appState.currentPet ?? pets.first,
+                    onDone: { showDebugLocationTracking = false }
+                )
+                .toolbar { debugLocationTrackingCloseButton }
             }
             .environmentObject(appState)
             .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
@@ -218,16 +209,11 @@ struct PetHomeView: View {
     }
 
 #if DEBUG
-    private enum DebugWidgetSetupStep: Hashable {
-        case locationTracking
-    }
-
     @ToolbarContentBuilder
-    private var debugWidgetSetupCloseButton: some ToolbarContent {
+    private var debugLocationTrackingCloseButton: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button("close") {
-                showDebugWidgetSetup = false
-                debugWidgetSetupPath = []
+                showDebugLocationTracking = false
             }
             .font(.bodyM)
         }

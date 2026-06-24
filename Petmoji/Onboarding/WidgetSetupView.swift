@@ -12,56 +12,62 @@ struct WidgetSetupView: View {
     private let steps: [WidgetSetupStep] = [
         WidgetSetupStep(
             number: 1,
-            prefix: "Long press on any empty area of your ",
-            highlight: "Home Screen",
-            suffix: " until apps jiggle."
+            title: "Long-press the Home Screen",
+            description: "Hold any empty area until the apps start to jiggle."
         ),
         WidgetSetupStep(
             number: 2,
-            prefix: "Tap the ",
-            highlight: "+",
-            suffix: " button in the top left corner."
+            title: "Tap the + button",
+            description: "You'll find it in the top-left corner of the screen."
         ),
         WidgetSetupStep(
             number: 3,
-            prefix: "Search for ",
-            highlight: "Petmoji",
-            suffix: " in the widget gallery."
+            title: "Search for \"Petmoji\"",
+            description: "Look it up in the widget gallery."
         ),
         WidgetSetupStep(
             number: 4,
-            prefix: "Choose your favorite layout and tap ",
-            highlight: "Add Widget",
-            suffix: "."
+            title: "Add your widget",
+            description: "Pick a favorite layout, then tap Add Widget."
         )
     ]
+
+    private static let stepRowHeight: CGFloat = 48
+    private static let stepSpacing: CGFloat = 12
+
+    private func videoMaxHeight(in availableHeight: CGFloat) -> CGFloat {
+        let stepsBlockHeight = CGFloat(steps.count) * Self.stepRowHeight
+            + CGFloat(steps.count - 1) * Self.stepSpacing
+        let chrome: CGFloat = 8 + 12
+        return max(120, availableHeight - stepsBlockHeight - chrome)
+    }
 
     var body: some View {
         ZStack {
             PMSageScreenBackdrop()
 
             GeometryReader { geo in
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        WidgetSetupVideoPlayer(
-                            maxWidth: geo.size.width - 48,
-                            maxHeight: geo.size.height * 0.5
-                        )
-                        .padding(.top, 8)
+                let contentWidth = geo.size.width - 48
+                let maxVideoHeight = videoMaxHeight(in: geo.size.height)
 
-                        Text("how to setup")
-                            .font(.titleL)
-                            .foregroundStyle(palette.accentDark)
+                VStack(alignment: .leading, spacing: 12) {
+                    WidgetSetupVideoPlayer(
+                        maxWidth: contentWidth,
+                        maxHeight: maxVideoHeight
+                    )
+                    .frame(maxWidth: .infinity)
 
-                        VStack(spacing: 8) {
-                            ForEach(steps) { step in
-                                WidgetSetupStepCard(step: step)
-                            }
+                    VStack(spacing: Self.stepSpacing) {
+                        ForEach(steps) { step in
+                            WidgetSetupStepRow(step: step)
+                                .frame(height: Self.stepRowHeight)
                         }
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, onCancel != nil ? 16 : 96)
+
+                    Spacer(minLength: 0)
                 }
+                .padding(.horizontal, 24)
+                .padding(.top, 8)
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 12) {
@@ -93,9 +99,8 @@ struct WidgetSetupView: View {
 
 private struct WidgetSetupStep: Identifiable {
     let number: Int
-    let prefix: String
-    let highlight: String
-    let suffix: String
+    let title: String
+    let description: String
 
     var id: Int { number }
 }
@@ -103,15 +108,15 @@ private struct WidgetSetupStep: Identifiable {
 // MARK: - Video Player
 
 private enum WidgetSetupVideo {
-    static let resourceName = "WidgetSetup"
+    static let resourceName = "WidgetScreenDemo"
     static let resourceExtension = "mov"
+    static let cornerRadius: CGFloat = 24
     static var bundledURL: URL? {
         Bundle.main.url(forResource: resourceName, withExtension: resourceExtension)
     }
 }
 
 private struct WidgetSetupVideoPlayer: View {
-    @Environment(\.petmojiPalette) private var palette
     @State private var player: AVPlayer?
     @State private var videoSize: CGSize?
 
@@ -122,7 +127,7 @@ private struct WidgetSetupVideoPlayer: View {
         let sourceWidth = videoSize?.width ?? 9
         let sourceHeight = videoSize?.height ?? 16
         guard sourceWidth > 0, sourceHeight > 0, maxWidth > 0, maxHeight > 0 else {
-            return CGSize(width: maxWidth, height: maxHeight)
+            return CGSize(width: maxWidth, height: min(maxWidth * 16 / 9, maxHeight))
         }
 
         let scale = min(maxWidth / sourceWidth, maxHeight / sourceHeight)
@@ -134,6 +139,7 @@ private struct WidgetSetupVideoPlayer: View {
             if WidgetSetupVideo.bundledURL != nil {
                 WidgetSetupAspectFitVideoPlayerView(
                     player: player,
+                    cornerRadius: WidgetSetupVideo.cornerRadius,
                     onVideoSizeChange: { size in
                         guard size.width > 0, size.height > 0 else { return }
                         videoSize = size
@@ -141,16 +147,11 @@ private struct WidgetSetupVideoPlayer: View {
                 )
             } else {
                 WidgetSetupVideoUnavailablePlaceholder()
-                    .frame(width: displaySize.width, height: displaySize.height)
             }
         }
         .frame(width: displaySize.width, height: displaySize.height)
+        .clipShape(RoundedRectangle(cornerRadius: WidgetSetupVideo.cornerRadius, style: .continuous))
         .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
-        )
         .accessibilityLabel("Widget setup walkthrough video")
         .onAppear(perform: configurePlayerIfNeeded)
         .onDisappear {
@@ -170,6 +171,7 @@ private struct WidgetSetupVideoPlayer: View {
 
 private struct WidgetSetupAspectFitVideoPlayerView: UIViewRepresentable {
     let player: AVPlayer?
+    let cornerRadius: CGFloat
     var onVideoSizeChange: (CGSize) -> Void
 
     func makeCoordinator() -> Coordinator {
@@ -177,14 +179,14 @@ private struct WidgetSetupAspectFitVideoPlayerView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> WidgetSetupPlayerContainerView {
-        let view = WidgetSetupPlayerContainerView()
+        let view = WidgetSetupPlayerContainerView(cornerRadius: cornerRadius)
         view.isUserInteractionEnabled = false
-        view.clipsToBounds = true
         context.coordinator.bind(player: player, to: view)
         return view
     }
 
     func updateUIView(_ uiView: WidgetSetupPlayerContainerView, context: Context) {
+        uiView.cornerRadius = cornerRadius
         context.coordinator.bind(player: player, to: uiView)
     }
 
@@ -244,11 +246,17 @@ private struct WidgetSetupAspectFitVideoPlayerView: UIViewRepresentable {
 private final class WidgetSetupPlayerContainerView: UIView {
     let playerLayer = AVPlayerLayer()
     var onLayoutVideoSize: ((CGSize) -> Void)?
+    var cornerRadius: CGFloat {
+        didSet { applyCornerRadius() }
+    }
 
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(cornerRadius: CGFloat) {
+        self.cornerRadius = cornerRadius
+        super.init(frame: .zero)
+        backgroundColor = .clear
         clipsToBounds = true
         layer.addSublayer(playerLayer)
+        applyCornerRadius()
     }
 
     @available(*, unavailable)
@@ -258,39 +266,30 @@ private final class WidgetSetupPlayerContainerView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        applyCornerRadius()
         layoutAspectFitPlayerLayer()
+    }
+
+    private func applyCornerRadius() {
+        layer.cornerRadius = cornerRadius
+        layer.cornerCurve = .continuous
+        layer.masksToBounds = true
+        playerLayer.cornerRadius = cornerRadius
+        playerLayer.masksToBounds = true
     }
 
     private func layoutAspectFitPlayerLayer() {
         let containerSize = bounds.size
         guard containerSize.width > 0, containerSize.height > 0 else { return }
 
-        guard let videoSize = presentationVideoSize,
-              videoSize.width > 0,
-              videoSize.height > 0 else {
-            playerLayer.frame = bounds
-            playerLayer.videoGravity = .resizeAspect
-            return
+        if let videoSize = presentationVideoSize,
+           videoSize.width > 0,
+           videoSize.height > 0 {
+            onLayoutVideoSize?(videoSize)
         }
 
-        onLayoutVideoSize?(videoSize)
-
-        let fitScale = min(
-            containerSize.width / videoSize.width,
-            containerSize.height / videoSize.height
-        )
-        let scaledWidth = videoSize.width * fitScale
-        let scaledHeight = videoSize.height * fitScale
-
+        playerLayer.frame = bounds
         playerLayer.videoGravity = .resizeAspect
-        playerLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        playerLayer.position = CGPoint(x: containerSize.width / 2, y: containerSize.height / 2)
-        playerLayer.bounds = CGRect(
-            x: 0,
-            y: 0,
-            width: scaledWidth,
-            height: scaledHeight
-        )
     }
 
     private var presentationVideoSize: CGSize? {
@@ -307,7 +306,7 @@ private struct WidgetSetupVideoUnavailablePlaceholder: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: WidgetSetupVideo.cornerRadius, style: .continuous)
                 .fill(palette.elevatedCardFill)
 
             VStack(spacing: 8) {
@@ -322,39 +321,36 @@ private struct WidgetSetupVideoUnavailablePlaceholder: View {
     }
 }
 
-// MARK: - Step Card
+// MARK: - Step Row
 
-private struct WidgetSetupStepCard: View {
+private struct WidgetSetupStepRow: View {
     @Environment(\.petmojiPalette) private var palette
 
     let step: WidgetSetupStep
 
     var body: some View {
-        HStack(alignment: .center, spacing: 10) {
+        HStack(alignment: .center, spacing: 12) {
             Text("\(step.number)")
-                .font(.bodyL)
-                .foregroundStyle(palette.accentDark)
+                .font(.bodyM.weight(.bold))
+                .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
                 .background(palette.accent, in: Circle())
 
-            (
-                Text(step.prefix)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(step.title)
+                    .font(.bodyL)
                     .foregroundStyle(palette.textPrimary)
-                + Text(step.highlight)
-                    .foregroundStyle(palette.accentDark)
-                + Text(step.suffix)
-                    .foregroundStyle(palette.textPrimary)
-            )
-            .font(.bodyS)
-            .multilineTextAlignment(.leading)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+
+                Text(step.description)
+                    .font(.bodyS)
+                    .foregroundStyle(palette.textSecondary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.9)
+            }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.surface.opacity(0.65), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(palette.elevatedCardStroke.opacity(0.8), lineWidth: 1)
-        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 }

@@ -12,7 +12,7 @@
 		2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73DA20062A61BDF056EB316 /* PetmojiApp.swift */; };
 		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
 		F7WIDGET022F9E8D7C006EDD01 /* WidgetSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */; };
-		F7WIDGET0V22F9E8D7C006EDD01 /* WidgetSetup.mov in Resources */ = {isa = PBXBuildFile; fileRef = F7WIDGET0V12F9E8D7C006EDD01 /* WidgetSetup.mov */; };
+		F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */ = {isa = PBXBuildFile; fileRef = F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
 		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
 		78A053739147FE7EDE5153B9 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAC105A00465289B0DF46CE /* Pet.swift */; };
@@ -102,7 +102,7 @@
 		BE4275124830FEE1D8B137A8 /* PetHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetHomeView.swift; sourceTree = "<group>"; };
 		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
 		F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSetupView.swift; sourceTree = "<group>"; };
-		F7WIDGET0V12F9E8D7C006EDD01 /* WidgetSetup.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = WidgetSetup.mov; sourceTree = "<group>"; };
+		F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = WidgetScreenDemo.mov; sourceTree = "<group>"; };
 		C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpressionRevealView.swift; sourceTree = "<group>"; };
 		C9EFEE996E1C4B444F152178 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CEE58751CCD8E8C6589EE39C /* PetmojiWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetmojiWidget.entitlements; sourceTree = "<group>"; };
@@ -264,7 +264,7 @@
 			isa = PBXGroup;
 			children = (
 				05D7681EDDDE782F2D2CA814 /* Assets.xcassets */,
-				F7WIDGET0V12F9E8D7C006EDD01 /* WidgetSetup.mov */,
+				F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -390,7 +390,7 @@
 				F7AEEFD82F9D459F006EDD07 /* tester_excited.png in Resources */,
 				F7AEEFD22F9D451B006EDD07 /* tester_happy.png in Resources */,
 				F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */,
-				F7WIDGET0V22F9E8D7C006EDD01 /* WidgetSetup.mov in Resources */,
+				F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */,
 				F7AEEFD62F9D459A006EDD07 /* tester_mad.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

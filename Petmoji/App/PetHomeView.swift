@@ -19,11 +19,9 @@ struct PetHomeView: View {
     @State private var selectedPetForChatRoom: Pet?
     @State private var showChatRoom = false
     @State private var showResumeSecondPetPrompt = false
+    @State private var showAddPetConfirm = false
     @State private var didShowResumePrompt = false
     @State private var declinedResumeOnce = false
-#if DEBUG
-    @State private var showDebugLocationTracking = false
-#endif
     @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
     private var pets: [Pet] { appState.availablePets }
@@ -60,16 +58,6 @@ struct PetHomeView: View {
                         onShowSettings: { showSettings = true }
                     )
                     .padding(.horizontal, horizontalInset)
-
-#if DEBUG
-                    Button("location tracking") {
-                        showDebugLocationTracking = true
-                    }
-                    .font(.bodyS)
-                    .foregroundStyle(palette.textSecondary)
-                    .padding(.horizontal, horizontalInset)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-#endif
 
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 14) {
@@ -144,20 +132,6 @@ struct PetHomeView: View {
             }
         }
         .navigationDestination(isPresented: $showSettings) { SettingsView() }
-#if DEBUG
-        .fullScreenCover(isPresented: $showDebugLocationTracking) {
-            NavigationStack {
-                HomeLocationSetupView(
-                    pet: appState.currentPet ?? pets.first,
-                    onDone: { showDebugLocationTracking = false }
-                )
-                .toolbar { debugLocationTrackingCloseButton }
-            }
-            .environmentObject(appState)
-            .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
-            .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
-        }
-#endif
         .fullScreenCover(isPresented: $showAddPetOnboarding) {
             OnboardingCoordinator(context: .additionalPet {
                 showAddPetOnboarding = false
@@ -206,26 +180,22 @@ struct PetHomeView: View {
         } message: {
             Text(OnboardingResumePrompt.message)
         }
-    }
-
-#if DEBUG
-    @ToolbarContentBuilder
-    private var debugLocationTrackingCloseButton: some ToolbarContent {
-        ToolbarItem(placement: .topBarLeading) {
-            Button("close") {
-                showDebugLocationTracking = false
+        .alert("Add another pet?", isPresented: $showAddPetConfirm) {
+            Button("Add pet") {
+                showAddPetOnboarding = true
             }
-            .font(.bodyM)
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("Create a second pet with its own personality, sprites, and messages.")
         }
     }
-#endif
 
     private func handleAddPetTapped() {
         guard appState.canAddPet else { return }
         if OnboardingDraftStore.hasPendingAdditionalPetDraft {
             showResumeSecondPetPrompt = true
         } else {
-            showAddPetOnboarding = true
+            showAddPetConfirm = true
         }
     }
 
@@ -469,10 +439,15 @@ private struct PetCardHeroSprite: View {
     var isBreathing: Bool = false
     var showsCircleStroke: Bool = false
 
-    private let breatheScale: CGFloat = 1.02
+    private let breatheScale: CGFloat = 0.985
 
     var body: some View {
-        SpriteImageView(urlString: urlString, contentMode: .fill)
+        SpriteImageView(urlString: urlString, contentMode: .fit)
+            .scaleEffect(isBreathing ? breatheScale : 1.0)
+            .animation(
+                isBreathing ? .easeInOut(duration: 2.5).repeatForever(autoreverses: true) : nil,
+                value: isBreathing
+            )
             .frame(width: width, height: height)
             .geometryGroup()
             .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace, properties: .frame)
@@ -483,11 +458,6 @@ private struct PetCardHeroSprite: View {
                         .strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25)
                 }
             }
-            .scaleEffect(isBreathing ? breatheScale : 1.0)
-            .animation(
-                isBreathing ? .easeInOut(duration: 2.5).repeatForever(autoreverses: true) : nil,
-                value: isBreathing
-            )
     }
 }
 
@@ -594,13 +564,12 @@ private struct ExpandedPetCardContent: View {
 
             Button(action: onOpenChatRoom) {
                 VStack(spacing: 14) {
-                    let spriteWidth = max(170, contentWidth - 56)
-                    let spriteHeight = spriteWidth * 0.9
+                    let spriteSize = max(170, contentWidth - 56)
 
                     PetCardHeroSprite(
                         urlString: spriteURL,
-                        width: spriteWidth,
-                        height: spriteHeight,
+                        width: spriteSize,
+                        height: spriteSize,
                         cornerRadius: 28,
                         heroGeometryID: heroGeometryID,
                         heroNamespace: heroNamespace,

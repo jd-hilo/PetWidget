@@ -10,11 +10,6 @@
 		1E4B9C810D7BF0E33A9BA04B /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */; };
 		292F7496F3240B0562708EBF /* PersonalityBuilderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */; };
 		2AAE93AC1B00CF9E2DCD0995 /* PetmojiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73DA20062A61BDF056EB316 /* PetmojiApp.swift */; };
-		F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */; };
-		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
-		F7WIDGET022F9E8D7C006EDD01 /* WidgetSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */; };
-		F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */ = {isa = PBXBuildFile; fileRef = F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */; };
-		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
 		526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */; };
 		581FA577A3522618713A071D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D02CECE79D4F8ADD0DC8CA1B /* SettingsView.swift */; };
 		78A053739147FE7EDE5153B9 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECAC105A00465289B0DF46CE /* Pet.swift */; };
@@ -41,7 +36,6 @@
 		F7AEEFDA2F9D45A5006EDD07 /* tester_misses_you.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */; };
 		F7AEEFDC2F9D45A8006EDD07 /* tester_judging.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */; };
 		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
-		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
 		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
 		F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */; };
 		F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */; };
@@ -51,11 +45,17 @@
 		F7DELIV012F9E8D7C006EDD01 /* PetMessageDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */; };
 		F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */; };
 		F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
+		F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */; };
+		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
+		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
 		F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */; };
 		F7PROF012F9E8D7C006EDD01 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */; };
 		F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */; };
 		F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */; };
 		F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */; };
+		F7WIDGET022F9E8D7C006EDD01 /* WidgetSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */; };
+		F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */ = {isa = PBXBuildFile; fileRef = F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -102,11 +102,6 @@
 		ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageScheduler.swift; sourceTree = "<group>"; };
 		BE4275124830FEE1D8B137A8 /* PetHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetHomeView.swift; sourceTree = "<group>"; };
-		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
-		F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationNotificationDemoMockup.swift; sourceTree = "<group>"; };
-		F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSetupView.swift; sourceTree = "<group>"; };
-		F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = WidgetScreenDemo.mov; sourceTree = "<group>"; };
-		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
 		C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpressionRevealView.swift; sourceTree = "<group>"; };
 		C9EFEE996E1C4B444F152178 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CEE58751CCD8E8C6589EE39C /* PetmojiWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetmojiWidget.entitlements; sourceTree = "<group>"; };
@@ -122,7 +117,6 @@
 		F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_misses_you.png; sourceTree = "<group>"; };
 		F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_judging.png; sourceTree = "<group>"; };
 		F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
-		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
 		F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUserSettings.swift; sourceTree = "<group>"; };
 		F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthCoordinator.swift; sourceTree = "<group>"; };
 		F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
@@ -131,11 +125,17 @@
 		F7DEBUG002F9E8D7C006EDD01 /* DebugLaunchArgs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLaunchArgs.swift; sourceTree = "<group>"; };
 		F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetMessageDelivery.swift; sourceTree = "<group>"; };
 		F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotSync.swift; sourceTree = "<group>"; };
+		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
+		F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationNotificationDemoMockup.swift; sourceTree = "<group>"; };
+		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
+		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
 		F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPFieldView.swift; sourceTree = "<group>"; };
 		F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		F7SIGN002F9E8D7C006EDD01 /* SignUpCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpCoordinator.swift; sourceTree = "<group>"; };
 		F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpDraft.swift; sourceTree = "<group>"; };
 		F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignUpStepView.swift; sourceTree = "<group>"; };
+		F7WIDGET012F9E8D7C006EDD01 /* WidgetSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSetupView.swift; sourceTree = "<group>"; };
+		F7WIDGET0V12F9E8D7C006EDD01 /* WidgetScreenDemo.mov */ = {isa = PBXFileReference; lastKnownFileType = video.quicktime; path = WidgetScreenDemo.mov; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -474,6 +474,7 @@
 				CODE_SIGN_ENTITLEMENTS = PetmojiWidget/PetmojiWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = PetmojiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -492,6 +493,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PetmojiWidget/PetmojiWidget.entitlements;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = PetmojiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -512,6 +514,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -661,6 +664,7 @@
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

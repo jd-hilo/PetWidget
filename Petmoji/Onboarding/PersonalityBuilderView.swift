@@ -1,117 +1,127 @@
 import SwiftUI
 
+// MARK: - Onboarding layout
+
+private enum OnboardingLayout {
+    static let horizontalPadding: CGFloat = 16
+    static let cardPadding: CGFloat = 18
+    static let cardCornerRadius: CGFloat = 22
+    static let contentSpacing: CGFloat = 8
+    static let sectionSpacing: CGFloat = 10
+}
+
 // MARK: - Personality Builder View (step wizard)
 
-struct PersonalityBuilderView: View {
+                                                                                                                                                                                                                          struct PersonalityBuilderView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.petmojiPalette) private var palette
     @ObservedObject var draft: OnboardingDraft
+    var initialActiveStep: Int = 0
+    var initialIsReviewScreen: Bool = false
     let onNext: () -> Void
     var onCancel: (() -> Void)?
+    var onProgressChange: ((_ activeStep: Int, _ isReview: Bool) -> Void)? = nil
 
     private static let totalSteps = 5
-    /// Rough per-step estimate for “time left” copy (personality flow).
-    private static let estimatedSecondsPerStep = 11
 
     @State private var activeStep: Int = 0
-    /// Highest step index the user has advanced to; they can jump back to any step ≤ this.
-    @State private var maxUnlockedStep: Int = 0
     @State private var isReviewScreen: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            wizardHeader
+            stepHeader
 
-            PersonalityWizardStepper(
-                activeStep: isReviewScreen ? Self.totalSteps : activeStep,
-                maxUnlockedStep: maxUnlockedStep,
-                furthestProgressStep: max(maxUnlockedStep, activeStep),
-                isReviewComplete: isReviewScreen,
-                totalSteps: Self.totalSteps,
-                onSelectStep: { index in
-                    guard index <= maxUnlockedStep else { return }
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        mainStepContent
+                            .padding(.horizontal, OnboardingLayout.horizontalPadding)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(minHeight: geo.size.height)
+                }
+                .scrollDismissesKeyboard(.interactively)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: activeStep)
+            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: isReviewScreen)
+        }
+        .safeAreaInset(edge: .bottom) {
+            bottomBarPadded
+        }
+        .pmSageScreenBackground()
+        .onAppear {
+            activeStep = initialActiveStep
+            isReviewScreen = initialIsReviewScreen
+        }
+    }
+
+    @ViewBuilder
+    private var mainStepContent: some View {
+        Group {
+            if isReviewScreen {
+                PersonalityReviewSummary(draft: draft) { step in
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                         isReviewScreen = false
-                        activeStep = index
+                        activeStep = step
+                        notifyProgressChange()
                     }
                 }
-            )
-            .padding(.horizontal, 24)
-            .padding(.top, 12)
-
-            Group {
-                if isReviewScreen {
-                    PersonalityReviewSummary(draft: draft) { step in
-                        withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
-                            isReviewScreen = false
-                            activeStep = step
-                        }
-                    }
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+            } else {
+                currentStepCard
+                    .id(activeStep)
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing).combined(with: .opacity),
                         removal: .move(edge: .leading).combined(with: .opacity)
                     ))
-                } else {
-                    currentStepCard
-                        .id(activeStep)
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                }
             }
-            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: activeStep)
-            .animation(.spring(response: 0.4, dampingFraction: 0.88), value: isReviewScreen)
-
-            Spacer(minLength: 16)
         }
-        .padding(.top, 8)
-        .safeAreaInset(edge: .bottom) {
-            bottomBar
-                .padding(.horizontal, 24)
-                .padding(.bottom, onCancel != nil ? 10 : 34)
-                .background(Color.clear)
-        }
-        .pmSageScreenBackground()
     }
 
-    // MARK: - Header & progress
+    private var bottomBarPadded: some View {
+        bottomBar
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, onCancel != nil ? 10 : 34)
+    }
 
-    private var wizardHeader: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("who are they, really?")
+    // MARK: - Step header
+
+    private var stepHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(currentScreenTitle)
                 .font(.displayL)
                 .foregroundStyle(palette.accentDark)
+                .fixedSize(horizontal: false, vertical: true)
 
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                if isReviewScreen {
-                    Text("review & generate")
-                        .font(.bodyM)
-                        .foregroundStyle(palette.textSecondary)
-                } else {
-                    Text("step \(activeStep + 1) of \(Self.totalSteps)")
-                        .font(.bodyM)
-                        .bold()
-                        .foregroundStyle(palette.accentDark)
-                    Text("·")
-                        .foregroundStyle(palette.textSecondary)
-                    Text("~\(secondsRemainingEstimate)s left")
-                        .font(.bodyM)
-                        .foregroundStyle(palette.textSecondary)
-                }
+            if !isReviewScreen {
+                Text("step \(activeStep + 1) of \(Self.totalSteps)")
+                    .font(.bodyM)
+                    .foregroundStyle(palette.textSecondary)
             }
-
-            Text("about \(Self.totalSteps * Self.estimatedSecondsPerStep)s total")
-                .font(.bodyS)
-                .foregroundStyle(palette.textSecondary.opacity(0.9))
         }
         .padding(.horizontal, 24)
-        .padding(.bottom, 4)
+        .padding(.top, 28)
+        .padding(.bottom, 10)
     }
 
-    private var secondsRemainingEstimate: Int {
-        let stepsLeftIncludingCurrent = Self.totalSteps - activeStep
-        return max(0, stepsLeftIncludingCurrent * Self.estimatedSecondsPerStep)
+    private var currentScreenTitle: String {
+        if isReviewScreen {
+            return "here’s what we’ve got"
+        }
+        switch activeStep {
+        case 0: return "boy or girl?"
+        case 1: return "pick 3 words that describe them"
+        case 2: return "energy level"
+        case 3: return "what sets them off?"
+        case 4: return "general vibe"
+        default: return ""
+        }
     }
 
     // MARK: - Step content
@@ -120,42 +130,26 @@ struct PersonalityBuilderView: View {
     private var currentStepCard: some View {
         switch activeStep {
         case 0:
-            PersonalitySection(
-                title: "boy or girl?",
-                gradient: [palette.washSoft, palette.washDeep]
-            ) {
+            PersonalitySection {
                 GenderPickerView(selectedGender: $draft.gender)
             }
         case 1:
-            PersonalitySection(
-                title: "pick 3 words that describe them",
-                gradient: [palette.washAltSoft, palette.washAltDeep]
-            ) {
+            PersonalitySection {
                 TraitGridView(selectedTraits: $draft.selectedTraits)
             }
         case 2:
-            PersonalitySection(
-                title: "energy level",
-                gradient: [palette.washMid, palette.washDeep]
-            ) {
+            PersonalitySection {
                 EnergySliderView(value: $draft.energyLevel)
             }
         case 3:
-            PersonalitySection(
-                title: "what sets them off?",
-                gradient: [Color.pmClayLight, Color.pmClayMid],
-                titleColor: Color.pmClayDark
-            ) {
+            PersonalitySection {
                 TriggerSelectorView(
                     selectedTriggers: $draft.selectedTriggers,
                     customTrigger: $draft.customTrigger
                 )
             }
         case 4:
-            PersonalitySection(
-                title: "general vibe",
-                gradient: [palette.surface, palette.washDeep]
-            ) {
+            PersonalitySection {
                 MoodSelectorView(selectedMood: $draft.baseMood)
             }
         default:
@@ -185,6 +179,7 @@ struct PersonalityBuilderView: View {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.86)) {
                         isReviewScreen = false
                         activeStep = Self.totalSteps - 1
+                        notifyProgressChange()
                     }
                 } label: {
                         Text("back to last step")
@@ -208,6 +203,7 @@ struct PersonalityBuilderView: View {
                     if activeStep > 0 {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.88)) {
                             activeStep -= 1
+                            notifyProgressChange()
                         }
                     } else {
                         dismiss()
@@ -237,103 +233,18 @@ struct PersonalityBuilderView: View {
         if activeStep < Self.totalSteps - 1 {
             withAnimation(.spring(response: 0.4, dampingFraction: 0.88)) {
                 activeStep += 1
-                maxUnlockedStep = max(maxUnlockedStep, activeStep)
+                notifyProgressChange()
             }
         } else {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
                 isReviewScreen = true
+                notifyProgressChange()
             }
         }
     }
-}
 
-// MARK: - Stepper (tap completed / current steps to go back)
-
-private struct PersonalityWizardStepper: View {
-    @Environment(\.petmojiPalette) private var palette
-
-    let activeStep: Int
-    let maxUnlockedStep: Int
-    /// Fills the bar through the furthest step reached (does not shrink when revisiting earlier steps).
-    let furthestProgressStep: Int
-    let isReviewComplete: Bool
-    let totalSteps: Int
-    let onSelectStep: (Int) -> Void
-
-    private let labels = ["gender", "traits", "energy", "triggers", "mood"]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            GeometryReader { geo in
-                let width = geo.size.width
-                let segment = width / CGFloat(totalSteps)
-                let filledSegments = isReviewComplete
-                    ? totalSteps
-                    : min(totalSteps, furthestProgressStep + 1)
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(palette.segmentMuted.opacity(0.55))
-                        .frame(height: 4)
-
-                    Capsule()
-                        .fill(palette.accent)
-                        .frame(
-                            width: segment * CGFloat(filledSegments),
-                            height: 4
-                        )
-                        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: furthestProgressStep)
-                        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: isReviewComplete)
-                }
-            }
-            .frame(height: 4)
-
-            HStack(spacing: 0) {
-                ForEach(0..<totalSteps, id: \.self) { index in
-                    let tappable = index <= maxUnlockedStep
-                    let isCurrent = !isReviewComplete && index == activeStep
-                    let isDone = !isReviewComplete && !isCurrent && index <= maxUnlockedStep
-                    let isLocked = index > maxUnlockedStep
-
-                    Button {
-                        onSelectStep(index)
-                    } label: {
-                        VStack(spacing: 4) {
-                            Text("\(index + 1)")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(
-                                    isReviewComplete || isCurrent
-                                        ? (isReviewComplete ? palette.accentDark : Color.white)
-                                        : (isDone ? palette.accentDark : palette.textSecondary.opacity(0.45))
-                                )
-                                .frame(width: 22, height: 22)
-                                .background(
-                                    Circle()
-                                        .fill(
-                                            isReviewComplete
-                                                ? palette.surface
-                                                : (isCurrent ? palette.accent : (isDone ? palette.surface : Color.clear))
-                                        )
-                                )
-                                .overlay(
-                                    Circle()
-                                        .strokeBorder(palette.border.opacity(isLocked ? 0.35 : 0.9), lineWidth: 1)
-                                )
-
-                            Text(labels[index])
-                                .font(.system(size: 9, weight: .semibold, design: .rounded))
-                                .foregroundStyle(
-                                    isLocked ? palette.textSecondary.opacity(0.35) : palette.textSecondary
-                                )
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(!tappable)
-                }
-            }
-        }
+    private func notifyProgressChange() {
+        onProgressChange?(activeStep, isReviewScreen)
     }
 }
 
@@ -345,26 +256,14 @@ private struct PersonalityReviewSummary: View {
     let onEditStep: (Int) -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("here’s what we’ve got")
-                    .font(.titleL)
-                    .foregroundStyle(palette.accentDark)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
-
-                VStack(spacing: 0) {
-                    reviewRow(title: "gender", value: draft.gender.displayName, step: 0)
-                    reviewRow(title: "traits", value: traitSummary, step: 1)
-                    reviewRow(title: "energy", value: "\(Int(draft.energyLevel))/10", step: 2)
-                    reviewRow(title: "triggers", value: draft.triggersReviewSummary, step: 3)
-                    reviewRow(title: "vibe", value: draft.baseMood.displayName, step: 4, showDivider: false)
-                }
-                .pmSageCard(cornerRadius: 20)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
-            }
+        VStack(spacing: 0) {
+            reviewRow(title: "gender", value: draft.gender.displayName, step: 0)
+            reviewRow(title: "traits", value: traitSummary, step: 1)
+            reviewRow(title: "energy", value: "\(Int(draft.energyLevel))/10", step: 2)
+            reviewRow(title: "triggers", value: draft.triggersReviewSummary, step: 3)
+            reviewRow(title: "vibe", value: draft.baseMood.displayName, step: 4, showDivider: false)
         }
+        .pmSageCard(cornerRadius: OnboardingLayout.cardCornerRadius)
     }
 
     private var traitSummary: String {
@@ -379,7 +278,7 @@ private struct PersonalityReviewSummary: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.bodyS)
+                        .font(.bodyM)
                         .foregroundStyle(palette.textSecondary)
                     Text(value)
                         .font(.bodyL)
@@ -390,11 +289,11 @@ private struct PersonalityReviewSummary: View {
                 Button("edit") {
                     onEditStep(step)
                 }
-                .font(.bodyS)
+                .font(.bodyM)
                 .bold()
                 .foregroundStyle(palette.accent)
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, 20)
             .padding(.vertical, 14)
             .contentShape(Rectangle())
 
@@ -410,45 +309,13 @@ private struct PersonalityReviewSummary: View {
 // MARK: - Section Container
 
 struct PersonalitySection<Content: View>: View {
-    @Environment(\.petmojiPalette) private var palette
-
-    let title: String
-    let gradient: [Color]
-    var titleColor: Color?
     @ViewBuilder let content: () -> Content
 
-    init(title: String, gradient: [Color], titleColor: Color? = nil, @ViewBuilder content: @escaping () -> Content) {
-        self.title = title
-        self.gradient = gradient
-        self.titleColor = titleColor
-        self.content = content
-    }
-
-    private var resolvedTitleColor: Color {
-        titleColor ?? palette.accentDark
-    }
-
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(title)
-                    .font(.titleL)
-                    .foregroundStyle(resolvedTitleColor)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(20)
-                    .background(
-                        LinearGradient(colors: gradient, startPoint: .leading, endPoint: .trailing)
-                            .opacity(0.75)
-                    )
-
-                content()
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
-            }
-            .pmSageCard(cornerRadius: 20)
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-        }
+        content()
+            .padding(OnboardingLayout.cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .pmSageCard(cornerRadius: OnboardingLayout.cardCornerRadius)
     }
 }
 
@@ -460,11 +327,12 @@ struct TraitGridView: View {
     let columns = [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())]
 
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
+        LazyVGrid(columns: columns, spacing: OnboardingLayout.contentSpacing) {
             ForEach(PersonalityTrait.allCases, id: \.self) { trait in
                 PMTraitPill(
                     trait: trait,
-                    isSelected: selectedTraits.contains(trait)
+                    isSelected: selectedTraits.contains(trait),
+                    isProminent: true
                 ) {
                     if selectedTraits.contains(trait) {
                         selectedTraits.remove(trait)
@@ -484,10 +352,11 @@ struct EnergySliderView: View {
     @Binding var value: Double
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: OnboardingLayout.sectionSpacing) {
             Slider(value: $value, in: 1...10, step: 1) {
                 EmptyView()
             }
+            .controlSize(.large)
             .tint(
                 LinearGradient(
                     colors: [Color.pmSageAccent, Color.pmSageAccentDark, Color.pmClay],
@@ -498,14 +367,15 @@ struct EnergySliderView: View {
 
             HStack {
                 Text("professional napper")
-                    .font(.bodyS)
+                    .font(.bodyM)
                     .foregroundStyle(palette.textSecondary)
                 Spacer()
                 Text("absolute chaos")
-                    .font(.bodyS)
+                    .font(.bodyM)
                     .foregroundStyle(palette.textSecondary)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -514,6 +384,15 @@ struct EnergySliderView: View {
 private enum TriggerSelectorConfig {
     static let maxPresetSelections = 3
     static let maxCustomLength = 40
+
+    static let featuredTriggers: [PetTrigger] = [
+        .doorbell,
+        .strangers,
+        .otherPets,
+        .beingIgnored,
+        .loneliness,
+        .bathTime,
+    ]
 }
 
 struct TriggerSelectorView: View {
@@ -521,29 +400,58 @@ struct TriggerSelectorView: View {
     @Binding var selectedTriggers: Set<PetTrigger>
     @Binding var customTrigger: String
 
+    @State private var showsAllTriggers = false
+
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("pick up to \(TriggerSelectorConfig.maxPresetSelections) (or add your own below)")
-                .font(.bodyS)
-                .foregroundStyle(palette.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+    private var visibleTriggers: [PetTrigger] {
+        showsAllTriggers ? Array(PetTrigger.allCases) : TriggerSelectorConfig.featuredTriggers
+    }
 
-            LazyVGrid(columns: columns, spacing: 10) {
-                ForEach(PetTrigger.allCases, id: \.self) { trigger in
-                    PMChip(
-                        label: trigger.displayName,
-                        isSelected: selectedTriggers.contains(trigger)
-                    ) {
-                        toggleTrigger(trigger)
+    private var hiddenSelectedTriggers: Bool {
+        let featured = Set(TriggerSelectorConfig.featuredTriggers)
+        return selectedTriggers.contains { !featured.contains($0) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: OnboardingLayout.sectionSpacing) {
+            VStack(alignment: .leading, spacing: OnboardingLayout.contentSpacing) {
+                Text("pick up to \(TriggerSelectorConfig.maxPresetSelections)")
+                    .font(.bodyL)
+                    .bold()
+                    .foregroundStyle(palette.accentDark)
+
+                LazyVGrid(columns: columns, spacing: OnboardingLayout.contentSpacing) {
+                    ForEach(visibleTriggers, id: \.self) { trigger in
+                        PMChip(
+                            label: trigger.displayName,
+                            isSelected: selectedTriggers.contains(trigger),
+                            isProminent: true
+                        ) {
+                            toggleTrigger(trigger)
+                        }
                     }
                 }
+
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) {
+                        showsAllTriggers.toggle()
+                    }
+                } label: {
+                    Text(showsAllTriggers ? "collapse" : "expand to show more")
+                        .font(.bodyL)
+                        .foregroundStyle(palette.accent)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            Divider()
+                .background(palette.border.opacity(0.5))
+
+            VStack(alignment: .leading, spacing: OnboardingLayout.contentSpacing) {
                 Text("something else?")
-                    .font(.bodyM)
+                    .font(.bodyL)
                     .bold()
                     .foregroundStyle(palette.accentDark)
 
@@ -558,18 +466,26 @@ struct TriggerSelectorView: View {
                             customTrigger = String(newValue.prefix(TriggerSelectorConfig.maxCustomLength))
                         }
                     }
-                    .padding(14)
-                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .padding(16)
+                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .strokeBorder(palette.border, lineWidth: 1.5)
                     )
 
                 Text("\(customTrigger.count)/\(TriggerSelectorConfig.maxCustomLength)")
-                    .font(.bodyS)
+                    .font(.bodyM)
                     .foregroundStyle(palette.textSecondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
+        }
+        .onAppear { expandIfNeeded() }
+        .onChange(of: selectedTriggers) { _, _ in expandIfNeeded() }
+    }
+
+    private func expandIfNeeded() {
+        if hiddenSelectedTriggers {
+            showsAllTriggers = true
         }
     }
 
@@ -588,16 +504,19 @@ struct GenderPickerView: View {
     @Binding var selectedGender: PetGender
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: OnboardingLayout.contentSpacing) {
             ForEach(PetGender.allCases, id: \.self) { gender in
                 PMChip(
                     label: gender.displayName,
-                    isSelected: selectedGender == gender
+                    isSelected: selectedGender == gender,
+                    isProminent: true
                 ) {
                     selectedGender = gender
                 }
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -607,15 +526,18 @@ struct MoodSelectorView: View {
     @Binding var selectedMood: BaseMood
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: OnboardingLayout.contentSpacing) {
             ForEach(BaseMood.allCases, id: \.self) { mood in
                 PMChip(
                     label: mood.displayName,
-                    isSelected: selectedMood == mood
+                    isSelected: selectedMood == mood,
+                    isProminent: true
                 ) {
                     selectedMood = mood
                 }
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 }

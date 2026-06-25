@@ -83,6 +83,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var debugDraft = OnboardingDraft()
+#if DEBUG
+    @State private var showDebugLocationTracking = false
+#endif
 
     private var shouldSkipOnboardingToReveal: Bool {
 #if DEBUG
@@ -108,6 +111,22 @@ struct RootView: View {
 #endif
     }
 
+    private var shouldSkipOnboardingToLocationTracking: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipOnboardingToLocationTracking")
+#else
+        false
+#endif
+    }
+
+    private var isShowingDebugLocationTracking: Bool {
+#if DEBUG
+        showDebugLocationTracking || shouldSkipOnboardingToLocationTracking
+#else
+        false
+#endif
+    }
+
     private var shouldSkipSignUp: Bool {
 #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-skipSignUp")
@@ -118,49 +137,14 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
-                NavigationStack {
-                    WidgetSetupView {
-#if DEBUG
-                        appState.setPet(makeDebugRogerPet(useMockSprites: shouldUseMockSprites))
-#endif
-                        appState.setHasCompletedOnboarding(true)
-                    }
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3)
-                    .navigationBarBackButtonHidden(true)
-                }
-            } else if shouldSkipOnboardingToReveal {
-                DebugRevealFlowView(
-                    draft: debugDraft,
-                    onSetPet: appState.setPet(_:),
-                    useMockSprites: shouldUseMockSprites
-                )
-            } else if appState.isBootstrapping || appState.isLoading {
-                BrandLandingView(mode: .loading)
-            } else if !appState.isAuthenticated && !shouldSkipSignUp {
-                if !appState.hasSeenWelcome {
-                    BrandLandingView(mode: .welcome) {
-                        appState.setHasSeenWelcome(true)
-                    }
-                } else {
-                    AuthCoordinator()
-                }
-            } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
-                NavigationStack {
-                    PetHomeView()
-                }
-            } else if appState.isAuthenticated {
-                OnboardingCoordinator()
-            } else {
-                AuthCoordinator()
-            }
+            rootRoutingContent
         }
         .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
         .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
-            let skipNormalBootstrap = shouldSkipOnboardingToReveal || shouldSkipOnboardingToWidgetSetup
+            let skipNormalBootstrap = shouldSkipOnboardingToReveal
+                || shouldSkipOnboardingToWidgetSetup
+                || shouldSkipOnboardingToLocationTracking
 #if DEBUG
             let wantsTestNotifications = !debugTestPetMessageEvents.isEmpty
 #else
@@ -180,6 +164,61 @@ struct RootView: View {
             } else {
                 appState.markBootstrapComplete()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var rootRoutingContent: some View {
+#if DEBUG
+        if isShowingDebugLocationTracking {
+            DebugLocationTrackingFlowView(
+                pet: appState.currentPet ?? makeDebugRogerPet(useMockSprites: shouldUseMockSprites),
+                onSetPet: appState.setPet(_:),
+                onComplete: { appState.setHasCompletedOnboarding(true) },
+                onDismiss: shouldSkipOnboardingToLocationTracking ? nil : {
+                    showDebugLocationTracking = false
+                }
+            )
+        } else if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
+            DebugWidgetSetupFlowView(
+                pet: makeDebugRogerPet(useMockSprites: shouldUseMockSprites),
+                onSetPet: appState.setPet(_:),
+                onComplete: { appState.setHasCompletedOnboarding(true) }
+            )
+        } else if shouldSkipOnboardingToReveal {
+            DebugRevealFlowView(
+                draft: debugDraft,
+                onSetPet: appState.setPet(_:),
+                useMockSprites: shouldUseMockSprites
+            )
+        } else {
+            standardRootContent
+        }
+#else
+        standardRootContent
+#endif
+    }
+
+    @ViewBuilder
+    private var standardRootContent: some View {
+        if appState.isBootstrapping || appState.isLoading {
+            BrandLandingView(mode: .loading)
+        } else if !appState.isAuthenticated && !shouldSkipSignUp {
+            if !appState.hasSeenWelcome {
+                BrandLandingView(mode: .welcome) {
+                    appState.setHasSeenWelcome(true)
+                }
+            } else {
+                AuthCoordinator()
+            }
+        } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
+            NavigationStack {
+                PetHomeView()
+            }
+        } else if appState.isAuthenticated {
+            FirstPetOnboardingGateView()
+        } else {
+            AuthCoordinator()
         }
     }
 
@@ -243,7 +282,7 @@ struct RootView: View {
             species: .dog,
             gender: .boy,
             expressions: useMockSprites ? debugTesterExpressions() : ExpressionMap(),
-            personalityTraits: [.dramatic, .mischievous, .sweet],
+            personalityTraits: [.dramatic, .sneaky, .sweet],
             energyLevel: 7,
             triggers: [.vacuumCleaner],
             customTrigger: nil,
@@ -299,6 +338,31 @@ struct RootView: View {
 #endif
 }
 
+private struct DebugLocationTrackingFlowView: View {
+    let pet: Pet
+    let onSetPet: (Pet) -> Void
+    let onComplete: () -> Void
+    var onDismiss: (() -> Void)?
+
+    var body: some View {
+        NavigationStack {
+            HomeLocationSetupView(pet: pet) {
+                onSetPet(pet)
+                onComplete()
+            }
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                if let onDismiss {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Close") { onDismiss() }
+                            .font(.bodyM)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private struct DebugRevealFlowView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var draft: OnboardingDraft
@@ -309,6 +373,7 @@ private struct DebugRevealFlowView: View {
 
     private enum Step: Hashable {
         case widgetSetup
+        case locationTracking
     }
 
     var body: some View {
@@ -324,23 +389,56 @@ private struct DebugRevealFlowView: View {
             )
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            .pmOnboardingToolbar(total: 4, current: 2)
+            .pmOnboardingToolbar(total: 5, current: 2)
             .navigationBarBackButtonHidden(true)
             .navigationDestination(for: Step.self) { step in
                 switch step {
                 case .widgetSetup:
-                    WidgetSetupView {
+                    WidgetSetupView(
+                        onNext: { path.append(.locationTracking) }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                case .locationTracking:
+                    HomeLocationSetupView(
+                        pet: draft.completedPet
+                    ) {
                         if let pet = draft.completedPet {
                             onSetPet(pet)
                         }
                         appState.setHasCompletedOnboarding(true)
                     }
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .pmOnboardingToolbar(total: 4, current: 3)
                     .navigationBarBackButtonHidden(true)
                 }
             }
+        }
+    }
+}
+
+private struct DebugWidgetSetupFlowView: View {
+    let pet: Pet
+    let onSetPet: (Pet) -> Void
+    let onComplete: () -> Void
+
+    @State private var path: [Step] = []
+
+    private enum Step: Hashable {
+        case locationTracking
+    }
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            WidgetSetupView(onNext: { path.append(.locationTracking) })
+                .navigationBarBackButtonHidden(true)
+                .navigationDestination(for: Step.self) { step in
+                    switch step {
+                    case .locationTracking:
+                        HomeLocationSetupView(pet: pet) {
+                            onSetPet(pet)
+                            onComplete()
+                        }
+                        .navigationBarBackButtonHidden(true)
+                    }
+                }
         }
     }
 }
@@ -531,7 +629,6 @@ final class AppState: ObservableObject {
         let email = draft.email.trimmingCharacters(in: .whitespacesAndNewlines)
         setUserDisplayName(name)
         setUserEmail(email)
-        setUserPhone(draft.phoneDigitsOnly)
         setHasCompletedSignUp(true)
     }
 
@@ -549,8 +646,13 @@ final class AppState: ObservableObject {
                 currentPet = fetched.first
             }
             resolveWidgetPetId()
-            if !fetched.isEmpty {
+            if !fetched.isEmpty, OnboardingDraftStore.load()?.context != .firstPet {
                 setHasCompletedOnboarding(true)
+            }
+            if let displayable = displayablePets.first(where: { $0.id == currentPet?.id }) {
+                currentPet = displayable
+            } else {
+                currentPet = displayablePets.first ?? currentPet
             }
             syncHomeGeofenceFromCurrentPet()
             await syncWidgetSnapshot()
@@ -562,11 +664,14 @@ final class AppState: ObservableObject {
 
     private func resolveWidgetPetId() {
         if let widgetPetId,
-           pets.contains(where: { $0.id == widgetPetId }) {
+           displayablePets.contains(where: { $0.id == widgetPetId }) {
             return
         }
-        if let firstPet = pets.first {
+        if let firstPet = displayablePets.first {
             setWidgetPetId(firstPet.id)
+        } else if displayablePets.isEmpty, !pets.isEmpty {
+            // Keep widget pet if only hidden incomplete pets remain.
+            return
         } else {
             setWidgetPetId(nil)
         }
@@ -586,9 +691,19 @@ final class AppState: ObservableObject {
         return pets.first { $0.id == widgetPetId } ?? pets.first
     }
 
-    var canAddPet: Bool { pets.count < Self.maxPets }
+    var canAddPet: Bool { displayablePets.count < Self.maxPets }
 
-    var availablePets: [Pet] { pets }
+    var displayablePets: [Pet] {
+        let pendingId = OnboardingDraftStore.pendingPetId
+        return pets.filter { pet in
+            guard pet.name == "unnamed", let pendingId, pet.id == pendingId else {
+                return true
+            }
+            return false
+        }
+    }
+
+    var availablePets: [Pet] { displayablePets }
 
     func setWidgetPet(_ pet: Pet) {
         setWidgetPetId(pet.id)
@@ -680,11 +795,22 @@ final class AppState: ObservableObject {
         currentPet = pet
     }
 
+    /// Clears in-progress onboarding draft and any incomplete server pet row.
+    func abandonPendingOnboardingDraft() async {
+        if let petId = OnboardingDraftStore.pendingPetId {
+            stopSyncingExpressions()
+            try? await supabase.deletePet(petId: petId)
+            removePetLocally(petId: petId)
+        }
+        OnboardingDraftStore.clear()
+    }
+
     /// Clears session, pet, and cached profile so the app returns to sign-in.
     func signOut() async {
         stopSyncingExpressions()
         MessageScheduler.shared.cancelBeenGoneNotifications()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
+        OnboardingDraftStore.clear()
         applyUnauthenticatedState()
         setHasCompletedOnboarding(false)
         setUserDisplayName("")
@@ -702,6 +828,7 @@ final class AppState: ObservableObject {
         for petId in petIds {
             ChatHistoryStore.clearHistory(for: petId)
         }
+        OnboardingDraftStore.clear()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         applyUnauthenticatedState()
         setHasCompletedOnboarding(false)

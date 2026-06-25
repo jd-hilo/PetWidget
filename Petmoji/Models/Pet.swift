@@ -195,9 +195,24 @@ enum PetExpression: String, Codable, CaseIterable {
 
 enum PersonalityTrait: String, Codable, CaseIterable {
     case dramatic, lazy, chaotic, sweet, judgy, needy
-    case aloof, hyper, foodie, anxious, mischievous, stoic
+    case aloof, hyper, foodie, anxious, sneaky, stoic
 
     var displayName: String { rawValue.capitalized }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let raw = try container.decode(String.self)
+        if raw == "mischievous" {
+            self = .sneaky
+        } else if let value = PersonalityTrait(rawValue: raw) {
+            self = value
+        } else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Unknown personality trait: \(raw)"
+            )
+        }
+    }
 }
 
 enum PetTrigger: String, Codable, CaseIterable, Hashable {
@@ -213,6 +228,8 @@ enum PetTrigger: String, Codable, CaseIterable, Hashable {
     case carRides = "car rides"
     case birds
     case foodDelivery = "food delivery"
+    case separationAnxiety = "separation anxiety"
+    case loneliness
 
     var displayName: String { rawValue.capitalized }
 

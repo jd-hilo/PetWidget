@@ -8,6 +8,7 @@ struct PhotoPickerView: View {
     @ObservedObject var draft: OnboardingDraft
     let onNext: () -> Void
     var onCancel: (() -> Void)?
+    var onProgressChange: (() -> Void)? = nil
 
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var isLoadingPhotos = false
@@ -49,21 +50,30 @@ struct PhotoPickerView: View {
                                 label: Species.dog.displayName.lowercased(),
                                 iconAssetName: "dogIcon",
                                 isSelected: draft.species == .dog,
-                                action: { draft.species = .dog }
+                                action: {
+                                    draft.species = .dog
+                                    onProgressChange?()
+                                }
                             )
 
                             SpeciesTileButton(
                                 label: Species.cat.displayName.lowercased(),
                                 iconAssetName: "catIcon",
                                 isSelected: draft.species == .cat,
-                                action: { draft.species = .cat }
+                                action: {
+                                    draft.species = .cat
+                                    onProgressChange?()
+                                }
                             )
                         }
 
                         SpeciesWideButton(
                             label: Species.other.displayName.lowercased(),
                             isSelected: draft.species == .other,
-                            action: { draft.species = .other }
+                            action: {
+                                draft.species = .other
+                                onProgressChange?()
+                            }
                         )
                     }
                     .padding(.horizontal, 24)
@@ -106,6 +116,7 @@ struct PhotoPickerView: View {
                     draft.photos = images
                     draft.photoData = dataItems
                     isLoadingPhotos = false
+                    onProgressChange?()
                 }
             }
         }

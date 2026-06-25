@@ -18,6 +18,10 @@ struct PetHomeView: View {
     @State private var showAddPetOnboarding = false
     @State private var selectedPetForChatRoom: Pet?
     @State private var showChatRoom = false
+    @State private var showResumeSecondPetPrompt = false
+    @State private var showAddPetConfirm = false
+    @State private var didShowResumePrompt = false
+    @State private var declinedResumeOnce = false
     @AppStorage("petHomeExpandedPetIDs") private var expandedPetIDsRaw = ""
 
     private var pets: [Pet] { appState.availablePets }
@@ -49,6 +53,8 @@ struct PetHomeView: View {
                     HomeHeader(
                         greeting: greeting,
                         petCount: pets.count,
+                        canAddPet: appState.canAddPet,
+                        onAddPet: handleAddPetTapped,
                         onShowSettings: { showSettings = true }
                     )
                     .padding(.horizontal, horizontalInset)
@@ -110,13 +116,6 @@ struct PetHomeView: View {
                                     )
                                     .frame(maxWidth: .infinity)
                                 }
-
-                                if appState.canAddPet {
-                                    PMSageCTAButton(title: "add another pet") {
-                                        showAddPetOnboarding = true
-                                    }
-                                    .padding(.top, 4)
-                                }
                             }
                         }
                         .padding(.horizontal, horizontalInset)
@@ -168,7 +167,59 @@ struct PetHomeView: View {
             if case .openChat = appState.pendingWidgetDeepLink {
                 openDeepLinkedChat()
             }
+            presentResumeSecondPetPromptIfNeeded()
         }
+        .alert(OnboardingResumePrompt.title(isSecondPet: true), isPresented: $showResumeSecondPetPrompt) {
+            Button("Continue") {
+                declinedResumeOnce = false
+                showAddPetOnboarding = true
+            }
+            Button("Not now", role: .cancel) {
+                handleResumeDeclined()
+            }
+        } message: {
+            Text(OnboardingResumePrompt.message)
+        }
+        .alert("Add another pet?", isPresented: $showAddPetConfirm) {
+            Button("Add pet") {
+                showAddPetOnboarding = true
+            }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("Create a second pet with its own personality, sprites, and messages.")
+        }
+    }
+
+    private func handleAddPetTapped() {
+        guard appState.canAddPet else { return }
+        if OnboardingDraftStore.hasPendingAdditionalPetDraft {
+            showResumeSecondPetPrompt = true
+        } else {
+            showAddPetConfirm = true
+        }
+    }
+
+    private func handleResumeDeclined() {
+        if declinedResumeOnce {
+            declinedResumeOnce = false
+            Task { await abandonPendingAdditionalPetDraft() }
+        } else {
+            declinedResumeOnce = true
+        }
+    }
+
+    @MainActor
+    private func abandonPendingAdditionalPetDraft() async {
+        await appState.abandonPendingOnboardingDraft()
+    }
+
+    private func presentResumeSecondPetPromptIfNeeded() {
+        guard !didShowResumePrompt,
+              OnboardingDraftStore.hasPendingAdditionalPetDraft else {
+            return
+        }
+        didShowResumePrompt = true
+        showResumeSecondPetPrompt = true
     }
 
     private func openDeepLinkedChat() {
@@ -301,11 +352,37 @@ struct PetHomeView: View {
     }
 }
 
+private struct HomeChromeIconButton: View {
+    @Environment(\.petmojiPalette) private var palette
+
+    let systemName: String
+    let accessibilityLabel: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(palette.iconTint)
+                .frame(width: 56, height: 56)
+                .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(palette.chromeButtonStroke, lineWidth: 1.25)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
 private struct HomeHeader: View {
     @Environment(\.petmojiPalette) private var palette
 
     let greeting: String
     let petCount: Int
+    let canAddPet: Bool
+    let onAddPet: () -> Void
     let onShowSettings: () -> Void
 
     private var checkInText: String {
@@ -330,18 +407,20 @@ private struct HomeHeader: View {
                     .minimumScaleFactor(0.9)
             }
             Spacer(minLength: 8)
-            Button(action: onShowSettings) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(palette.iconTint)
-                    .frame(width: 56, height: 56)
-                    .background(palette.chromeButtonFill, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .strokeBorder(palette.chromeButtonStroke, lineWidth: 1.25)
+            HStack(spacing: 8) {
+                if canAddPet {
+                    HomeChromeIconButton(
+                        systemName: "plus",
+                        accessibilityLabel: "add another pet",
+                        action: onAddPet
                     )
+                }
+                HomeChromeIconButton(
+                    systemName: "gearshape.fill",
+                    accessibilityLabel: "settings",
+                    action: onShowSettings
+                )
             }
-            .buttonStyle(.plain)
         }
     }
 }
@@ -360,10 +439,15 @@ private struct PetCardHeroSprite: View {
     var isBreathing: Bool = false
     var showsCircleStroke: Bool = false
 
-    private let breatheScale: CGFloat = 1.02
+    private let breatheScale: CGFloat = 0.985
 
     var body: some View {
-        SpriteImageView(urlString: urlString, contentMode: .fill)
+        SpriteImageView(urlString: urlString, contentMode: .fit)
+            .scaleEffect(isBreathing ? breatheScale : 1.0)
+            .animation(
+                isBreathing ? .easeInOut(duration: 2.5).repeatForever(autoreverses: true) : nil,
+                value: isBreathing
+            )
             .frame(width: width, height: height)
             .geometryGroup()
             .matchedGeometryEffect(id: heroGeometryID, in: heroNamespace, properties: .frame)
@@ -374,11 +458,6 @@ private struct PetCardHeroSprite: View {
                         .strokeBorder(palette.border.opacity(0.85), lineWidth: 1.25)
                 }
             }
-            .scaleEffect(isBreathing ? breatheScale : 1.0)
-            .animation(
-                isBreathing ? .easeInOut(duration: 2.5).repeatForever(autoreverses: true) : nil,
-                value: isBreathing
-            )
     }
 }
 
@@ -485,13 +564,12 @@ private struct ExpandedPetCardContent: View {
 
             Button(action: onOpenChatRoom) {
                 VStack(spacing: 14) {
-                    let spriteWidth = max(170, contentWidth - 56)
-                    let spriteHeight = spriteWidth * 0.9
+                    let spriteSize = max(170, contentWidth - 56)
 
                     PetCardHeroSprite(
                         urlString: spriteURL,
-                        width: spriteWidth,
-                        height: spriteHeight,
+                        width: spriteSize,
+                        height: spriteSize,
                         cornerRadius: 28,
                         heroGeometryID: heroGeometryID,
                         heroNamespace: heroNamespace,

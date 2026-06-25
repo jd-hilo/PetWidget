@@ -164,7 +164,7 @@ struct PetmojiPalette: Equatable {
         chipSelectedStroke: Color.pmSageAccentDark.opacity(0.35),
         traitSelectedFg: .pmSageAccentDark,
         traitUnselectedFg: .pmSageTextPrimary,
-        traitSelectedBg: Color.pmSageAccent.opacity(0.22),
+        traitSelectedBg: Color.pmSageAccent.opacity(0.40),
         traitUnselectedBg: .pmSageSurface,
         traitSelectedBorder: .pmSageAccent,
         traitUnselectedBorder: Color.pmSageBorder.opacity(0.65),
@@ -210,7 +210,7 @@ struct PetmojiPalette: Equatable {
         chipSelectedStroke: Color.pmSageAccent.opacity(0.55),
         traitSelectedFg: .white,
         traitUnselectedFg: Color.white.opacity(0.9),
-        traitSelectedBg: Color.pmSageAccent.opacity(0.42),
+        traitSelectedBg: Color.pmSageAccent.opacity(0.55),
         traitUnselectedBg: Color.white.opacity(0.10),
         traitSelectedBorder: Color.pmSageAccent,
         traitUnselectedBorder: Color.white.opacity(0.28),
@@ -415,12 +415,21 @@ struct PMSageEdgePattern: View {
     ) -> some View {
         let absoluteX = size.width * relativePoint.x
         let absoluteY = size.height * relativePoint.y
+        let effectiveOpacity = patternSymbolOpacity(for: systemName, base: opacity)
 
         return Image(systemName: systemName)
             .font(.system(size: iconSize, weight: .medium))
-            .foregroundStyle(palette.patternSymbol.opacity(opacity))
+            .foregroundStyle(palette.patternSymbol.opacity(effectiveOpacity))
             .rotationEffect(.degrees(rotation))
             .position(x: absoluteX, y: absoluteY)
+    }
+
+    /// Filled symbols read heavier than outlines on the light sage backdrop.
+    private func patternSymbolOpacity(for systemName: String, base: Double) -> Double {
+        guard palette.visualStyle == .classic, systemName.hasSuffix(".fill") else {
+            return base
+        }
+        return base * 0.62
     }
 }
 
@@ -596,6 +605,7 @@ struct PMTraitPill: View {
 
     let trait: PersonalityTrait
     let isSelected: Bool
+    var isProminent: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -605,18 +615,34 @@ struct PMTraitPill: View {
             action()
         }) {
             Text(trait.displayName)
-                .font(.bodyM)
+                .font(isProminent ? .bodyL : .bodyM)
+                .fontWeight(isSelected ? .bold : .regular)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
                 .foregroundStyle(isSelected ? palette.traitSelectedFg : palette.traitUnselectedFg)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .padding(.leading, isProminent ? 14 : 12)
+                .padding(.trailing, isProminent ? 26 : 22)
+                .padding(.vertical, isProminent ? 13 : 10)
                 .background(
                     isSelected ? palette.traitSelectedBg : palette.traitUnselectedBg,
                     in: Capsule()
                 )
                 .overlay(
                     Capsule()
-                        .strokeBorder(isSelected ? palette.traitSelectedBorder : palette.traitUnselectedBorder, lineWidth: 1.5)
+                        .strokeBorder(
+                            isSelected ? palette.traitSelectedBorder : palette.traitUnselectedBorder,
+                            lineWidth: isSelected ? 2 : 1.5
+                        )
                 )
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: isProminent ? 11 : 9, weight: .bold))
+                        .foregroundStyle(palette.traitSelectedFg)
+                        .padding(.trailing, isProminent ? 10 : 8)
+                        .opacity(isSelected ? 1 : 0)
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(SpringButtonStyle())
     }
@@ -629,6 +655,7 @@ struct PMChip: View {
 
     let label: String
     let isSelected: Bool
+    var isProminent: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -639,23 +666,23 @@ struct PMChip: View {
         }) {
             HStack {
                 Text(label)
-                    .font(.bodyM)
+                    .font(isProminent ? .bodyL : .bodyM)
                     .foregroundStyle(isSelected ? .white : palette.textPrimary)
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: isProminent ? 14 : 12, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, isProminent ? 18 : 16)
+            .padding(.vertical, isProminent ? 17 : 14)
             .background(
                 isSelected ? palette.accent : palette.chipUnselectedBg,
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                in: RoundedRectangle(cornerRadius: isProminent ? 18 : 16, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: isProminent ? 18 : 16, style: .continuous)
                     .strokeBorder(isSelected ? palette.chipSelectedStroke : palette.chipUnselectedStroke, lineWidth: 1)
             )
         }
@@ -798,7 +825,7 @@ struct PMOnboardingIconProgressBar: View {
     let total: Int
     let current: Int
 
-    /// First half of steps use bone icons, second half use fish-bone icons (matches 4-step onboarding: photo → personality → reveal → widget).
+    /// First half of steps use bone icons, second half use fish-bone icons (matches 5-step onboarding: photo → personality → reveal → widget → location).
     private let boneOutlineAsset = "boneIcon"
     private let boneFillAsset = "bonefillIcon"
     private let fishOutlineAsset = "fishBoneIcon"
@@ -891,6 +918,36 @@ extension View {
     /// Progress in the nav bar principal slot.
     func pmOnboardingToolbar(total: Int, current: Int) -> some View {
         modifier(PMOnboardingToolbarModifier(total: total, current: current))
+    }
+
+    /// Large onboarding screen title in the nav bar principal slot.
+    func pmOnboardingScreenTitle(_ title: String, titleTopPadding: CGFloat = 0) -> some View {
+        modifier(PMOnboardingScreenTitleModifier(title: title, titleTopPadding: titleTopPadding))
+    }
+}
+
+struct PMOnboardingScreenTitleModifier: ViewModifier {
+    @Environment(\.petmojiPalette) private var palette
+
+    let title: String
+    var titleTopPadding: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(title)
+                        .font(.titleL)
+                        .foregroundStyle(palette.accentDark)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.9)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, titleTopPadding)
+                }
+            }
     }
 }
 

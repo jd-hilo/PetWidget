@@ -7,8 +7,12 @@ struct ExpressionRevealView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.petmojiPalette) private var palette
     var context: OnboardingContext = .firstPet
+    var initialPetName: String = ""
+    var initialSpriteRevealReady: Bool = false
+    var isDraftReady: Bool = true
     let onComplete: (Pet) -> Void
     var onCancel: (() -> Void)?
+    var onProgressChange: ((_ petName: String, _ isSpriteRevealReady: Bool) -> Void)? = nil
     var skipGenerationForDebug: Bool = false
     var useMockSpritesForDebug: Bool = false
 
@@ -22,6 +26,7 @@ struct ExpressionRevealView: View {
     @State private var thumbnailsVisible = [Bool](repeating: false, count: 6)
     @State private var createdPetId: UUID?
     @State private var nameDebounceTask: Task<Void, Never>?
+    @State private var progressDebounceTask: Task<Void, Never>?
     @State private var expressionSyncTask: Task<Void, Never>?
     @FocusState private var isNameFieldFocused: Bool
 
@@ -47,6 +52,11 @@ struct ExpressionRevealView: View {
         return filled < 6
     }
 
+    private var isRevealComplete: Bool {
+        if case .done = generationState { return true }
+        return false
+    }
+
     var body: some View {
         ZStack {
             PMSageScreenBackdrop()
@@ -65,7 +75,11 @@ struct ExpressionRevealView: View {
             }
         }
         .navigationBarBackButtonHidden(isGenerating)
-        .task {
+        .task(id: isDraftReady) {
+            guard isDraftReady else { return }
+            if !initialPetName.isEmpty, name.isEmpty {
+                name = initialPetName
+            }
             if skipGenerationForDebug {
                 if useMockSpritesForDebug {
 #if DEBUG
@@ -79,6 +93,15 @@ struct ExpressionRevealView: View {
             }
         }
         .onChange(of: name) { _, newName in
+            progressDebounceTask?.cancel()
+            progressDebounceTask = Task {
+                try? await Task.sleep(nanoseconds: 300_000_000)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    onProgressChange?(newName, isRevealComplete)
+                }
+            }
+
             guard let petId = createdPetId else { return }
             nameDebounceTask?.cancel()
             nameDebounceTask = Task {
@@ -89,6 +112,7 @@ struct ExpressionRevealView: View {
         }
         .onDisappear {
             expressionSyncTask?.cancel()
+            progressDebounceTask?.cancel()
         }
     }
 
@@ -246,6 +270,40 @@ struct ExpressionRevealView: View {
     // MARK: - Generation Logic
 
     private func startGeneration() async {
+        await resolvePendingPetIfNeeded()
+
+        if initialSpriteRevealReady, let pet = draft.completedPet {
+            await resumeFromExistingPet(pet)
+            return
+        }
+
+        if let existingPet = draft.completedPet, existingPet.expressions.happy != nil {
+            await resumeFromExistingPet(existingPet)
+            return
+        }
+
+        if let existingPet = draft.completedPet {
+            await resumeInProgressGeneration(for: existingPet)
+            return
+        }
+
+        if OnboardingDraftStore.pendingPetId != nil {
+            // A server row exists for this draft — never create another pet.
+            if let petId = OnboardingDraftStore.pendingPetId,
+               let pet = try? await SupabaseService.shared.fetchPet(by: petId) {
+                await MainActor.run {
+                    draft.completedPet = pet
+                    draft.generatedExpressions = pet.expressions
+                }
+                if pet.expressions.happy != nil {
+                    await resumeFromExistingPet(pet)
+                } else {
+                    await resumeInProgressGeneration(for: pet)
+                }
+            }
+            return
+        }
+
         UIApplication.shared.isIdleTimerDisabled = true
         defer { UIApplication.shared.isIdleTimerDisabled = false }
 
@@ -261,6 +319,7 @@ struct ExpressionRevealView: View {
             await MainActor.run {
                 draft.completedPet = pet
                 createdPetId = pet.id
+                onProgressChange?(name, false)
             }
 
             // 3. Upload photos
@@ -297,6 +356,7 @@ struct ExpressionRevealView: View {
                 draft.completedPet = snapshot
             }
             generationState = .done
+            markSpriteRevealReady()
 
             // Start polling for the remaining 5 expressions written by Stage B.
             startExpressionSync(petId: pet.id)
@@ -305,9 +365,49 @@ struct ExpressionRevealView: View {
         }
     }
 
+    private func resolvePendingPetIfNeeded() async {
+        guard draft.completedPet == nil else { return }
+        guard let petId = OnboardingDraftStore.pendingPetId else { return }
+        guard let pet = try? await SupabaseService.shared.fetchPet(by: petId) else { return }
+        await MainActor.run {
+            draft.completedPet = pet
+            draft.generatedExpressions = pet.expressions
+        }
+    }
+
+    @MainActor
+    private func resumeInProgressGeneration(for pet: Pet) async {
+        createdPetId = pet.id
+        expressions = pet.expressions
+        draft.generatedExpressions = pet.expressions
+        generationState = .generating
+        startExpressionSync(petId: pet.id, revealWhenHappyArrives: true)
+    }
+
+    @MainActor
+    private func markSpriteRevealReady() {
+        onProgressChange?(name, true)
+    }
+
+    @MainActor
+    private func resumeFromExistingPet(_ pet: Pet) {
+        createdPetId = pet.id
+        expressions = pet.expressions
+        draft.generatedExpressions = pet.expressions
+        if !initialPetName.isEmpty {
+            name = initialPetName
+        } else if pet.name != "unnamed" {
+            name = pet.name
+        }
+        generationState = .done
+        spriteVisible = true
+        markSpriteRevealReady()
+        startExpressionSync(petId: pet.id)
+    }
+
     /// Polls the pet row and merges newly-written expressions into local state
     /// so the UI fills in thumbnails as Stage B completes.
-    private func startExpressionSync(petId: UUID) {
+    private func startExpressionSync(petId: UUID, revealWhenHappyArrives: Bool = false) {
         expressionSyncTask?.cancel()
         expressionSyncTask = Task {
             do {
@@ -319,6 +419,11 @@ struct ExpressionRevealView: View {
                         if var snapshot = draft.completedPet {
                             snapshot.expressions = partial
                             draft.completedPet = snapshot
+                        }
+                        if revealWhenHappyArrives, partial.happy != nil, !isRevealComplete {
+                            generationState = .done
+                            spriteVisible = true
+                            markSpriteRevealReady()
                         }
                     }
                 }
@@ -631,166 +736,5 @@ struct ExpressionThumbnail: View {
             y: 0
         )
         .opacity(isLoading ? 0.85 : 1)
-    }
-}
-
-// MARK: - Widget Setup View
-
-struct WidgetSetupView: View {
-    @EnvironmentObject private var appState: AppState
-    @Environment(\.petmojiPalette) private var palette
-    @ObservedObject private var locationService = LocationService.shared
-
-    var pet: Pet?
-    let onDone: () -> Void
-    var onCancel: (() -> Void)?
-
-    @State private var isSavingHome = false
-    @State private var homeSaved = false
-    @State private var skippedHome = false
-    @State private var homeError: String?
-    @State private var showLocationConsentPrompt = false
-
-    private var resolvedPet: Pet? {
-        pet ?? appState.currentPet ?? appState.availablePets.first
-    }
-
-    private var canFinish: Bool {
-        resolvedPet != nil && !isSavingHome
-    }
-
-    var body: some View {
-        ZStack {
-            PMSageScreenBackdrop()
-
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
-                    Text("📱")
-                        .font(.system(size: 64))
-                        .padding(.top, 16)
-
-                    VStack(spacing: 12) {
-                        Text("add to home screen")
-                            .font(.displayL)
-                            .foregroundStyle(palette.accentDark)
-                            .multilineTextAlignment(.center)
-                        Text("long press your home screen → tap +\n→ search Petmoji → add widget")
-                            .font(.bodyL)
-                            .foregroundStyle(palette.textSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("leave-home reactions")
-                            .font(.titleL)
-                            .foregroundStyle(palette.accentDark)
-                        Text("Set your home so your pet can notice when you leave and send you messages.")
-                            .font(.bodyM)
-                            .foregroundStyle(palette.textSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        if homeSaved {
-                            Label("Home location saved", systemImage: "checkmark.circle.fill")
-                                .font(.bodyM)
-                                .foregroundStyle(palette.accentDark)
-                        } else if !skippedHome {
-                            PMSageCTAButton(
-                                title: isSavingHome ? "saving home…" : "use current location as home",
-                                action: { saveHomeFromCurrentLocation() },
-                                isEnabled: resolvedPet != nil && !isSavingHome
-                            )
-
-                            Button("skip for now") {
-                                skippedHome = true
-                                homeError = nil
-                            }
-                            .font(.bodyM)
-                            .foregroundStyle(palette.textSecondary)
-                            .frame(maxWidth: .infinity)
-                        }
-
-                        if let homeError {
-                            Text(homeError)
-                                .font(.bodyS)
-                                .foregroundStyle(.red.opacity(0.9))
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-
-                        if locationService.needsAlwaysForLeaveHomeAlerts {
-                            Text("Choose Always Allow for location so your pet can react when you leave home in the background.")
-                                .font(.bodyS)
-                                .foregroundStyle(palette.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                    .padding(16)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(palette.elevatedCardFill, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .strokeBorder(palette.elevatedCardStroke, lineWidth: 1.2)
-                    )
-
-                    VStack(spacing: 12) {
-                        PMSageCTAButton(
-                            title: isSavingHome ? "saving home…" : "done, let's go →",
-                            action: finishOnboarding,
-                            isEnabled: canFinish
-                        )
-                        if let onCancel {
-                            PMOnboardingCancelButton(action: onCancel)
-                        }
-                    }
-                    .padding(.bottom, 40)
-                }
-                .padding(.horizontal, 24)
-            }
-        }
-        .alert("Enable leave-home reactions?", isPresented: $showLocationConsentPrompt) {
-            Button("Use Current Location") {
-                saveHomeFromCurrentLocation(finishAfterSave: true)
-            }
-            Button("Not Now", role: .cancel) {
-                skippedHome = true
-                homeError = nil
-                onDone()
-            }
-        } message: {
-            Text("Petmoji will save this spot as home so your pet can react when you leave and come back. You can turn this off later in Settings.")
-        }
-    }
-
-    private func finishOnboarding() {
-        if homeSaved || skippedHome {
-            onDone()
-        } else {
-            showLocationConsentPrompt = true
-        }
-    }
-
-    private func saveHomeFromCurrentLocation(finishAfterSave: Bool = false) {
-        guard let resolvedPet else {
-            homeError = "Create your pet first, then set home."
-            return
-        }
-        homeError = nil
-        isSavingHome = true
-        Task {
-            defer { isSavingHome = false }
-            do {
-                try await locationService.saveCurrentLocationAsHome(
-                    petId: resolvedPet.id,
-                    petName: resolvedPet.name
-                ) { lat, lng in
-                    appState.updatePetHome(petId: resolvedPet.id, lat: lat, lng: lng)
-                }
-                homeSaved = true
-                if finishAfterSave {
-                    onDone()
-                }
-            } catch {
-                homeError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            }
-        }
     }
 }

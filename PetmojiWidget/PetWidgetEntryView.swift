@@ -46,7 +46,8 @@ struct SmallWidgetView: View {
                     showsBorder: false,
                     knockoutWhiteMatte: true,
                     knockoutDarkMatte: true,
-                    spriteScale: 1.28
+                    clipsToCircle: false,
+                    spriteScale: entry.spriteFitScale
                 )
                 Spacer(minLength: 0)
             }
@@ -92,7 +93,7 @@ struct MediumWidgetView: View {
     }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .top, spacing: 6) {
             WidgetBoundSpriteCircle(
                 image: entry.spriteImage,
                 size: 136,
@@ -100,10 +101,11 @@ struct MediumWidgetView: View {
                 showsBorder: false,
                 knockoutWhiteMatte: true,
                 knockoutDarkMatte: true,
-                spriteScale: 1.24
+                clipsToCircle: false,
+                spriteScale: entry.spriteFitScale
             )
             .padding(.leading, 4)
-            .padding(.vertical, 4)
+            .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 6) {
                 WidgetBulletEmotionRow(
@@ -251,13 +253,21 @@ struct WidgetBoundSpriteCircle: View {
     var knockoutWhiteMatte: Bool = false
     /// When true, knocks out near-black backdrop pixels in the sprite (for sprites that ship with a dark matte).
     var knockoutDarkMatte: Bool = false
-    /// Zoom inside the circular clip before masking to the circle.
-    var spriteScale: CGFloat = 1.2
+    /// When false, the sprite is not masked to a circle (shows full square bounds).
+    var clipsToCircle: Bool = true
+    /// Scales the sprite down to fit opaque content (ears included) inside the slot. Never zooms in.
+    var spriteScale: CGFloat = 1.0
+
+    private var fitScale: CGFloat {
+        min(max(spriteScale, 0.5), 1.0)
+    }
 
     var body: some View {
         ZStack {
-            Circle()
-                .fill(diskFill)
+            if clipsToCircle {
+                Circle()
+                    .fill(diskFill)
+            }
 
             WidgetSpriteView(
                 image: image,
@@ -265,15 +275,28 @@ struct WidgetBoundSpriteCircle: View {
                 knockoutDarkMatte: knockoutDarkMatte
             )
             .frame(width: size, height: size)
-            .scaleEffect(spriteScale)
-            .clipShape(Circle())
+            .scaleEffect(fitScale)
+            .modifier(WidgetSpriteClipModifier(enabled: clipsToCircle))
         }
         .frame(width: size, height: size)
+        .clipped()
         .overlay {
             if showsBorder {
                 Circle()
                     .strokeBorder(borderColor, lineWidth: 1.6)
             }
+        }
+    }
+}
+
+private struct WidgetSpriteClipModifier: ViewModifier {
+    let enabled: Bool
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.clipShape(Circle())
+        } else {
+            content
         }
     }
 }
@@ -339,6 +362,74 @@ private extension WidgetExpression {
         case .missesYou: return "Misses You"
         case .judging: return "Judging"
         }
+    }
+}
+
+extension UIImage {
+    /// Downscales and scans alpha so tall ears near the canvas edge still fit after `scaledToFit`.
+    func widgetContentFitScale(targetMaxFill: CGFloat = 0.84) -> CGFloat {
+        guard let bounds = normalizedAlphaContentBounds() else { return 0.88 }
+        let maxFill = max(bounds.width, bounds.height)
+        guard maxFill > 0.001 else { return 0.88 }
+        if maxFill <= targetMaxFill { return 1.0 }
+        return targetMaxFill / maxFill
+    }
+
+    private func normalizedAlphaContentBounds() -> CGRect? {
+        guard let cgImage else { return nil }
+        let width = cgImage.width
+        let height = cgImage.height
+        guard width > 0, height > 0 else { return nil }
+
+        let maxSample = 128
+        let sampleScale = CGFloat(maxSample) / CGFloat(max(width, height))
+        let sampleWidth = max(1, Int((CGFloat(width) * sampleScale).rounded(.down)))
+        let sampleHeight = max(1, Int((CGFloat(height) * sampleScale).rounded(.down)))
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue
+        guard let context = CGContext(
+            data: nil,
+            width: sampleWidth,
+            height: sampleHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: sampleWidth * 4,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else { return nil }
+
+        context.interpolationQuality = .low
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: sampleWidth, height: sampleHeight))
+        guard let data = context.data else { return nil }
+
+        let pixels = data.bindMemory(to: UInt8.self, capacity: sampleWidth * sampleHeight * 4)
+        let alphaThreshold: UInt8 = 20
+        var minX = sampleWidth
+        var minY = sampleHeight
+        var maxX = 0
+        var maxY = 0
+        var found = false
+
+        for y in 0..<sampleHeight {
+            for x in 0..<sampleWidth {
+                let offset = (y * sampleWidth + x) * 4
+                if pixels[offset + 3] > alphaThreshold {
+                    found = true
+                    minX = min(minX, x)
+                    minY = min(minY, y)
+                    maxX = max(maxX, x)
+                    maxY = max(maxY, y)
+                }
+            }
+        }
+
+        guard found, maxX >= minX, maxY >= minY else { return nil }
+
+        let boundsWidth = CGFloat(maxX - minX + 1) / CGFloat(sampleWidth)
+        let boundsHeight = CGFloat(maxY - minY + 1) / CGFloat(sampleHeight)
+        let originX = CGFloat(minX) / CGFloat(sampleWidth)
+        let originY = CGFloat(minY) / CGFloat(sampleHeight)
+        return CGRect(x: originX, y: originY, width: boundsWidth, height: boundsHeight)
     }
 }
 

@@ -23,6 +23,8 @@ struct PetWidgetEntry: TimelineEntry {
     let petName: String
     let spriteURL: String?
     let spriteImageData: Data?     // Data is Sendable; convert to UIImage at render time
+    /// Scales the sprite down so opaque pixels (including tall ears) fit inside the widget slot.
+    let spriteFitScale: CGFloat
     let message: String
     let expression: WidgetExpression
 
@@ -32,6 +34,7 @@ struct PetWidgetEntry: TimelineEntry {
         petName: "Mochi",
         spriteURL: nil,
         spriteImageData: nil,
+        spriteFitScale: 0.88,
         message: "thinking about naps. and also snacks.",
         expression: .sleepy
     )
@@ -109,6 +112,10 @@ struct PetWidgetProvider: TimelineProvider {
         let spriteURL     = defaults?.string(forKey: "widget_sprite_url")
         let petId         = defaults?.string(forKey: "widget_pet_id").flatMap(UUID.init(uuidString:))
         let imageData     = await Self.downloadImageData(from: spriteURL)
+        let fitScale: CGFloat = {
+            guard let imageData, let image = UIImage(data: imageData) else { return 0.88 }
+            return image.widgetContentFitScale()
+        }()
 
         return PetWidgetEntry(
             date: .now,
@@ -116,6 +123,7 @@ struct PetWidgetProvider: TimelineProvider {
             petName: name,
             spriteURL: spriteURL,
             spriteImageData: imageData,
+            spriteFitScale: fitScale,
             message: message,
             expression: WidgetExpression(from: expressionStr)
         )

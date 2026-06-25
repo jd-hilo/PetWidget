@@ -15,16 +15,13 @@ struct HomeLocationSetupView: View {
     @State private var homeSaved = false
     @State private var skippedHome = false
     @State private var homeError: String?
+    @State private var titleHeight: CGFloat = 0
 
     private var resolvedPet: Pet? {
         pet ?? appState.currentPet ?? appState.availablePets.first
     }
 
-    private var canFinish: Bool {
-        (homeSaved || skippedHome) && !isSettingUp
-    }
-
-    private func videoMaxHeight(in availableHeight: CGFloat) -> CGFloat {
+    private func demoMaxHeight(in availableHeight: CGFloat) -> CGFloat {
         let subtextAndTop: CGFloat = 48
         return max(140, availableHeight - subtextAndTop - 8)
     }
@@ -35,26 +32,43 @@ struct HomeLocationSetupView: View {
 
             GeometryReader { geo in
                 let contentWidth = geo.size.width - 48
-                let maxVideoHeight = videoMaxHeight(in: geo.size.height)
+                let demoMaxHeight = demoMaxHeight(in: geo.size.height)
 
                 VStack(alignment: .leading, spacing: 8) {
+                    Spacer(minLength: 0)
+
+                    Text("want me to message when you leave home?")
+                        .font(.titleL)
+                        .foregroundStyle(palette.accentDark)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            GeometryReader { titleGeo in
+                                Color.clear
+                                    .preference(key: TitleHeightKey.self, value: titleGeo.size.height)
+                            }
+                        )
+
                     Text("turn on location and notifications for the best experience")
                         .font(.bodyS)
                         .foregroundStyle(palette.textSecondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
+                        .padding(.bottom, 20)
 
-                    OnboardingLoopingVideoPlayer(
-                        resourceName: "NotificationDemo",
+                    LocationNotificationDemoMockup(
+                        petName: resolvedPet?.name ?? "Mochi",
                         maxWidth: contentWidth,
-                        maxHeight: maxVideoHeight,
-                        accessibilityLabel: "Location and notification setup walkthrough video"
+                        maxHeight: demoMaxHeight
                     )
 
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
+                .offset(y: -((titleHeight + 8) / 2))
+                .onPreferenceChange(TitleHeightKey.self) { titleHeight = $0 }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 8) {
@@ -68,38 +82,24 @@ struct HomeLocationSetupView: View {
                         .frame(maxWidth: .infinity)
                 }
 
-                if !skippedHome {
-                    LocationTrackingPrimaryButton(
-                        title: locationButtonTitle,
-                        subtitle: locationButtonSubtitle,
-                        isLoading: isSettingUp,
-                        isEnabled: !homeSaved,
-                        action: enableLocationTracking
-                    )
-                    .disabled(isSettingUp || resolvedPet == nil || homeSaved)
-                }
-
-                PMSageCTAButton(
-                    title: "done, let's go →",
-                    action: onDone,
-                    isEnabled: canFinish
+                LocationTrackingPrimaryButton(
+                    title: locationButtonTitle,
+                    subtitle: locationButtonSubtitle,
+                    isLoading: isSettingUp,
+                    isEnabled: !homeSaved,
+                    action: enableLocationTracking
                 )
+                .disabled(isSettingUp || resolvedPet == nil || homeSaved)
 
-                if !homeSaved && !skippedHome {
-                    Button("Skip for now") {
-                        skippedHome = true
-                        homeError = nil
-                    }
-                    .font(.bodyM)
-                    .foregroundStyle(palette.textSecondary)
-                    .frame(maxWidth: .infinity)
-                } else {
-                    Text("You can always turn this on later in settings")
-                        .font(.bodyS)
-                        .foregroundStyle(palette.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
+                Button("Skip for now") {
+                    skippedHome = true
+                    homeError = nil
+                    onDone()
                 }
+                .font(.bodyM)
+                .foregroundStyle(palette.textSecondary)
+                .frame(maxWidth: .infinity)
+                .disabled(isSettingUp)
 
                 if let onCancel {
                     PMOnboardingCancelButton(action: onCancel)
@@ -109,7 +109,7 @@ struct HomeLocationSetupView: View {
             .padding(.bottom, 6)
             .background(Color.clear)
         }
-        .pmOnboardingScreenTitle("want me to message when you leave home?", titleTopPadding: 8)
+        .pmOnboardingScreenTitle("", titleTopPadding: 0)
     }
 
     private var locationButtonTitle: String {
@@ -150,12 +150,23 @@ struct HomeLocationSetupView: View {
                 }
                 homeSaved = true
                 homeError = nil
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                onDone()
             } catch let error as HomeLocationError {
                 homeError = error.errorDescription
             } catch {
                 homeError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             }
         }
+    }
+}
+
+// MARK: - Title height measurement
+
+private struct TitleHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

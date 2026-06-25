@@ -85,6 +85,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "-skipOnboardingToLocationTracking"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "-mockSprites"
             isEnabled = "NO">
          </CommandLineArgument>

@@ -83,6 +83,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
 struct RootView: View {
     @EnvironmentObject var appState: AppState
     @StateObject private var debugDraft = OnboardingDraft()
+#if DEBUG
+    @State private var showDebugLocationTracking = false
+#endif
 
     private var shouldSkipOnboardingToReveal: Bool {
 #if DEBUG
@@ -108,6 +111,22 @@ struct RootView: View {
 #endif
     }
 
+    private var shouldSkipOnboardingToLocationTracking: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-skipOnboardingToLocationTracking")
+#else
+        false
+#endif
+    }
+
+    private var isShowingDebugLocationTracking: Bool {
+#if DEBUG
+        showDebugLocationTracking || shouldSkipOnboardingToLocationTracking
+#else
+        false
+#endif
+    }
+
     private var shouldSkipSignUp: Bool {
 #if DEBUG
         ProcessInfo.processInfo.arguments.contains("-skipSignUp")
@@ -118,42 +137,14 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
-                DebugWidgetSetupFlowView(
-                    pet: makeDebugRogerPet(useMockSprites: shouldUseMockSprites),
-                    onSetPet: appState.setPet(_:),
-                    onComplete: { appState.setHasCompletedOnboarding(true) }
-                )
-            } else if shouldSkipOnboardingToReveal {
-                DebugRevealFlowView(
-                    draft: debugDraft,
-                    onSetPet: appState.setPet(_:),
-                    useMockSprites: shouldUseMockSprites
-                )
-            } else if appState.isBootstrapping || appState.isLoading {
-                BrandLandingView(mode: .loading)
-            } else if !appState.isAuthenticated && !shouldSkipSignUp {
-                if !appState.hasSeenWelcome {
-                    BrandLandingView(mode: .welcome) {
-                        appState.setHasSeenWelcome(true)
-                    }
-                } else {
-                    AuthCoordinator()
-                }
-            } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
-                NavigationStack {
-                    PetHomeView()
-                }
-            } else if appState.isAuthenticated {
-                FirstPetOnboardingGateView()
-            } else {
-                AuthCoordinator()
-            }
+            rootRoutingContent
         }
         .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
         .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         .task {
-            let skipNormalBootstrap = shouldSkipOnboardingToReveal || shouldSkipOnboardingToWidgetSetup
+            let skipNormalBootstrap = shouldSkipOnboardingToReveal
+                || shouldSkipOnboardingToWidgetSetup
+                || shouldSkipOnboardingToLocationTracking
 #if DEBUG
             let wantsTestNotifications = !debugTestPetMessageEvents.isEmpty
 #else
@@ -173,6 +164,61 @@ struct RootView: View {
             } else {
                 appState.markBootstrapComplete()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var rootRoutingContent: some View {
+#if DEBUG
+        if isShowingDebugLocationTracking {
+            DebugLocationTrackingFlowView(
+                pet: appState.currentPet ?? makeDebugRogerPet(useMockSprites: shouldUseMockSprites),
+                onSetPet: appState.setPet(_:),
+                onComplete: { appState.setHasCompletedOnboarding(true) },
+                onDismiss: shouldSkipOnboardingToLocationTracking ? nil : {
+                    showDebugLocationTracking = false
+                }
+            )
+        } else if shouldSkipOnboardingToWidgetSetup && appState.currentPet == nil {
+            DebugWidgetSetupFlowView(
+                pet: makeDebugRogerPet(useMockSprites: shouldUseMockSprites),
+                onSetPet: appState.setPet(_:),
+                onComplete: { appState.setHasCompletedOnboarding(true) }
+            )
+        } else if shouldSkipOnboardingToReveal {
+            DebugRevealFlowView(
+                draft: debugDraft,
+                onSetPet: appState.setPet(_:),
+                useMockSprites: shouldUseMockSprites
+            )
+        } else {
+            standardRootContent
+        }
+#else
+        standardRootContent
+#endif
+    }
+
+    @ViewBuilder
+    private var standardRootContent: some View {
+        if appState.isBootstrapping || appState.isLoading {
+            BrandLandingView(mode: .loading)
+        } else if !appState.isAuthenticated && !shouldSkipSignUp {
+            if !appState.hasSeenWelcome {
+                BrandLandingView(mode: .welcome) {
+                    appState.setHasSeenWelcome(true)
+                }
+            } else {
+                AuthCoordinator()
+            }
+        } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
+            NavigationStack {
+                PetHomeView()
+            }
+        } else if appState.isAuthenticated {
+            FirstPetOnboardingGateView()
+        } else {
+            AuthCoordinator()
         }
     }
 
@@ -290,6 +336,31 @@ struct RootView: View {
         return nil
     }
 #endif
+}
+
+private struct DebugLocationTrackingFlowView: View {
+    let pet: Pet
+    let onSetPet: (Pet) -> Void
+    let onComplete: () -> Void
+    var onDismiss: (() -> Void)?
+
+    var body: some View {
+        NavigationStack {
+            HomeLocationSetupView(pet: pet) {
+                onSetPet(pet)
+                onComplete()
+            }
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                if let onDismiss {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Close") { onDismiss() }
+                            .font(.bodyM)
+                    }
+                }
+            }
+        }
+    }
 }
 
 private struct DebugRevealFlowView: View {

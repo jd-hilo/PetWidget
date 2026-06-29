@@ -7,6 +7,10 @@ struct WidgetSetupView: View {
 
     let onNext: () -> Void
     var onCancel: (() -> Void)?
+    /// Primary button label. Defaults to the onboarding wording; settings passes its own.
+    var ctaTitle: String = "next: location tracking →"
+    /// Helper line under the CTA. Pass `nil` to hide (e.g. when shown from settings).
+    var subtitle: String? = "You can always add this later from settings"
 
     private let steps: [WidgetSetupStep] = [
         WidgetSetupStep(
@@ -73,15 +77,17 @@ struct WidgetSetupView: View {
         .safeAreaInset(edge: .bottom, spacing: 12) {
             VStack(spacing: 12) {
                 PMSageCTAButton(
-                    title: "next: location tracking →",
+                    title: ctaTitle,
                     action: onNext
                 )
 
-                Text("You can always add this later from settings")
-                    .font(.bodyS)
-                    .foregroundStyle(palette.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.bodyS)
+                        .foregroundStyle(palette.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                }
 
                 if let onCancel {
                     PMOnboardingCancelButton(action: onCancel)

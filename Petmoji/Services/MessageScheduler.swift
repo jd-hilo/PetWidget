@@ -1,5 +1,6 @@
 import Foundation
 import UserNotifications
+import UIKit
 import WidgetKit
 
 // MARK: - Message Scheduler (local notifications for time/location events)
@@ -21,10 +22,33 @@ final class MessageScheduler {
     func requestNotificationPermission() async -> Bool {
         let settings = await center.notificationSettings()
         guard settings.authorizationStatus == .notDetermined else {
-            return settings.authorizationStatus == .authorized
+            let authorized = settings.authorizationStatus == .authorized
+            // Already decided — make sure we have a fresh APNs token for the server to push to.
+            if authorized { registerForRemoteNotifications() }
+            return authorized
         }
-        let granted = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
-        return granted ?? false
+        let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        // Obtaining the APNs device token requires an explicit registration call; without it
+        // `didRegisterForRemoteNotificationsWithDeviceToken` never fires and no token is stored,
+        // so the server has nothing to send a push to.
+        if granted { registerForRemoteNotifications() }
+        return granted
+    }
+
+    /// Registers with APNs for a device token when the user has already authorized notifications.
+    /// Safe to call on every foreground — APNs tokens can rotate, and re-registering refreshes them.
+    func registerForPushIfAuthorized() async {
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            registerForRemoteNotifications()
+        default:
+            break
+        }
+    }
+
+    private func registerForRemoteNotifications() {
+        UIApplication.shared.registerForRemoteNotifications()
     }
 
     // MARK: - Been gone follow-ups (AI messages via background refresh at ~2h / ~6h)

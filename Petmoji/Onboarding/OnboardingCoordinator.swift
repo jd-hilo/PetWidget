@@ -122,8 +122,14 @@ struct OnboardingCoordinator: View {
                 case .widgetSetup:
                     WidgetSetupView(
                         onNext: {
-                            path.append(.locationTracking)
-                            persistProgress(topStep: .locationTracking)
+                            // Ask for notifications here so users who later skip location
+                            // tracking still get prompted (idempotent — the location step's
+                            // request becomes a no-op once permission is determined).
+                            Task {
+                                _ = await MessageScheduler.shared.requestNotificationPermission()
+                                path.append(.locationTracking)
+                                persistProgress(topStep: .locationTracking)
+                            }
                         },
                         onCancel: additionalPetCancelAction
                     )

@@ -363,7 +363,14 @@ final class SupabaseService: @unchecked Sendable {
 
     func registerDeviceToken(_ token: String) async throws {
         let userId = try await currentUserId()
-        let environment = Bundle.main.object(forInfoDictionaryKey: "APS_ENVIRONMENT") as? String ?? "development"
+        // The APNs token's environment must match how the build is signed: debug installs use the
+        // sandbox APNs environment, while Release (TestFlight/App Store) use production. The server
+        // routes the push host/topic/key off this value, so a wrong label means pushes never arrive.
+        #if DEBUG
+        let environment = "development"
+        #else
+        let environment = "production"
+        #endif
         try await client
             .from("device_tokens")
             .upsert([

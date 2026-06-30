@@ -39,6 +39,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         Task { @MainActor in
+            // Re-register for APNs each foreground so an authorized user always has a current
+            // device token stored server-side (tokens can rotate); otherwise pushes never fire.
+            await MessageScheduler.shared.registerForPushIfAuthorized()
             await PetMessageDelivery.refreshWidgetFromServer()
         }
     }
@@ -71,11 +74,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
         await PetMessageDelivery.refreshWidgetFromServer()
     }
 
+    // A push arriving while the app is in the foreground only triggers `willPresent`
+    // (not `didReceiveRemoteNotification`), so refresh the widget here too — otherwise the
+    // widget stays stale until the app is next backgrounded/foregrounded.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        Task { @MainActor in
+            await PetMessageDelivery.refreshWidgetFromServer()
+        }
         completionHandler([.banner, .sound, .list])
     }
 }

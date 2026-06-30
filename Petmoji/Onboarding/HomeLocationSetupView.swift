@@ -15,6 +15,7 @@ struct HomeLocationSetupView: View {
     @State private var homeSaved = false
     @State private var skippedHome = false
     @State private var homeError: String?
+    @State private var showSaveHomePrompt = false
     @State private var titleHeight: CGFloat = 0
 
     private var resolvedPet: Pet? {
@@ -110,6 +111,12 @@ struct HomeLocationSetupView: View {
             .background(Color.clear)
         }
         .pmOnboardingScreenTitle("", titleTopPadding: 0)
+        .alert("Save your current location as home?", isPresented: $showSaveHomePrompt) {
+            Button("Save current location") { saveHomeFromPrompt() }
+            Button("Not now", role: .cancel) { onDone() }
+        } message: {
+            Text("Save your current location as \(resolvedPet?.name ?? "your pet")'s home so they can react when you leave and come back. You can change this anytime in settings.")
+        }
     }
 
     private var locationButtonTitle: String {
@@ -141,6 +148,27 @@ struct HomeLocationSetupView: View {
                     return
                 }
 
+                // Permission granted — turn tracking on, then ask before capturing home.
+                locationService.setLocationTrackingEnabled(true)
+                showSaveHomePrompt = true
+            } catch let error as HomeLocationError {
+                homeError = error.errorDescription
+            } catch {
+                homeError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            }
+        }
+    }
+
+    private func saveHomeFromPrompt() {
+        guard let resolvedPet else {
+            onDone()
+            return
+        }
+        homeError = nil
+        isSettingUp = true
+        Task {
+            defer { isSettingUp = false }
+            do {
                 try await locationService.saveCurrentLocationAsHome(
                     petId: resolvedPet.id,
                     petName: resolvedPet.name,

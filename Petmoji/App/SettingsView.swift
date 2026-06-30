@@ -25,6 +25,8 @@ struct SettingsView: View {
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: String?
     @State private var showSignOutConfirm = false
+    @State private var showWidgetInstructions = false
+    @State private var showSaveHomePrompt = false
     @State private var isUpdatingHome = false
     @State private var homeLocationError: String?
     @ObservedObject private var locationService = LocationService.shared
@@ -137,6 +139,14 @@ struct SettingsView: View {
         } message: {
             Text("Change \(committedPetName)'s name to \(pendingPetName)?")
         }
+        .alert("Set \(pet?.name ?? "your pet")'s home?", isPresented: $showSaveHomePrompt) {
+            Button("Save current location") {
+                updateHomeLocation()
+            }
+            Button("Not now", role: .cancel) {}
+        } message: {
+            Text("Save your current location as home so \(pet?.name ?? "your pet") can react when you leave and come back. You can change this anytime in settings.")
+        }
         .alert("Regenerate sprites?", isPresented: $showRegenerateConfirm) {
             Button("Regenerate") {
                 isRegenerating = true
@@ -155,6 +165,22 @@ struct SettingsView: View {
                 pet: pet
             )
             .interactiveDismissDisabled(true)
+        }
+        .sheet(isPresented: $showWidgetInstructions) {
+            NavigationStack {
+                WidgetSetupView(
+                    onNext: { showWidgetInstructions = false },
+                    ctaTitle: "got it",
+                    subtitle: nil
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Done") { showWidgetInstructions = false }
+                            .font(.bodyM)
+                            .tint(palette.accentDark)
+                    }
+                }
+            }
         }
     }
 
@@ -177,7 +203,7 @@ struct SettingsView: View {
                         value: appState.userEmail
                     )
 
-                    LocationTrackingToggleRow()
+                    LocationTrackingToggleRow(onEnable: handleLocationTrackingEnabled)
 
                     if !locationService.isLocationTrackingEnabled {
                         Text("Your pet won't react when you leave home while this is off.")
@@ -277,19 +303,39 @@ struct SettingsView: View {
             }
         }
 
-        if appState.pets.count > 1 {
-            SettingsSageSection(
-                title: "home screen widget",
-                footer: "Choose which pet appears on your home screen widget."
-            ) {
-                Picker("Widget pet", selection: widgetPetSelection) {
-                    ForEach(appState.pets) { listedPet in
-                        Text(listedPet.name).tag(listedPet.id)
+        SettingsSageSection(
+            title: "home screen widget",
+            footer: appState.pets.count > 1
+                ? "Choose which pet appears on your home screen widget, or add a new widget."
+                : "Add the Petmoji widget to your home screen to see your pet's latest message at a glance."
+        ) {
+            VStack(alignment: .leading, spacing: 12) {
+                if appState.pets.count > 1 {
+                    Picker("Widget pet", selection: widgetPetSelection) {
+                        ForEach(appState.pets) { listedPet in
+                            Text(listedPet.name).tag(listedPet.id)
+                        }
                     }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .accessibilityLabel("Home screen widget pet")
+
+                    Divider().overlay(palette.border.opacity(0.6))
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .accessibilityLabel("Home screen widget pet")
+
+                Button {
+                    showWidgetInstructions = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "plus.square.on.square")
+                        Text("add widget to home screen")
+                    }
+                    .font(.bodyL)
+                    .foregroundStyle(palette.accentDark)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityLabel("Add widget to home screen")
+                .accessibilityHint("Opens step-by-step instructions for adding the home screen widget")
             }
         }
 
@@ -485,6 +531,13 @@ struct SettingsView: View {
         }
     }
 
+    /// Right after location tracking is switched on (off → on), offer to capture the current
+    /// location as home. Declining is fine; they can set it later via "update home location" below.
+    private func handleLocationTrackingEnabled() {
+        guard pet != nil else { return }
+        showSaveHomePrompt = true
+    }
+
     private func updateHomeLocation() {
         guard let pet else {
             homeLocationError = "No pet loaded."
@@ -536,6 +589,9 @@ private struct LocationTrackingToggleRow: View {
     @ObservedObject private var locationService = LocationService.shared
     @Environment(\.petmojiPalette) private var palette
 
+    /// Called when the user switches tracking from off → on.
+    var onEnable: () -> Void = {}
+
     var body: some View {
         HStack(alignment: .center) {
             Text("Location tracking")
@@ -544,7 +600,10 @@ private struct LocationTrackingToggleRow: View {
             Spacer(minLength: 12)
             Toggle("", isOn: Binding(
                 get: { locationService.isLocationTrackingEnabled },
-                set: { locationService.setLocationTrackingEnabled($0) }
+                set: { enabled in
+                    locationService.setLocationTrackingEnabled(enabled)
+                    if enabled { onEnable() }
+                }
             ))
             .labelsHidden()
             .toggleStyle(.switch)

@@ -62,10 +62,31 @@ Set required secrets:
 supabase secrets set REPLICATE_API_TOKEN=r8_...
 supabase secrets set CLAUDE_API_KEY=sk-ant-...
 supabase secrets set OPENWEATHER_API_KEY=...
-supabase secrets set APNS_KEY_ID=...         # optional
-supabase secrets set APNS_TEAM_ID=...        # optional
-supabase secrets set APNS_PRIVATE_KEY=...    # optional
+supabase secrets set APNS_TEAM_ID=...        # required for push (10-char Apple Team ID)
+supabase secrets set MAX_MESSAGES_PER_DAY=2  # optional (default 2) — scheduled-message cap
 ```
+
+APNs keys — set **either** a single team-scoped key (works for both environments) **or**
+environment-specific topic-specific keys (`_DEV` = Sandbox, `_PROD` = Production). The
+`_DEV`/`_PROD` vars take precedence; if unset they fall back to the shared `APNS_KEY_ID`/`APNS_PRIVATE_KEY`:
+
+```bash
+# Option A — one team-scoped key for both environments
+supabase secrets set APNS_KEY_ID=ABC123DEFG
+supabase secrets set APNS_PRIVATE_KEY="$(cat AuthKey_ABC123DEFG.p8)"
+
+# Option B — separate topic-specific keys per environment
+supabase secrets set APNS_KEY_ID_DEV=SAND123456
+supabase secrets set APNS_PRIVATE_KEY_DEV="$(cat AuthKey_SAND123456.p8)"
+supabase secrets set APNS_KEY_ID_PROD=PROD123456
+supabase secrets set APNS_PRIVATE_KEY_PROD="$(cat AuthKey_PROD123456.p8)"
+
+# Topics default to the shipping bundle ids; override only if they change
+supabase secrets set APNS_TOPIC_DEV=com.hilollcpetmoji.app
+supabase secrets set APNS_TOPIC_PROD=com.hilollc.petmoji.app
+```
+
+> How messages are generated, scheduled, capped, and delivered is documented in [`docs/ai-message-logic.md`](../docs/ai-message-logic.md).
 
 ## 5. Set Up Cron for generate-messages
 

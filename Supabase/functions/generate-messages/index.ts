@@ -1,16 +1,22 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  GENERATE_MESSAGES_CRON,
+  handleCronList,
+  handleCronSetup,
+} from "../_shared/cron-jobs.ts";
+import { sendSilentPetMessagePush, userNotificationsEnabled } from "../_shared/onesignal.ts";
 
 // ============================================================
 // generate-messages
-// Cron: every 2–3 hours
-// For each pet: fetch weather, call Claude, store message, push APNs
+// Cron: 0 7,9,12,15,17,19,21,23 * * *  (register via ?setup_cron=1)
 // ============================================================
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CLAUDE_API_KEY = Deno.env.get("CLAUDE_API_KEY")!;
 const OPENWEATHER_API_KEY = Deno.env.get("OPENWEATHER_API_KEY")!;
+<<<<<<< Updated upstream
 // Team ID (JWT `iss`) is account-level, shared across all keys.
 const APNS_TEAM_ID = Deno.env.get("APNS_TEAM_ID");
 // Topic-specific APNs keys are restricted to a single environment, so we allow a distinct
@@ -41,6 +47,8 @@ const MAX_MESSAGES_PER_DAY = (() => {
   const raw = parseInt(Deno.env.get("MAX_MESSAGES_PER_DAY") ?? "2", 10);
   return Number.isFinite(raw) && raw > 0 ? raw : 2;
 })();
+=======
+>>>>>>> Stashed changes
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -58,15 +66,19 @@ interface Pet {
   timezone: string;
 }
 
-interface Message {
-  id: string;
-  pet_id: string;
-  content: string;
-  expression: string;
-}
-
 Deno.serve(async (req: Request) => {
-  // Can be triggered by cron or manually
+  const url = new URL(req.url);
+
+  // Part 5.1 — register pg_cron job (run once after migration 005)
+  if (url.searchParams.get("setup_cron") === "1") {
+    return handleCronSetup(supabase, GENERATE_MESSAGES_CRON, req);
+  }
+
+  // Part 5.3 — verify cron jobs
+  if (url.searchParams.get("list_cron") === "1") {
+    return handleCronList(supabase, req);
+  }
+
   console.log("generate-messages triggered");
 
   try {
@@ -105,7 +117,15 @@ Deno.serve(async (req: Request) => {
 });
 
 async function processOnePet(pet: Pet): Promise<void> {
+<<<<<<< Updated upstream
   // 1. Enforce the daily cap on scheduled messages
+=======
+  if (!(await userNotificationsEnabled(supabase, pet.user_id))) {
+    return;
+  }
+
+  // 1. Check if we've already sent 4–6 messages today
+>>>>>>> Stashed changes
   const today = new Date().toISOString().split("T")[0];
   const { count } = await supabase
     .from("messages")
@@ -171,6 +191,7 @@ async function processOnePet(pet: Pet): Promise<void> {
 
   if (insertError) throw insertError;
 
+<<<<<<< Updated upstream
   // 7. Send a user-visible APNs push (also wakes the widget via content-available)
   if (APNS_CONFIGURED) {
     try {
@@ -180,6 +201,17 @@ async function processOnePet(pet: Pet): Promise<void> {
     }
   } else {
     console.warn("APNs not configured (need APNS_TEAM_ID + a DEV or PROD key); skipping push");
+=======
+  // 7. Send silent push so the app can deliver the avatar notification
+  try {
+    await sendSilentPetMessagePush(pet.user_id, {
+      pet_id: pet.id,
+      message_id: message.id,
+      trigger: "scheduled",
+    });
+  } catch (err) {
+    console.warn("Push failed (non-fatal):", err);
+>>>>>>> Stashed changes
   }
 
   console.log(`Message sent for pet ${pet.id}: "${response.message}" [${response.expression}]`);
@@ -301,6 +333,7 @@ Return ONLY valid JSON: { "message": "string max 80 chars", "expression": "happy
   return { message, expression };
 }
 
+<<<<<<< Updated upstream
 // ============================================================
 // APNs Push (user-visible alert + content-available widget wake)
 // ============================================================
@@ -447,3 +480,5 @@ function base64urlBytes(bytes: Uint8Array): string {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
+=======
+>>>>>>> Stashed changes

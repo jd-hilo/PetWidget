@@ -8,6 +8,7 @@ enum PetMessageDelivery {
     /// Writes the latest message to the widget snapshot, chat history, and posts a user-visible notification.
     @MainActor
     static func deliver(pet: Pet, message: PetMessage) {
+        UserDefaults.standard.set(message.id.uuidString, forKey: PushNotificationHandler.lastDeliveredMessageIdKey)
         ChatHistoryStore.appendPetMessage(message)
         WidgetSnapshotSync.writeFromPet(pet, message: message)
         postNotification(pet: pet, message: message)

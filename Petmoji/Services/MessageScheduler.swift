@@ -21,7 +21,12 @@ final class MessageScheduler {
 
     func requestNotificationPermission() async -> Bool {
         let settings = await center.notificationSettings()
+        if settings.authorizationStatus == .authorized {
+            PushNotificationService.registerForRemoteNotificationsIfAuthorized()
+            return true
+        }
         guard settings.authorizationStatus == .notDetermined else {
+<<<<<<< Updated upstream
             let authorized = settings.authorizationStatus == .authorized
             // Already decided — make sure we have a fresh APNs token for the server to push to.
             if authorized { registerForRemoteNotifications() }
@@ -49,6 +54,15 @@ final class MessageScheduler {
 
     private func registerForRemoteNotifications() {
         UIApplication.shared.registerForRemoteNotifications()
+=======
+            return false
+        }
+        let granted = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+        if granted == true {
+            PushNotificationService.registerForRemoteNotificationsIfAuthorized()
+        }
+        return granted ?? false
+>>>>>>> Stashed changes
     }
 
     // MARK: - Been gone follow-ups (AI messages via background refresh at ~2h / ~6h)

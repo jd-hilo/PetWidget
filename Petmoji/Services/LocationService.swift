@@ -49,6 +49,19 @@ final class LocationService: NSObject, ObservableObject {
         applyLocationTrackingState()
     }
 
+    /// Clears home geofence + app-group location metadata (sign-out / reset).
+    func clearPersistedLocationData() {
+        for region in manager.monitoredRegions {
+            manager.stopMonitoring(for: region)
+        }
+        homeRegion = nil
+        sharedDefaults?.removeObject(forKey: "home_lat")
+        sharedDefaults?.removeObject(forKey: "home_lng")
+        sharedDefaults?.removeObject(forKey: "departure_time")
+        sharedDefaults?.removeObject(forKey: MessageScheduler.petIdKey)
+        sharedDefaults?.removeObject(forKey: MessageScheduler.petNameKey)
+    }
+
     private static func loadLocationTrackingEnabled() -> Bool {
         let d = UserDefaults.standard
         guard d.object(forKey: MockUserSettings.Keys.locationTrackingEnabled) != nil else {

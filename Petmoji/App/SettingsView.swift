@@ -13,7 +13,7 @@ struct SettingsView: View {
     @State private var isSavingPetName = false
     @State private var petNameError: String?
     @FocusState private var isPetNameFocused: Bool
-    @State private var notificationsEnabled = UserDefaults.standard.bool(forKey: "notifications_enabled")
+    @State private var notificationsEnabled = UserDefaults.standard.object(forKey: "notifications_enabled") as? Bool ?? true
     @State private var isRegenerating = false
     @State private var regenerateError: String?
     @State private var regenerateSuccess = false
@@ -108,7 +108,13 @@ struct SettingsView: View {
         .tint(palette.accentDark)
         .onAppear {
             syncPetNameFieldsFromCurrentPet()
-            Task { await appState.refreshProfileIfNeeded() }
+            Task {
+                await appState.refreshProfileIfNeeded()
+                if let profile = try? await SupabaseService.shared.fetchProfile() {
+                    notificationsEnabled = profile.notificationsEnabled
+                    UserDefaults.standard.set(profile.notificationsEnabled, forKey: "notifications_enabled")
+                }
+            }
         }
         .onChange(of: appState.currentPet?.id) { _, _ in
             syncPetNameFieldsFromCurrentPet()
@@ -391,6 +397,9 @@ struct SettingsView: View {
                 .tint(palette.accent)
                 .onChange(of: notificationsEnabled) { _, enabled in
                     UserDefaults.standard.set(enabled, forKey: "notifications_enabled")
+                    Task {
+                        try? await SupabaseService.shared.updateNotificationsEnabled(enabled)
+                    }
                 }
         }
 

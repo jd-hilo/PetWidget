@@ -26,8 +26,10 @@ enum PetMessageDelivery {
     @MainActor
     static func refreshWidgetFromServer() async {
         let defaults = UserDefaults(suiteName: WidgetSnapshotSync.appGroupSuiteName)
-        guard let raw = defaults?.string(forKey: WidgetSnapshotSync.Keys.petId),
-              let petId = UUID(uuidString: raw) else { return }
+        let raw = defaults?.string(forKey: WidgetSnapshotSync.Keys.petId)
+            ?? defaults?.string(forKey: WidgetSnapshotSync.Keys.legacyPetId)
+            ?? UserDefaults.standard.string(forKey: MockUserSettings.Keys.widgetPetId)
+        guard let raw, let petId = UUID(uuidString: raw) else { return }
 
         await ChatHistoryStore.mergeServerMessages(for: petId)
 

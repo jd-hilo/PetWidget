@@ -26,6 +26,8 @@ enum PushNotificationHandler {
         // Visible OneSignal pushes already show an alert — only post a local (avatar) notif for silent wakes.
         let postLocal = !remotePushHasVisibleAlert(userInfo)
         PetMessageDelivery.deliver(pet: pet, message: message, postLocalNotification: postLocal)
+        // Belt-and-suspenders: ensure WidgetKit is asked even if signature dedupe skipped a reload.
+        WidgetReloader.reload()
         return .newData
     }
 

@@ -85,11 +85,16 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.petmoji.app
         INFOPLIST_FILE: Petmoji/Info.plist
+        ONESIGNAL_APP_ID: 50232d9c-b355-4208-86ba-d36d7da3dee7
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Petmoji/Petmoji.entitlements
+          PRODUCT_BUNDLE_IDENTIFIER: com.hilollcpetmoji.app
         Release:
           CODE_SIGN_ENTITLEMENTS: Petmoji/Petmoji-Release.entitlements
+          PRODUCT_BUNDLE_IDENTIFIER: com.hilollc.petmoji.app
+          ONESIGNAL_APP_ID: 50232d9c-b355-4208-86ba-d36d7da3dee7
+
     dependencies:
       - package: Supabase
         product: Supabase

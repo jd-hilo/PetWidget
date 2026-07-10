@@ -527,7 +527,8 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
-				INFOPLIST_KEY_ONESIGNAL_APP_ID = "$(ONESIGNAL_APP_ID)";
+				INFOPLIST_KEY_ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
+				ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -678,7 +679,8 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
-				INFOPLIST_KEY_ONESIGNAL_APP_ID = "$(ONESIGNAL_APP_ID)";
+				INFOPLIST_KEY_ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
+				ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

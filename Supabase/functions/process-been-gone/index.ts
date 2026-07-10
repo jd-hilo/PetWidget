@@ -133,11 +133,15 @@ async function processPetIfNeeded(pet: Pet): Promise<boolean> {
   if (insertError) throw insertError;
 
   try {
-    await sendSilentPetMessagePush(pet.user_id, {
-      pet_id: pet.id,
-      message_id: message.id,
-      trigger: event,
-    });
+    await sendSilentPetMessagePush(
+      pet.user_id,
+      {
+        pet_id: pet.id,
+        message_id: message.id,
+        trigger: event,
+      },
+      { title: pet.name, body: response.message },
+    );
   } catch (err) {
     console.warn("Push failed (non-fatal):", err);
   }

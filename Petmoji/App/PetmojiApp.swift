@@ -70,26 +70,29 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
         }
     }
 
-<<<<<<< Updated upstream
-    @MainActor
-    private func refreshWidgetData() async {
-        await PetMessageDelivery.refreshWidgetFromServer()
-    }
-
     // A push arriving while the app is in the foreground only triggers `willPresent`
-    // (not `didReceiveRemoteNotification`), so refresh the widget here too — otherwise the
-    // widget stays stale until the app is next backgrounded/foregrounded.
-=======
->>>>>>> Stashed changes
+    // (not `didReceiveRemoteNotification`), so deliver/refresh the widget here too.
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         Task { @MainActor in
-            await PetMessageDelivery.refreshWidgetFromServer()
+            _ = await PushNotificationHandler.handle(userInfo: notification.request.content.userInfo)
         }
         completionHandler([.banner, .sound, .list])
+    }
+
+    // Tapping a notification must also refresh the widget — background wake is not guaranteed.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            _ = await PushNotificationHandler.handle(userInfo: response.notification.request.content.userInfo)
+            completionHandler()
+        }
     }
 }
 

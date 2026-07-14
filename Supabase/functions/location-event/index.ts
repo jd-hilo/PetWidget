@@ -104,11 +104,15 @@ Deno.serve(async (req: Request) => {
     const petRow = pet as Pet;
     if (await userNotificationsEnabled(supabase, petRow.user_id)) {
       try {
-        await sendSilentPetMessagePush(petRow.user_id, {
-          pet_id,
-          message_id: message.id,
-          trigger: event,
-        });
+        await sendSilentPetMessagePush(
+          petRow.user_id,
+          {
+            pet_id,
+            message_id: message.id,
+            trigger: event,
+          },
+          { title: petRow.name, body: response.message },
+        );
       } catch (err) {
         console.warn("Push failed (non-fatal):", err);
       }

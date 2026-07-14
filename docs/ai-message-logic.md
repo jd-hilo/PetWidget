@@ -93,8 +93,9 @@ File: [`Petmoji/Services/PetMessageDelivery.swift`](../Petmoji/Services/PetMessa
 ## 5. Push notifications (server → device)
 
 For **scheduled** messages the app isn't running, so the push must come from the server. See HIL-28 / HIL-36 for setup. Summary:
-- `generate-messages` looks up the owner's `device_tokens` and sends an APNs **alert** (title = pet name, body = message) + `content-available` to wake the widget.
-- Requires `APNS_TEAM_ID` plus an APNs signing key; otherwise push is skipped (logged). The key can be a single team-scoped key (`APNS_KEY_ID`/`APNS_PRIVATE_KEY`, both environments) or environment-specific topic-specific keys (`APNS_KEY_ID_DEV`/`_PROD` + matching private keys, used for Sandbox vs Production tokens respectively).
+- Edge functions call OneSignal with a **visible** alert (title = pet name, body = message) plus `content_available` so chat/widget can refresh when the app wakes.
+- Targeting uses `external_id` = Supabase user UUID (`OneSignal.login` on sign-in).
+- Requires Supabase secrets `ONESIGNAL_APP_ID` + `ONESIGNAL_REST_API_KEY`. OneSignal iOS platform must use bundle id `com.hilollc.petmoji.app` and a production APNs `.p8`.
 
 ---
 
@@ -103,11 +104,8 @@ For **scheduled** messages the app isn't running, so the push must come from the
 | Variable | Where | Default | Purpose |
 |----------|-------|---------|---------|
 | `MAX_MESSAGES_PER_DAY` | `generate-messages` | `2` | Max **scheduled** messages per pet per day (HIL-33). Tune without code changes. |
-| `APNS_TEAM_ID` | `generate-messages` | — | Apple Team ID (JWT `iss`); required for push. |
-| `APNS_KEY_ID` / `APNS_PRIVATE_KEY` | `generate-messages` | — | Shared team-scoped key (both environments). |
-| `APNS_KEY_ID_DEV` / `APNS_PRIVATE_KEY_DEV` | `generate-messages` | shared key | Sandbox topic-specific key (overrides shared for dev tokens). |
-| `APNS_KEY_ID_PROD` / `APNS_PRIVATE_KEY_PROD` | `generate-messages` | shared key | Production topic-specific key (overrides shared for prod tokens). |
-| `APNS_TOPIC_DEV` / `APNS_TOPIC_PROD` | `generate-messages` | bundle ids | `apns-topic` per token environment. |
+| `ONESIGNAL_APP_ID` | edge functions + iOS | — | OneSignal app id (also baked into Xcode Release/Debug). |
+| `ONESIGNAL_REST_API_KEY` | edge functions | — | OneSignal REST key (server only). |
 | `OPENWEATHER_API_KEY` | `generate-messages` | — | Optional weather context. |
 | cron schedule | pg_cron | `0 7,9,12,15,17,19,21,23 * * *` | When the scheduler runs. |
 

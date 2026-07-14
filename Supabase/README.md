@@ -65,41 +65,14 @@ Set required secrets:
 supabase secrets set REPLICATE_API_TOKEN=r8_...
 supabase secrets set CLAUDE_API_KEY=sk-ant-...
 supabase secrets set OPENWEATHER_API_KEY=...
-<<<<<<< Updated upstream
-supabase secrets set APNS_TEAM_ID=...        # required for push (10-char Apple Team ID)
+supabase secrets set ONESIGNAL_APP_ID=...
+supabase secrets set ONESIGNAL_REST_API_KEY=...
 supabase secrets set MAX_MESSAGES_PER_DAY=2  # optional (default 2) — scheduled-message cap
-```
-
-APNs keys — set **either** a single team-scoped key (works for both environments) **or**
-environment-specific topic-specific keys (`_DEV` = Sandbox, `_PROD` = Production). The
-`_DEV`/`_PROD` vars take precedence; if unset they fall back to the shared `APNS_KEY_ID`/`APNS_PRIVATE_KEY`:
-
-```bash
-# Option A — one team-scoped key for both environments
-supabase secrets set APNS_KEY_ID=ABC123DEFG
-supabase secrets set APNS_PRIVATE_KEY="$(cat AuthKey_ABC123DEFG.p8)"
-
-# Option B — separate topic-specific keys per environment
-supabase secrets set APNS_KEY_ID_DEV=SAND123456
-supabase secrets set APNS_PRIVATE_KEY_DEV="$(cat AuthKey_SAND123456.p8)"
-supabase secrets set APNS_KEY_ID_PROD=PROD123456
-supabase secrets set APNS_PRIVATE_KEY_PROD="$(cat AuthKey_PROD123456.p8)"
-
-# Topics default to the shipping bundle ids; override only if they change
-supabase secrets set APNS_TOPIC_DEV=com.hilollcpetmoji.app
-supabase secrets set APNS_TOPIC_PROD=com.hilollc.petmoji.app
 ```
 
 > How messages are generated, scheduled, capped, and delivered is documented in [`docs/ai-message-logic.md`](../docs/ai-message-logic.md).
 
-## 5. Set Up Cron for generate-messages
-=======
-supabase secrets set ONESIGNAL_APP_ID=...
-supabase secrets set ONESIGNAL_REST_API_KEY=...
-```
-
 ## 5. Set Up Cron Jobs
->>>>>>> Stashed changes
 
 Cron jobs are registered via `pg_cron` (migration `005_cron_jobs.sql`) and each
 Edge Function's `?setup_cron=1` endpoint.
@@ -167,13 +140,13 @@ In Xcode, add `ONESIGNAL_APP_ID` to the Petmoji target **Build Settings** (or sc
 
 ### OneSignal setup
 
-1. Create an iOS app in [OneSignal](https://onesignal.com) with bundle ID `com.petmoji.app`
+1. Create an iOS app in [OneSignal](https://onesignal.com) with bundle ID `com.hilollc.petmoji.app` (Release / TestFlight)
 2. Upload your APNs Auth Key (.p8) in OneSignal → Settings → Platforms → Apple iOS
-3. Copy **App ID** → `ONESIGNAL_APP_ID` (iOS + Supabase secret)
+3. Copy **App ID** → `ONESIGNAL_APP_ID` (iOS build setting + Supabase secret)
 4. Copy **REST API Key** → `ONESIGNAL_REST_API_KEY` (Supabase secret only)
 5. On sign-in, the app calls `OneSignal.login(supabaseUserId)` so pushes target `external_id`
 
-Push flow: edge functions send **silent** OneSignal pushes → iOS wakes → fetches message → `PetMessageDelivery` builds the communication notification with pet avatar.
+Push flow: edge functions send a **visible** OneSignal push (title = pet name, body = message) plus `content_available` → iOS shows the banner even if the app is killed → when the app wakes it refreshes chat/widget from `pet_id` / `message_id` in the payload.
 
 In `ClaudeService.swift`:
 - `CLAUDE_API_KEY` (for on-device chat — consider proxying through your backend instead)

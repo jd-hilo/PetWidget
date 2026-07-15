@@ -1,5 +1,5 @@
 {
-  "originHash" : "ecb6b66cae064dc7793975d9c3c1b13cff168f09aecfe91e01a6ada2877d38f6",
+  "originHash" : "7ae83f8ef15a40f2130f43237c0ba41d413e74737431ce4e2963262c2aadc2e4",
   "pins" : [
     {
       "identity" : "onesignal-xcframework",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "af871d3492e3dd233eb456b550aa53ce33d26c2d",
         "version" : "5.5.3"
+      }
+    },
+    {
+      "identity" : "purchases-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RevenueCat/purchases-ios",
+      "state" : {
+        "revision" : "8969bf1feaca2cc9efaa7630cd148cec5005f2f8",
+        "version" : "5.80.3"
       }
     },
     {

@@ -42,6 +42,7 @@ struct OnboardingCoordinator: View {
         case spriteReveal
         case widgetSetup
         case locationTracking
+        case paywall
     }
 
     private var pendingPetId: UUID? {
@@ -141,13 +142,23 @@ struct OnboardingCoordinator: View {
                 case .locationTracking:
                     HomeLocationSetupView(
                         pet: draft.completedPet,
-                        onDone: finishOnboarding,
+                        onDone: {
+                            path.append(.paywall)
+                            persistProgress(topStep: .paywall)
+                        },
                         onCancel: additionalPetCancelAction
                     )
                     .navigationBarBackButtonHidden(true)
                     .onAppear {
                         persistProgress(topStep: .locationTracking)
                     }
+
+                case .paywall:
+                    PaywallView(onUnlocked: finishOnboarding)
+                        .navigationBarBackButtonHidden(true)
+                        .onAppear {
+                            persistProgress(topStep: .paywall)
+                        }
                 }
             }
         }

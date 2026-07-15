@@ -34,6 +34,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
         PushNotificationService.configure(launchOptions: launchOptions)
+        SubscriptionService.configure()
         BeenGoneBackgroundScheduler.registerHandlers()
         return true
     }
@@ -227,7 +228,9 @@ struct RootView: View {
             } else {
                 AuthCoordinator()
             }
-        } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding {
+        } else if appState.isAuthenticated, appState.hasCompletedOnboarding, !appState.isPro {
+            PaywallView(onUnlocked: {})
+        } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding, appState.isPro {
             NavigationStack {
                 PetHomeView()
             }
@@ -482,6 +485,7 @@ final class AppState: ObservableObject {
     @Published var hasCompletedSignUp: Bool = false
     @Published var hasCompletedOnboarding: Bool = false
     @Published var hasSeenWelcome: Bool = false
+    @Published private(set) var isPro: Bool = false
     @Published var userDisplayName: String = ""
     @Published var userEmail: String = ""
     @Published var userPhone: String = ""
@@ -621,6 +625,7 @@ final class AppState: ObservableObject {
         setHasCompletedSignUp(false)
         setHasCompletedOnboarding(false)
         setHasSeenWelcome(false)
+        isPro = false
         setUserDisplayName("")
         setUserEmail("")
         setUserPhone("")
@@ -646,6 +651,21 @@ final class AppState: ObservableObject {
 
         if let userId = try? await supabase.currentUserId() {
             PushNotificationService.login(userId: userId)
+            await SubscriptionService.logIn(userId: userId)
+        }
+        await refreshSubscriptionStatus()
+    }
+
+    func applyProStatus(_ active: Bool) {
+        isPro = active
+    }
+
+    func refreshSubscriptionStatus() async {
+        do {
+            let info = try await SubscriptionService.refreshCustomerInfo()
+            applyProStatus(SubscriptionService.isPro(from: info))
+        } catch {
+            print("[AppState] refreshSubscriptionStatus failed: \(error.localizedDescription)")
         }
     }
 
@@ -677,6 +697,11 @@ final class AppState: ObservableObject {
         setUserDisplayName(name)
         setUserEmail(email)
         setHasCompletedSignUp(true)
+        if let userId = try? await supabase.currentUserId() {
+            PushNotificationService.login(userId: userId)
+            await SubscriptionService.logIn(userId: userId)
+        }
+        await refreshSubscriptionStatus()
     }
 
     func loadPets(showLoading: Bool = true) async {
@@ -864,6 +889,7 @@ final class AppState: ObservableObject {
         stopSyncingExpressions()
         MessageScheduler.shared.cancelBeenGoneNotifications()
         PushNotificationService.logout()
+        await SubscriptionService.logOut()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         clearAllPersistedUserData()
         applyUnauthenticatedState()
@@ -875,6 +901,7 @@ final class AppState: ObservableObject {
         stopSyncingExpressions()
         MessageScheduler.shared.cancelBeenGoneNotifications()
         PushNotificationService.logout()
+        await SubscriptionService.logOut()
         try await supabase.deleteAccount()
         for petId in petIds {
             ChatHistoryStore.clearHistory(for: petId)

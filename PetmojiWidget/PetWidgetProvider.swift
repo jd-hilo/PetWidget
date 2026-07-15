@@ -115,8 +115,12 @@ struct PetWidgetProvider: TimelineProvider {
             ?? defaults?.string(forKey: "pet_id").flatMap(UUID.init(uuidString:))
 
         // Prefer the app-group sprite cache written by the main app (reliable); fall back to network.
-        let imageData = Self.cachedSpriteData(matching: spriteURL)
-            ?? await Self.downloadImageData(from: spriteURL)
+        let imageData: Data?
+        if let cached = Self.cachedSpriteData(matching: spriteURL) {
+            imageData = cached
+        } else {
+            imageData = await Self.downloadImageData(from: spriteURL)
+        }
         let fitScale: CGFloat = {
             guard let imageData, let image = UIImage(data: imageData) else { return 0.88 }
             return image.widgetContentFitScale()

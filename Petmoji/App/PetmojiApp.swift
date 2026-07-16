@@ -228,9 +228,10 @@ struct RootView: View {
             } else {
                 AuthCoordinator()
             }
-        } else if appState.isAuthenticated, appState.hasCompletedOnboarding, !appState.isPro {
+        } else if appState.isAuthenticated, appState.hasCompletedOnboarding, SubscriptionConfig.isPaywallEnabled, !appState.isPro {
             PaywallView(onUnlocked: {})
-        } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding, appState.isPro {
+        } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding,
+                  !SubscriptionConfig.isPaywallEnabled || appState.isPro {
             NavigationStack {
                 PetHomeView()
             }
@@ -661,6 +662,10 @@ final class AppState: ObservableObject {
     }
 
     func refreshSubscriptionStatus() async {
+        guard SubscriptionConfig.isPaywallEnabled else {
+            applyProStatus(true)
+            return
+        }
         do {
             let info = try await SubscriptionService.refreshCustomerInfo()
             applyProStatus(SubscriptionService.isPro(from: info))
@@ -815,15 +820,16 @@ final class AppState: ObservableObject {
         }
     }
 
-    func updateCurrentPetHome(lat: Double, lng: Double) {
+    func updateCurrentPetHome(lat: Double, lng: Double, address: String?) {
         guard let petId = currentPet?.id else { return }
-        updatePetHome(petId: petId, lat: lat, lng: lng)
+        updatePetHome(petId: petId, lat: lat, lng: lng, address: address)
     }
 
-    func updatePetHome(petId: UUID, lat: Double, lng: Double) {
+    func updatePetHome(petId: UUID, lat: Double, lng: Double, address: String?) {
         guard var pet = pets.first(where: { $0.id == petId }) else { return }
         pet.homeLat = lat
         pet.homeLng = lng
+        pet.homeAddress = address
         mergePet(pet)
         if currentPet?.id == petId {
             syncHomeGeofenceFromCurrentPet()

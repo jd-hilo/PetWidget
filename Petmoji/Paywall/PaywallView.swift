@@ -61,6 +61,8 @@ struct PaywallView: View {
 
     /// Called after a successful purchase or restore that unlocks Pro.
     var onUnlocked: () -> Void
+    /// When false, stay on the paywall even if the user already has Pro (DEBUG previews).
+    var allowsAutoUnlock: Bool = true
 
     @State private var selectedPlan: PaywallPlan = .lifetime
     @State private var offerings: Offerings?
@@ -184,7 +186,7 @@ struct PaywallView: View {
         }
         .task {
             await loadOfferings()
-            if appState.isPro {
+            if allowsAutoUnlock, appState.isPro {
                 onUnlocked()
             }
         }

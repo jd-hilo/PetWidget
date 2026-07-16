@@ -143,8 +143,12 @@ struct OnboardingCoordinator: View {
                     HomeLocationSetupView(
                         pet: draft.completedPet,
                         onDone: {
-                            path.append(.paywall)
-                            persistProgress(topStep: .paywall)
+                            if SubscriptionConfig.isPaywallEnabled {
+                                path.append(.paywall)
+                                persistProgress(topStep: .paywall)
+                            } else {
+                                finishOnboarding()
+                            }
                         },
                         onCancel: additionalPetCancelAction
                     )
@@ -154,11 +158,20 @@ struct OnboardingCoordinator: View {
                     }
 
                 case .paywall:
-                    PaywallView(onUnlocked: finishOnboarding)
-                        .navigationBarBackButtonHidden(true)
-                        .onAppear {
+                    Group {
+                        if SubscriptionConfig.isPaywallEnabled {
+                            PaywallView(onUnlocked: finishOnboarding)
+                        } else {
+                            Color.clear
+                                .onAppear { finishOnboarding() }
+                        }
+                    }
+                    .navigationBarBackButtonHidden(true)
+                    .onAppear {
+                        if SubscriptionConfig.isPaywallEnabled {
                             persistProgress(topStep: .paywall)
                         }
+                    }
                 }
             }
         }

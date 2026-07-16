@@ -150,10 +150,13 @@ struct PetHomeView: View {
         }
         #if DEBUG
         .fullScreenCover(isPresented: $showPaywallDebug) {
-            PaywallView(onUnlocked: { showPaywallDebug = false })
-                .environmentObject(appState)
-                .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
-                .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
+            PaywallView(
+                onUnlocked: { showPaywallDebug = false },
+                allowsAutoUnlock: false
+            )
+            .environmentObject(appState)
+            .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
+            .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
         }
         #endif
         .navigationDestination(isPresented: $showChatRoom) {

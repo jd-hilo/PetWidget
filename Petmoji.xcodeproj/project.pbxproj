@@ -47,6 +47,7 @@
 		F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */; };
 		F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
+		F7ADDR022F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */; };
 		F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */; };
 		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
 		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
@@ -135,6 +136,7 @@
 		F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetMessageDelivery.swift; sourceTree = "<group>"; };
 		F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotSync.swift; sourceTree = "<group>"; };
 		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
+		F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAddressSearchSheet.swift; sourceTree = "<group>"; };
 		F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationNotificationDemoMockup.swift; sourceTree = "<group>"; };
 		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
 		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
@@ -196,6 +198,7 @@
 			isa = PBXGroup;
 			children = (
 				C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */,
+				F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */,
 				F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */,
 				F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */,
 				F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */,
@@ -474,6 +477,7 @@
 				E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */,
 				F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,
+				F7ADDR022F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift in Sources */,
 				F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */,
 				F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */,
 				F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */,
@@ -573,8 +577,8 @@
 					"@executable_path/Frameworks",
 				);
 				ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
-				PETMOJI_PRIVACY_URL = "";
-				PETMOJI_TERMS_URL = "";
+				PETMOJI_PRIVACY_URL = "https://pastoral-supply-662.notion.site/Privacy-Policy-for-Petmoji-39f2cec59ddf80a8a5b8e2c7f5d6d379";
+				PETMOJI_TERMS_URL = "https://pastoral-supply-662.notion.site/Terms-of-Service-for-Petmoji-39f2cec59ddf800d9effe270d79ad394";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hilollc.petmoji.app;
 				REVENUECAT_API_KEY = appl_KNkxOvHKIUCwPiPynHTmmapKVzz;
 				SDKROOT = iphoneos;
@@ -728,8 +732,8 @@
 					"@executable_path/Frameworks",
 				);
 				ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
-				PETMOJI_PRIVACY_URL = "";
-				PETMOJI_TERMS_URL = "";
+				PETMOJI_PRIVACY_URL = "https://pastoral-supply-662.notion.site/Privacy-Policy-for-Petmoji-39f2cec59ddf80a8a5b8e2c7f5d6d379";
+				PETMOJI_TERMS_URL = "https://pastoral-supply-662.notion.site/Terms-of-Service-for-Petmoji-39f2cec59ddf800d9effe270d79ad394";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hilollc.petmoji.app;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REVENUECAT_API_KEY = appl_KNkxOvHKIUCwPiPynHTmmapKVzz;

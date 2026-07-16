@@ -8,6 +8,9 @@ enum SubscriptionConfig {
     static let monthlyPackageID = "$rc_monthly"
     static let lifetimePackageID = "$rc_lifetime"
 
+    /// Kill switch: when `false`, skip onboarding/root paywall and treat the user as Pro.
+    static let isPaywallEnabled = false
+
     /// Public RevenueCat Apple SDK key (`appl_…`). Prefer build setting / env over hardcoding.
     static var apiKey: String {
         if let env = ProcessInfo.processInfo.environment["REVENUECAT_API_KEY"], !env.isEmpty {

@@ -69,6 +69,7 @@ Each run loops over **all** pets and calls `processOnePet`.
 Files: [`Petmoji/Services/LocationService.swift`](../Petmoji/Services/LocationService.swift), [`Petmoji/Services/BeenGoneBackgroundScheduler.swift`](../Petmoji/Services/BeenGoneBackgroundScheduler.swift), [`Supabase/functions/location-event/index.ts`](../Supabase/functions/location-event/index.ts)
 
 - Requires **location tracking on** + **Always** authorization + a saved **home** geofence.
+- Home is set from a **user-confirmed address** (MapKit search / optional current-location prefill), geocoded to lat/lng — not from raw GPS at the moment tracking is enabled.
 - **Geofence exit** (`didExitRegion`) → store `departure_time`, schedule been-gone follow-ups, call `location-event` with `left_home`.
 - **Geofence enter** (`didEnterRegion`) → clear `departure_time`, cancel follow-ups, call `location-event` with `returned`.
 - **Been-gone follow-ups**: two `BGAppRefreshTask`s scheduled ~2h and ~6h after leaving (`com.petmoji.been-gone-2h/6h`). When the OS runs them, they call `location-event` with `been_gone_2h` / `been_gone_6h`. These are best-effort — iOS decides when (or whether) background refresh runs.

@@ -28,6 +28,7 @@
 		EBCAA8C98D86B2BDF29F0DD7 /* MessageScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = B648FC808AC8BAEBB97A81A6 /* MessageScheduler.swift */; };
 		ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9844B5416F8DE38FCA025428 /* LocationService.swift */; };
 		EFF5B90AECAEC78FD9950367 /* PetWidgetEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75B15C9F26B1590FEDD4031F /* PetWidgetEntryView.swift */; };
+		F77FAA253007D900003AC483 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F77FAA243007D900003AC483 /* StoreKit.framework */; };
 		F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 05D7681EDDDE782F2D2CA814 /* Assets.xcassets */; };
 		F7AEEFD22F9D451B006EDD07 /* tester_happy.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD12F9D451B006EDD07 /* tester_happy.png */; };
 		F7AEEFD42F9D4595006EDD07 /* tester_sleepy.png in Resources */ = {isa = PBXBuildFile; fileRef = F7AEEFD32F9D4595006EDD07 /* tester_sleepy.png */; };
@@ -46,10 +47,15 @@
 		F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */; };
 		F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
+		F7ADDR022F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */; };
 		F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */; };
 		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
 		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
 		F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */; };
+		F7PAYW022F9E8D7C006EDD01 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */; };
+		F7RC0032F9E8D7C006EDD01 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = F7RC0022F9E8D7C006EDD01 /* RevenueCat */; };
+		F7STORE022F9E8D7C006EDD01 /* PetmojiProducts.storekit in Resources */ = {isa = PBXBuildFile; fileRef = F7STORE012F9E8D7C006EDD01 /* PetmojiProducts.storekit */; };
+		F7SUBS022F9E8D7C006EDD01 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SUBS012F9E8D7C006EDD01 /* SubscriptionService.swift */; };
 		F7PROF012F9E8D7C006EDD01 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */; };
 		F7PUSH012F9E8D7C006EDD01 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PUSH002F9E8D7C006EDD01 /* PushNotificationService.swift */; };
 		F7PUSH022F9E8D7C006EDD01 /* PushNotificationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PUSH032F9E8D7C006EDD01 /* PushNotificationHandler.swift */; };
@@ -113,6 +119,7 @@
 		E2C31EB3D182749A40DD6A1F /* Petmoji.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Petmoji.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E367B57172A90687CF9B9982 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		ECAC105A00465289B0DF46CE /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
+		F77FAA243007D900003AC483 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		F7AEEFD12F9D451B006EDD07 /* tester_happy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_happy.png; sourceTree = "<group>"; };
 		F7AEEFD32F9D4595006EDD07 /* tester_sleepy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_sleepy.png; sourceTree = "<group>"; };
 		F7AEEFD52F9D459A006EDD07 /* tester_mad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_mad.png; sourceTree = "<group>"; };
@@ -129,10 +136,14 @@
 		F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetMessageDelivery.swift; sourceTree = "<group>"; };
 		F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotSync.swift; sourceTree = "<group>"; };
 		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
+		F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAddressSearchSheet.swift; sourceTree = "<group>"; };
 		F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationNotificationDemoMockup.swift; sourceTree = "<group>"; };
 		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
 		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
 		F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPFieldView.swift; sourceTree = "<group>"; };
+		F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
+		F7STORE012F9E8D7C006EDD01 /* PetmojiProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = PetmojiProducts.storekit; sourceTree = "<group>"; };
+		F7SUBS012F9E8D7C006EDD01 /* SubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionService.swift; sourceTree = "<group>"; };
 		F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		F7PUSH002F9E8D7C006EDD01 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
 		F7PUSH032F9E8D7C006EDD01 /* PushNotificationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationHandler.swift; sourceTree = "<group>"; };
@@ -156,8 +167,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F77FAA253007D900003AC483 /* StoreKit.framework in Frameworks */,
 				F7PUSH042F9E8D7C006EDD01 /* OneSignalFramework in Frameworks */,
 				7DBB2DE5757F2983C69CE3ED /* Supabase in Frameworks */,
+				F7RC0032F9E8D7C006EDD01 /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -185,6 +198,7 @@
 			isa = PBXGroup;
 			children = (
 				C20EA9149132A07577D917D1 /* ExpressionRevealView.swift */,
+				F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */,
 				F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */,
 				F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */,
 				F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */,
@@ -204,6 +218,7 @@
 				887A848EC3284EE734418A0C /* Fonts */,
 				230CC9C6105ED920CEA58721 /* Models */,
 				27A41F408E50E8ADAD314F80 /* Onboarding */,
+				F7PAYWGRP2F9E8D7C006EDD01 /* Paywall */,
 				F7SIGN082F9E8D7C006EDD01 /* SignUp */,
 				A82AA808A0B39377903C3298 /* Resources */,
 				87003FA09D86DF4E181DA645 /* Services */,
@@ -256,6 +271,7 @@
 				F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */,
 				F7PUSH002F9E8D7C006EDD01 /* PushNotificationService.swift */,
 				F7PUSH032F9E8D7C006EDD01 /* PushNotificationHandler.swift */,
+				F7SUBS012F9E8D7C006EDD01 /* SubscriptionService.swift */,
 				F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */,
 			);
 			path = Services;
@@ -306,7 +322,25 @@
 				F7AEEFD72F9D459F006EDD07 /* tester_excited.png */,
 				F7AEEFD92F9D45A5006EDD07 /* tester_misses_you.png */,
 				F7AEEFDB2F9D45A8006EDD07 /* tester_judging.png */,
+				F77FAA233007D900003AC483 /* Frameworks */,
 			);
+			sourceTree = "<group>";
+		};
+		F77FAA233007D900003AC483 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F77FAA243007D900003AC483 /* StoreKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F7PAYWGRP2F9E8D7C006EDD01 /* Paywall */ = {
+			isa = PBXGroup;
+			children = (
+				F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */,
+				F7STORE012F9E8D7C006EDD01 /* PetmojiProducts.storekit */,
+			);
+			path = Paywall;
 			sourceTree = "<group>";
 		};
 		F7SIGN082F9E8D7C006EDD01 /* SignUp */ = {
@@ -343,6 +377,7 @@
 			packageProductDependencies = (
 				86C7DF1934A3B2403C541D2F /* Supabase */,
 				C3D4E5F6A7890123456789AB /* OneSignalFramework */,
+				F7RC0022F9E8D7C006EDD01 /* RevenueCat */,
 			);
 			productName = Petmoji;
 			productReference = E2C31EB3D182749A40DD6A1F /* Petmoji.app */;
@@ -387,6 +422,7 @@
 			packageReferences = (
 				A9FA533EDF0283438671DEA7 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				B2C3D4E5F6A7890123456789 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */,
+				F7RC0012F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -409,6 +445,7 @@
 				F7AEEFD22F9D451B006EDD07 /* tester_happy.png in Resources */,
 				F7ADCDD068A9FBAA205F6A92 /* Assets.xcassets in Resources */,
 				F7WIDGET0V22F9E8D7C006EDD01 /* WidgetScreenDemo.mov in Resources */,
+				F7STORE022F9E8D7C006EDD01 /* PetmojiProducts.storekit in Resources */,
 				F7AEEFD62F9D459A006EDD07 /* tester_mad.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -440,6 +477,7 @@
 				E74153BBCA1873B6C411ADC6 /* DesignSystem.swift in Sources */,
 				F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */,
 				526CC3FE8A4289E7F59AE1CE /* ExpressionRevealView.swift in Sources */,
+				F7ADDR022F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift in Sources */,
 				F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */,
 				F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */,
 				F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */,
@@ -457,6 +495,8 @@
 				F7DEBUG012F9E8D7C006EDD01 /* DebugLaunchArgs.swift in Sources */,
 				8F5FFD67DE463FB07BBB57A1 /* PhotoPickerView.swift in Sources */,
 				F7WIDGET022F9E8D7C006EDD01 /* WidgetSetupView.swift in Sources */,
+				F7PAYW022F9E8D7C006EDD01 /* PaywallView.swift in Sources */,
+				F7SUBS022F9E8D7C006EDD01 /* SubscriptionService.swift in Sources */,
 				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
 				F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */,
 				F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */,
@@ -515,7 +555,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.hilollcpetmoji.app.widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hilollc.petmoji.app.widget;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -537,7 +577,10 @@
 					"@executable_path/Frameworks",
 				);
 				ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
-				PRODUCT_BUNDLE_IDENTIFIER = com.hilollcpetmoji.app;
+				PETMOJI_PRIVACY_URL = "https://pastoral-supply-662.notion.site/Privacy-Policy-for-Petmoji-39f2cec59ddf80a8a5b8e2c7f5d6d379";
+				PETMOJI_TERMS_URL = "https://pastoral-supply-662.notion.site/Terms-of-Service-for-Petmoji-39f2cec59ddf800d9effe270d79ad394";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hilollc.petmoji.app;
+				REVENUECAT_API_KEY = appl_KNkxOvHKIUCwPiPynHTmmapKVzz;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -689,8 +732,11 @@
 					"@executable_path/Frameworks",
 				);
 				ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
+				PETMOJI_PRIVACY_URL = "https://pastoral-supply-662.notion.site/Privacy-Policy-for-Petmoji-39f2cec59ddf80a8a5b8e2c7f5d6d379";
+				PETMOJI_TERMS_URL = "https://pastoral-supply-662.notion.site/Terms-of-Service-for-Petmoji-39f2cec59ddf800d9effe270d79ad394";
 				PRODUCT_BUNDLE_IDENTIFIER = com.hilollc.petmoji.app;
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				REVENUECAT_API_KEY = appl_KNkxOvHKIUCwPiPynHTmmapKVzz;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -749,6 +795,14 @@
 				minimumVersion = 5.2.0;
 			};
 		};
+		F7RC0012F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -761,6 +815,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B2C3D4E5F6A7890123456789 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
 			productName = OneSignalFramework;
+		};
+		F7RC0022F9E8D7C006EDD01 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F7RC0012F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -228,10 +228,20 @@ final class SupabaseService: @unchecked Sendable {
             .execute()
     }
 
-    func updatePetHomeLocation(petId: UUID, lat: Double, lng: Double) async throws {
+    func updatePetHomeLocation(petId: UUID, lat: Double, lng: Double, address: String?) async throws {
+        struct HomeLocationUpdate: Encodable {
+            let home_lat: Double
+            let home_lng: Double
+            let home_address: String?
+        }
+        let trimmed = address?.trimmingCharacters(in: .whitespacesAndNewlines)
         try await client
             .from("pets")
-            .update(["home_lat": lat, "home_lng": lng])
+            .update(HomeLocationUpdate(
+                home_lat: lat,
+                home_lng: lng,
+                home_address: (trimmed?.isEmpty == false) ? trimmed : nil
+            ))
             .eq("id", value: petId.uuidString)
             .execute()
     }

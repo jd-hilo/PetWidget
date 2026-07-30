@@ -103,6 +103,10 @@ struct PetHomeView: View {
                                                     appState.selectPet(pet)
                                                     selectedPetForChatRoom = pet
                                                     showChatRoom = true
+                                                    AnalyticsService.capture(
+                                                        AnalyticsEvent.chatOpened,
+                                                        properties: ["pet_id": pet.id.uuidString]
+                                                    )
                                                 },
                                                 onSpriteAppeared: { scheduleHeroBreathe(for: pet.id) }
                                             )
@@ -259,6 +263,10 @@ struct PetHomeView: View {
             setExpanded(true, for: selected.id)
             selectedPetForChatRoom = selected
             showChatRoom = true
+            AnalyticsService.capture(
+                AnalyticsEvent.chatOpened,
+                properties: ["pet_id": selected.id.uuidString]
+            )
         }
     }
 

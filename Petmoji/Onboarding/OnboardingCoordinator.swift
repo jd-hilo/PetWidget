@@ -288,6 +288,7 @@ struct OnboardingCoordinator: View {
         }
         OnboardingDraftStore.clear()
         appState.setHasCompletedOnboarding(true)
+        AnalyticsService.capture(AnalyticsEvent.onboardingCompleted)
     }
 }
 

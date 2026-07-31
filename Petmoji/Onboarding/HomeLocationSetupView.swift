@@ -156,6 +156,7 @@ struct HomeLocationSetupView: View {
 
                 // Permission granted — turn tracking on, then ask for an explicit home address.
                 locationService.setLocationTrackingEnabled(true)
+                AnalyticsService.capture(AnalyticsEvent.locationTrackingEnabled)
                 showAddressSheet = true
             } catch let error as HomeLocationError {
                 homeError = error.errorDescription

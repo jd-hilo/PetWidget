@@ -954,6 +954,13 @@ struct RegeneratingModal: View {
                 appState.startSyncingExpressions(petId: pet.id)
                 success = true
                 phase = .done
+                AnalyticsService.capture(
+                    AnalyticsEvent.spritesGenerated,
+                    properties: [
+                        "source": "settings",
+                        "pet_id": pet.id.uuidString,
+                    ]
+                )
             }
         } catch {
             await MainActor.run {

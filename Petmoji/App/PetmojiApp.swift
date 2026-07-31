@@ -35,6 +35,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
         UNUserNotificationCenter.current().delegate = self
         PushNotificationService.configure(launchOptions: launchOptions)
         SubscriptionService.configure()
+        AnalyticsService.configure()
         BeenGoneBackgroundScheduler.registerHandlers()
         return true
     }
@@ -653,6 +654,11 @@ final class AppState: ObservableObject {
         if let userId = try? await supabase.currentUserId() {
             PushNotificationService.login(userId: userId)
             await SubscriptionService.logIn(userId: userId)
+            AnalyticsService.identify(
+                userId: userId,
+                email: userEmail.isEmpty ? nil : userEmail,
+                name: userDisplayName.isEmpty ? nil : userDisplayName
+            )
         }
         await refreshSubscriptionStatus()
     }
@@ -669,6 +675,7 @@ final class AppState: ObservableObject {
         do {
             let info = try await SubscriptionService.refreshCustomerInfo()
             applyProStatus(SubscriptionService.isPro(from: info))
+            AnalyticsService.trackSubscriptionPeriod(from: info)
         } catch {
             print("[AppState] refreshSubscriptionStatus failed: \(error.localizedDescription)")
         }
@@ -705,7 +712,9 @@ final class AppState: ObservableObject {
         if let userId = try? await supabase.currentUserId() {
             PushNotificationService.login(userId: userId)
             await SubscriptionService.logIn(userId: userId)
+            AnalyticsService.identify(userId: userId, email: email, name: name)
         }
+        AnalyticsService.capture(AnalyticsEvent.signUpCompleted)
         await refreshSubscriptionStatus()
     }
 
@@ -873,6 +882,7 @@ final class AppState: ObservableObject {
         try? await supabase.deletePet(petId: pet.id)
         ChatHistoryStore.clearHistory(for: pet.id)
         removePetLocally(petId: pet.id)
+        AnalyticsService.capture(AnalyticsEvent.petDeleted, properties: ["pet_id": pet.id.uuidString])
         await syncWidgetSnapshot()
     }
 
@@ -896,6 +906,8 @@ final class AppState: ObservableObject {
         MessageScheduler.shared.cancelBeenGoneNotifications()
         PushNotificationService.logout()
         await SubscriptionService.logOut()
+        AnalyticsService.capture(AnalyticsEvent.signOut)
+        AnalyticsService.reset()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         clearAllPersistedUserData()
         applyUnauthenticatedState()
@@ -908,6 +920,7 @@ final class AppState: ObservableObject {
         MessageScheduler.shared.cancelBeenGoneNotifications()
         PushNotificationService.logout()
         await SubscriptionService.logOut()
+        AnalyticsService.reset()
         try await supabase.deleteAccount()
         for petId in petIds {
             ChatHistoryStore.clearHistory(for: petId)

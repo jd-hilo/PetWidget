@@ -190,6 +190,9 @@ struct PaywallView: View {
                 onUnlocked()
             }
         }
+        .onAppear {
+            AnalyticsService.capture(AnalyticsEvent.paywallViewed)
+        }
     }
 
     private var planCard: some View {
@@ -356,6 +359,14 @@ struct PaywallView: View {
             let info = try await SubscriptionService.purchase(package: package)
             appState.applyProStatus(SubscriptionService.isPro(from: info))
             if appState.isPro {
+                AnalyticsService.capture(
+                    AnalyticsEvent.subscriptionPurchased,
+                    properties: [
+                        "plan": selectedPlan.rawValue,
+                        "product_id": package.storeProduct.productIdentifier,
+                    ]
+                )
+                AnalyticsService.trackSubscriptionPeriod(from: info, plan: selectedPlan.rawValue)
                 onUnlocked()
             } else {
                 errorMessage = "Purchase finished, but Pro isn’t active yet. Try Restore Purchases."
@@ -377,6 +388,8 @@ struct PaywallView: View {
             let info = try await SubscriptionService.restorePurchases()
             appState.applyProStatus(SubscriptionService.isPro(from: info))
             if appState.isPro {
+                AnalyticsService.capture(AnalyticsEvent.subscriptionRestored)
+                AnalyticsService.trackSubscriptionPeriod(from: info)
                 onUnlocked()
             } else {
                 errorMessage = "No active subscription found for this Apple ID."

@@ -69,6 +69,32 @@ final class SupabaseService: @unchecked Sendable {
         }
     }
 
+    /// True when `auth.users` already has this email (case-insensitive).
+    func isEmailRegistered(_ email: String) async throws -> Bool {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw SignUpAuthError.unknown("Enter a valid email address.")
+        }
+        do {
+            return try await client
+                .rpc("is_email_registered", params: ["p_email": trimmed])
+                .execute()
+                .value
+        } catch {
+#if DEBUG
+            print("[SupabaseService] isEmailRegistered failed: \(error)")
+#endif
+            throw SignUpAuthError.from(error)
+        }
+    }
+
+    /// Blocks sign-up OTP when the email already belongs to an account.
+    func ensureEmailAvailableForSignUp(_ email: String) async throws {
+        if try await isEmailRegistered(email) {
+            throw SignUpAuthError.emailAlreadyExists
+        }
+    }
+
     func sendEmailOTP(email: String, shouldCreateUser: Bool) async throws {
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -115,6 +141,31 @@ final class SupabaseService: @unchecked Sendable {
                 throw SignUpAuthError.noSession
             }
         } catch {
+            throw SignUpAuthError.from(error)
+        }
+    }
+
+    /// Password sign-in for the App Review demo account (no inbox / OTP).
+    @discardableResult
+    func signInWithPassword(email: String, password: String) async throws -> Session {
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw SignUpAuthError.unknown("Enter a valid email address.")
+        }
+        let normalizedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedPassword.isEmpty else {
+            throw SignUpAuthError.invalidCredentials
+        }
+        do {
+            let session = try await client.auth.signIn(
+                email: trimmed,
+                password: normalizedPassword
+            )
+            return session
+        } catch {
+#if DEBUG
+            print("[SupabaseService] signInWithPassword failed: \(error)")
+#endif
             throw SignUpAuthError.from(error)
         }
     }

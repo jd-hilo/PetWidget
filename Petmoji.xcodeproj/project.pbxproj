@@ -53,6 +53,7 @@
 		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
 		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
 		F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */; };
+		F7DEMO012F9E8D7C006EDD01 /* AppReviewDemoAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */; };
 		F7PAYW022F9E8D7C006EDD01 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */; };
 		F7PH0032F9E8D7C006EDD01 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = F7PH0022F9E8D7C006EDD01 /* PostHog */; };
 		F7PROF012F9E8D7C006EDD01 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */; };
@@ -144,6 +145,7 @@
 		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
 		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
 		F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPFieldView.swift; sourceTree = "<group>"; };
+		F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewDemoAccount.swift; sourceTree = "<group>"; };
 		F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		F7PUSH002F9E8D7C006EDD01 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
@@ -355,6 +357,7 @@
 				F7SIGN032F9E8D7C006EDD01 /* SignUpDraft.swift */,
 				F7SIGN072F9E8D7C006EDD01 /* SignUpStepView.swift */,
 				F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */,
+				F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */,
 				F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */,
 				F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */,
 			);
@@ -510,6 +513,7 @@
 				F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */,
 				F7SIGN062F9E8D7C006EDD01 /* SignUpStepView.swift in Sources */,
 				F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */,
+				F7DEMO012F9E8D7C006EDD01 /* AppReviewDemoAccount.swift in Sources */,
 				F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */,
 				F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */,
 				F7PUSH012F9E8D7C006EDD01 /* PushNotificationService.swift in Sources */,

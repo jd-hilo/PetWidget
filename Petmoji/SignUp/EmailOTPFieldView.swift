@@ -6,6 +6,7 @@ struct EmailOTPFieldView: View {
     @Environment(\.petmojiPalette) private var palette
     @Binding var code: String
     let email: String
+    var title: String = "enter the code we sent to your email"
     var resendCooldownRemaining: Int = 0
     var isResendDisabled: Bool = false
     var onResend: (() -> Void)?
@@ -18,7 +19,7 @@ struct EmailOTPFieldView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("enter the code we sent to your email")
+            Text(title)
                 .font(.displayL)
                 .foregroundStyle(palette.accentDark)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -32,6 +32,10 @@ struct SignInView: View {
         email.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var isDemoAccount: Bool {
+        AppReviewDemoAccount.matches(trimmedEmail)
+    }
+
     private var isEmailStepValid: Bool {
         trimmedEmail.contains("@") && trimmedEmail.contains(".")
     }
@@ -133,21 +137,24 @@ struct SignInView: View {
         EmailOTPFieldView(
             code: $otpCode,
             email: email,
+            title: isDemoAccount
+                ? "enter your password"
+                : "enter the code we sent to your email",
             resendCooldownRemaining: resendCooldownRemaining,
             isResendDisabled: isSubmitting,
-            onResend: resendOTP
+            onResend: isDemoAccount ? nil : { resendOTP() }
         )
     }
 
     private var ctaTitle: String {
         if isSubmitting {
             switch step {
-            case .email: return "sending code…"
+            case .email: return isDemoAccount ? "continuing…" : "sending code…"
             case .otp: return "signing in…"
             }
         }
         switch step {
-        case .email: return "send code →"
+        case .email: return isDemoAccount ? "continue →" : "send code →"
         case .otp: return "sign in →"
         }
     }
@@ -175,9 +182,21 @@ struct SignInView: View {
 
         switch step {
         case .email:
-            Task { await sendOTPAndAdvance() }
+            if isDemoAccount {
+                advanceToDemoPasswordStep()
+            } else {
+                Task { await sendOTPAndAdvance() }
+            }
         case .otp:
             Task { await verifyAndSignIn() }
+        }
+    }
+
+    private func advanceToDemoPasswordStep() {
+        otpCode = ""
+        stopResendCooldown()
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
+            step = .otp
         }
     }
 
@@ -216,7 +235,11 @@ struct SignInView: View {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            _ = try await supabase.verifyEmailOTP(email: trimmedEmail, token: otpCode)
+            if isDemoAccount {
+                _ = try await supabase.signInWithPassword(email: trimmedEmail, password: otpCode)
+            } else {
+                _ = try await supabase.verifyEmailOTP(email: trimmedEmail, token: otpCode)
+            }
             await appState.restoreAuthenticatedSession(showLoading: false)
             AnalyticsService.capture(AnalyticsEvent.signInCompleted)
         } catch {

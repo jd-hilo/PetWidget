@@ -191,6 +191,7 @@ struct SignUpCoordinator: View {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
+            try await supabase.ensureEmailAvailableForSignUp(trimmedEmail)
             try await supabase.sendEmailOTP(email: trimmedEmail, shouldCreateUser: true)
             startResendCooldown()
             draft.clearOTP()
@@ -209,6 +210,7 @@ struct SignUpCoordinator: View {
             isSubmitting = true
             defer { isSubmitting = false }
             do {
+                try await supabase.ensureEmailAvailableForSignUp(trimmedEmail)
                 try await supabase.sendEmailOTP(email: trimmedEmail, shouldCreateUser: true)
                 startResendCooldown()
                 draft.clearOTP()

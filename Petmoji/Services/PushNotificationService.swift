@@ -13,6 +13,9 @@ enum PushNotificationService {
         return Bundle.main.object(forInfoDictionaryKey: "ONESIGNAL_APP_ID") as? String ?? ""
     }
 
+    /// Retained so OneSignal's weak listener refs stay alive.
+    private static let bridge = OneSignalPushBridge()
+
     static func configure(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
         let id = appId
         guard !id.isEmpty else {
@@ -20,6 +23,8 @@ enum PushNotificationService {
             return
         }
         OneSignal.initialize(id, withLaunchOptions: launchOptions)
+        OneSignal.Notifications.addClickListener(bridge)
+        OneSignal.Notifications.addForegroundLifecycleListener(bridge)
     }
 
     static func login(userId: UUID) {
@@ -49,6 +54,9 @@ enum PushNotificationService {
            let data = custom["a"] as? [String: Any] {
             return parseFlatPayload(data)
         }
+        if let data = userInfo["data"] as? [String: Any] {
+            return parseFlatPayload(data)
+        }
         return nil
     }
 
@@ -60,5 +68,30 @@ enum PushNotificationService {
             return nil
         }
         return (petId, messageId)
+    }
+}
+
+// MARK: - OneSignal → widget/chat refresh
+
+/// Immutable listener retained for OneSignal's weak refs; hops to MainActor before touching app state.
+private final class OneSignalPushBridge: NSObject, OSNotificationClickListener, OSNotificationLifecycleListener, @unchecked Sendable {
+    func onClick(event: OSNotificationClickEvent) {
+        refreshFromNotification(event.notification)
+    }
+
+    func onWillDisplay(event: OSNotificationWillDisplayEvent) {
+        refreshFromNotification(event.notification)
+    }
+
+    private func refreshFromNotification(_ notification: OSNotification) {
+        var userInfo: [AnyHashable: Any] = notification.rawPayload
+        if let additional = notification.additionalData {
+            for (key, value) in additional {
+                userInfo[key] = value
+            }
+        }
+        Task { @MainActor in
+            _ = await PushNotificationHandler.handle(userInfo: userInfo)
+        }
     }
 }

@@ -37,6 +37,7 @@ interface Pet {
   home_lat?: number;
   home_lng?: number;
   timezone: string;
+  expressions?: Record<string, string>;
 }
 
 Deno.serve(async (req: Request) => {
@@ -166,6 +167,11 @@ async function processOnePet(pet: Pet): Promise<void> {
         pet_id: pet.id,
         message_id: message.id,
         trigger: "scheduled",
+        expression: response.expression,
+        pet_name: pet.name,
+        message: response.message,
+        sprite_url: pet.expressions?.[response.expression]
+          ?? pet.expressions?.happy,
       },
       { title: pet.name, body: response.message },
     );

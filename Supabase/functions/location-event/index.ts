@@ -27,6 +27,7 @@ interface Pet {
   energy_level: number;
   biggest_enemy: string;
   base_mood: string;
+  expressions?: Record<string, string>;
 }
 
 Deno.serve(async (req: Request) => {
@@ -102,6 +103,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const petRow = pet as Pet;
+    let push: { ok: boolean; error?: string } = { ok: false, error: "skipped" };
     if (await userNotificationsEnabled(supabase, petRow.user_id)) {
       try {
         await sendSilentPetMessagePush(
@@ -110,17 +112,27 @@ Deno.serve(async (req: Request) => {
             pet_id,
             message_id: message.id,
             trigger: event,
+            expression: response.expression,
+            pet_name: petRow.name,
+            message: response.message,
+            sprite_url: petRow.expressions?.[response.expression]
+              ?? petRow.expressions?.happy,
           },
           { title: petRow.name, body: response.message },
         );
+        push = { ok: true };
       } catch (err) {
-        console.warn("Push failed (non-fatal):", err);
+        const error = String(err);
+        console.warn("Push failed (non-fatal):", error);
+        push = { ok: false, error };
       }
+    } else {
+      push = { ok: false, error: "notifications_disabled" };
     }
 
     console.log(`Location message for pet ${pet_id} (${event}): "${response.message}"`);
 
-    return new Response(JSON.stringify(message), {
+    return new Response(JSON.stringify({ ...message, push }), {
       status: 200,
       headers: { "Content-Type": "application/json" },
     });

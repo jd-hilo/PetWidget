@@ -28,6 +28,7 @@ interface Pet {
   biggest_enemy: string;
   base_mood: string;
   departed_at: string;
+  expressions?: Record<string, string>;
 }
 
 type BeenGoneEvent = "been_gone_2h" | "been_gone_6h";
@@ -139,6 +140,11 @@ async function processPetIfNeeded(pet: Pet): Promise<boolean> {
         pet_id: pet.id,
         message_id: message.id,
         trigger: event,
+        expression: response.expression,
+        pet_name: pet.name,
+        message: response.message,
+        sprite_url: pet.expressions?.[response.expression]
+          ?? pet.expressions?.happy,
       },
       { title: pet.name, body: response.message },
     );

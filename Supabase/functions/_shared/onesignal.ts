@@ -7,6 +7,11 @@ export interface PetMessagePushData {
   pet_id: string;
   message_id: string;
   trigger: string;
+  /** Used by the Notification Service Extension to update the widget without opening the app. */
+  expression?: string;
+  pet_name?: string;
+  message?: string;
+  sprite_url?: string;
 }
 
 export interface PetMessagePushOptions {
@@ -22,6 +27,9 @@ export interface PetMessagePushOptions {
  * Always includes `content_available` so a running/background app can refresh chat + widget.
  * When title/body are provided, also sends a visible alert — silent-only pushes often never
  * wake a killed TestFlight/App Store build.
+ *
+ * `mutable_content` wakes the Notification Service Extension so the home-screen widget can
+ * update even when the main app is killed.
  */
 export async function sendSilentPetMessagePush(
   userId: string,
@@ -33,11 +41,15 @@ export async function sendSilentPetMessagePush(
     return;
   }
 
+  // iOS `UUID.uuidString` is uppercase; OneSignal aliases are case-sensitive.
+  const externalId = userId.toUpperCase();
+
   const payload: Record<string, unknown> = {
     app_id: ONESIGNAL_APP_ID,
     target_channel: "push",
-    include_aliases: { external_id: [userId] },
+    include_aliases: { external_id: [externalId] },
     content_available: true,
+    mutable_content: true,
     priority: 10,
     data,
   };
@@ -56,9 +68,28 @@ export async function sendSilentPetMessagePush(
     body: JSON.stringify(payload),
   });
 
+  const bodyText = await res.text();
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = JSON.parse(bodyText) as Record<string, unknown>;
+  } catch {
+    parsed = { raw: bodyText };
+  }
+
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OneSignal push failed (${res.status}): ${err}`);
+    throw new Error(`OneSignal push failed (${res.status}): ${bodyText}`);
+  }
+
+  const recipients = parsed.recipients;
+  console.log(
+    `OneSignal push ok id=${parsed.id ?? "?"} recipients=${recipients ?? "?"} errors=${JSON.stringify(parsed.errors ?? null)}`,
+  );
+
+  // 0 recipients = no subscribed device for this external_id (OneSignal.login never ran / wrong app id / revoked key)
+  if (recipients === 0 || parsed.errors) {
+    throw new Error(
+      `OneSignal push not delivered for external_id=${externalId}: recipients=${recipients ?? "?"} errors=${JSON.stringify(parsed.errors ?? null)}`,
+    );
   }
 }
 

@@ -229,10 +229,12 @@ struct RootView: View {
             } else {
                 AuthCoordinator()
             }
-        } else if appState.isAuthenticated, appState.hasCompletedOnboarding, SubscriptionConfig.isPaywallEnabled, !appState.isPro {
+        } else if appState.isAuthenticated, appState.hasCompletedOnboarding, SubscriptionConfig.isPaywallEnabled,
+                  !appState.isPro, !AppReviewDemoAccount.matches(appState.userEmail) {
             PaywallView(onUnlocked: {})
         } else if appState.isAuthenticated, !appState.pets.isEmpty, appState.hasCompletedOnboarding,
-                  !SubscriptionConfig.isPaywallEnabled || appState.isPro {
+                  !SubscriptionConfig.isPaywallEnabled || appState.isPro
+                    || AppReviewDemoAccount.matches(appState.userEmail) {
             NavigationStack {
                 PetHomeView()
             }
@@ -651,6 +653,19 @@ final class AppState: ObservableObject {
             }
         }
 
+        // Fresh install / cleared UserDefaults: loadPets runs before hasCompletedSignUp is hydrated,
+        // so re-apply the "already has a pet" shortcut after profile restore.
+        if !pets.isEmpty,
+           hasCompletedSignUp,
+           OnboardingDraftStore.load()?.context != .firstPet {
+            setHasCompletedOnboarding(true)
+        }
+
+        // App Review demo account must reach home without paywall (no real purchase).
+        if AppReviewDemoAccount.matches(userEmail) {
+            applyProStatus(true)
+        }
+
         if let userId = try? await supabase.currentUserId() {
             PushNotificationService.login(userId: userId)
             await SubscriptionService.logIn(userId: userId)
@@ -669,6 +684,10 @@ final class AppState: ObservableObject {
 
     func refreshSubscriptionStatus() async {
         guard SubscriptionConfig.isPaywallEnabled else {
+            applyProStatus(true)
+            return
+        }
+        if AppReviewDemoAccount.matches(userEmail) {
             applyProStatus(true)
             return
         }

@@ -11,11 +11,13 @@ struct SignInView: View {
     private enum Step {
         case email
         case otp
+        case password
     }
 
     @State private var step: Step = .email
     @State private var email = ""
     @State private var otpCode = ""
+    @State private var password = ""
     @FocusState private var focusedField: Field?
     @State private var isSubmitting = false
     @State private var authError: String?
@@ -26,6 +28,7 @@ struct SignInView: View {
 
     private enum Field {
         case email
+        case password
     }
 
     private var trimmedEmail: String {
@@ -44,10 +47,15 @@ struct SignInView: View {
         otpCode.count == SignUpOTPConfig.length && otpCode.allSatisfy(\.isNumber)
     }
 
+    private var isPasswordStepValid: Bool {
+        !password.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private var isFormValid: Bool {
         switch step {
         case .email: return isEmailStepValid
         case .otp: return isOTPStepValid
+        case .password: return isPasswordStepValid
         }
     }
 
@@ -60,6 +68,8 @@ struct SignInView: View {
                         emailStepContent
                     case .otp:
                         otpStepContent
+                    case .password:
+                        passwordStepContent
                     }
 
                     if let authError {
@@ -81,7 +91,7 @@ struct SignInView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
-                if step == .otp {
+                if step == .otp || step == .password {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Edit email") {
                             goBackToEmail()
@@ -137,25 +147,54 @@ struct SignInView: View {
         EmailOTPFieldView(
             code: $otpCode,
             email: email,
-            title: isDemoAccount
-                ? "enter your password"
-                : "enter the code we sent to your email",
+            title: "enter the code we sent to your email",
             resendCooldownRemaining: resendCooldownRemaining,
             isResendDisabled: isSubmitting,
-            onResend: isDemoAccount ? nil : { resendOTP() }
+            onResend: { resendOTP() }
         )
+    }
+
+    private var passwordStepContent: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("enter your password")
+                .font(.displayL)
+                .foregroundStyle(palette.accentDark)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(maskedEmail(trimmedEmail))
+                .font(.bodyM)
+                .foregroundStyle(palette.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            SecureField("password", text: $password)
+                .font(.titleL)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(palette.textPrimary)
+                .textContentType(.password)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .focused($focusedField, equals: .password)
+                .submitLabel(.go)
+                .tint(palette.accent)
+                .pmSignInFieldChrome()
+                .onSubmit {
+                    if isFormValid && !isSubmitting {
+                        advance()
+                    }
+                }
+        }
     }
 
     private var ctaTitle: String {
         if isSubmitting {
             switch step {
             case .email: return isDemoAccount ? "continuing…" : "sending code…"
-            case .otp: return "signing in…"
+            case .otp, .password: return "signing in…"
             }
         }
         switch step {
         case .email: return isDemoAccount ? "continue →" : "send code →"
-        case .otp: return "sign in →"
+        case .otp, .password: return "sign in →"
         }
     }
 
@@ -187,16 +226,20 @@ struct SignInView: View {
             } else {
                 Task { await sendOTPAndAdvance() }
             }
-        case .otp:
+        case .otp, .password:
             Task { await verifyAndSignIn() }
         }
     }
 
     private func advanceToDemoPasswordStep() {
+        password = ""
         otpCode = ""
         stopResendCooldown()
         withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
-            step = .otp
+            step = .password
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            focusedField = .password
         }
     }
 
@@ -235,8 +278,8 @@ struct SignInView: View {
         isSubmitting = true
         defer { isSubmitting = false }
         do {
-            if isDemoAccount {
-                _ = try await supabase.signInWithPassword(email: trimmedEmail, password: otpCode)
+            if step == .password || isDemoAccount {
+                _ = try await supabase.signInWithPassword(email: trimmedEmail, password: password)
             } else {
                 _ = try await supabase.verifyEmailOTP(email: trimmedEmail, token: otpCode)
             }
@@ -250,6 +293,7 @@ struct SignInView: View {
     private func goBackToEmail() {
         authError = nil
         otpCode = ""
+        password = ""
         stopResendCooldown()
         withAnimation(.spring(response: 0.45, dampingFraction: 0.86)) {
             step = .email
@@ -273,6 +317,17 @@ struct SignInView: View {
         resendCooldownTask?.cancel()
         resendCooldownTask = nil
         resendCooldownRemaining = 0
+    }
+
+    private func maskedEmail(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let atIndex = trimmed.firstIndex(of: "@") else { return trimmed }
+        let local = trimmed[..<atIndex]
+        let domain = trimmed[atIndex...]
+        if local.count <= 1 {
+            return "\(local)\(domain)"
+        }
+        return "\(local.prefix(1))***\(domain)"
     }
 }
 

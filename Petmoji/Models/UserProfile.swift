@@ -54,7 +54,7 @@ enum SignUpAuthError: LocalizedError {
         case .noSession:
             return "You're not signed in. Please sign in again."
         case .invalidCredentials:
-            return "Invalid or expired code."
+            return "Wrong email or password. Try again."
         case .invalidOTP:
             return "That code doesn't look right. Check the email and try again."
         case .expiredOTP:

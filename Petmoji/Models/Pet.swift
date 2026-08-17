@@ -87,7 +87,7 @@ struct Pet: Codable, Identifiable, Equatable {
         species = try container.decode(Species.self, forKey: .species)
         gender = try container.decode(PetGender.self, forKey: .gender)
         expressions = try container.decode(ExpressionMap.self, forKey: .expressions)
-        personalityTraits = try container.decode([PersonalityTrait].self, forKey: .personalityTraits)
+        personalityTraits = try PersonalityTrait.decodeLossyList(from: container, forKey: .personalityTraits)
         energyLevel = try container.decode(Int.self, forKey: .energyLevel)
         baseMood = try container.decode(BaseMood.self, forKey: .baseMood)
         homeLat = try container.decodeIfPresent(Double.self, forKey: .homeLat)
@@ -205,12 +205,30 @@ enum PersonalityTrait: String, Codable, CaseIterable {
 
     var displayName: String { rawValue.capitalized }
 
+    /// Older builds stored trait names that are no longer in the picker.
+    /// Unknown values are skipped so one stale pet cannot fail the whole fetch.
+    static func resolved(from raw: String) -> PersonalityTrait? {
+        let key = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch key {
+        case "mischievous": return .sneaky
+        case "loyal": return .stoic
+        case "playful": return .hyper
+        default: return PersonalityTrait(rawValue: key)
+        }
+    }
+
+    static func decodeLossyList<Key: CodingKey>(
+        from container: KeyedDecodingContainer<Key>,
+        forKey key: Key
+    ) throws -> [PersonalityTrait] {
+        let raw = try container.decodeIfPresent([String].self, forKey: key) ?? []
+        return raw.compactMap { resolved(from: $0) }
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let raw = try container.decode(String.self)
-        if raw == "mischievous" {
-            self = .sneaky
-        } else if let value = PersonalityTrait(rawValue: raw) {
+        if let value = Self.resolved(from: raw) {
             self = value
         } else {
             throw DecodingError.dataCorruptedError(

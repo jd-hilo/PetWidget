@@ -115,10 +115,16 @@ final class LocationService: NSObject, ObservableObject {
 
     // MARK: - Onboarding permissions
 
-    /// Requests When In Use location, then immediately prompts for notifications.
-    func requestOnboardingLocationThenNotifications() async throws {
+    /// Requests When In Use location during onboarding. Notifications are asked on their own screen.
+    func requestOnboardingWhenInUsePermission() async throws {
         try await ensureWhenInUseAuthorized()
-        _ = await MessageScheduler.shared.requestNotificationPermission()
+    }
+
+    /// After the user sets a home address, ask for Always so leave-home works in the background.
+    func requestAlwaysPermissionIfNeeded() {
+        if authorizationStatus == .authorizedWhenInUse {
+            requestAlwaysPermission()
+        }
     }
 
     // MARK: - Home setup (confirmed address → Supabase → geofence)

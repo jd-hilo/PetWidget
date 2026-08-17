@@ -396,6 +396,7 @@ private struct DebugRevealFlowView: View {
 
     private enum Step: Hashable {
         case widgetSetup
+        case notificationPermission
         case locationTracking
     }
 
@@ -418,6 +419,14 @@ private struct DebugRevealFlowView: View {
                 switch step {
                 case .widgetSetup:
                     WidgetSetupView(
+                        onNext: { path.append(.notificationPermission) },
+                        petName: draft.completedPet?.name ?? draft.name,
+                        showsLaterOption: true
+                    )
+                    .navigationBarBackButtonHidden(true)
+                case .notificationPermission:
+                    NotificationPermissionView(
+                        petName: draft.completedPet?.name ?? draft.name,
                         onNext: { path.append(.locationTracking) }
                     )
                     .navigationBarBackButtonHidden(true)
@@ -445,23 +454,34 @@ private struct DebugWidgetSetupFlowView: View {
     @State private var path: [Step] = []
 
     private enum Step: Hashable {
+        case notificationPermission
         case locationTracking
     }
 
     var body: some View {
         NavigationStack(path: $path) {
-            WidgetSetupView(onNext: { path.append(.locationTracking) })
-                .navigationBarBackButtonHidden(true)
-                .navigationDestination(for: Step.self) { step in
-                    switch step {
-                    case .locationTracking:
-                        HomeLocationSetupView(pet: pet) {
-                            onSetPet(pet)
-                            onComplete()
-                        }
-                        .navigationBarBackButtonHidden(true)
+            WidgetSetupView(
+                onNext: { path.append(.notificationPermission) },
+                petName: pet.name,
+                showsLaterOption: true
+            )
+            .navigationBarBackButtonHidden(true)
+            .navigationDestination(for: Step.self) { step in
+                switch step {
+                case .notificationPermission:
+                    NotificationPermissionView(
+                        petName: pet.name,
+                        onNext: { path.append(.locationTracking) }
+                    )
+                    .navigationBarBackButtonHidden(true)
+                case .locationTracking:
+                    HomeLocationSetupView(pet: pet) {
+                        onSetPet(pet)
+                        onComplete()
                     }
+                    .navigationBarBackButtonHidden(true)
                 }
+            }
         }
     }
 }
@@ -655,11 +675,7 @@ final class AppState: ObservableObject {
 
         // Fresh install / cleared UserDefaults: loadPets runs before hasCompletedSignUp is hydrated,
         // so re-apply the "already has a pet" shortcut after profile restore.
-        if !pets.isEmpty,
-           hasCompletedSignUp,
-           OnboardingDraftStore.load()?.context != .firstPet {
-            setHasCompletedOnboarding(true)
-        }
+        markOnboardingCompleteIfAccountAlreadyHasAPet()
 
         // App Review demo account must reach home without paywall (no real purchase).
         if AppReviewDemoAccount.matches(userEmail) {
@@ -751,11 +767,7 @@ final class AppState: ObservableObject {
                 currentPet = fetched.first
             }
             resolveWidgetPetId()
-            if !fetched.isEmpty,
-               OnboardingDraftStore.load()?.context != .firstPet,
-               hasCompletedOnboarding || hasCompletedSignUp {
-                setHasCompletedOnboarding(true)
-            }
+            markOnboardingCompleteIfAccountAlreadyHasAPet()
             if let displayable = displayablePets.first(where: { $0.id == currentPet?.id }) {
                 currentPet = displayable
             } else {
@@ -765,12 +777,31 @@ final class AppState: ObservableObject {
             await syncWidgetSnapshot()
             await PetMessageDelivery.refreshWidgetFromServer()
         } catch {
+            print("[AppState] loadPets failed: \(error)")
             pets = []
             currentPet = nil
             setWidgetPetId(nil)
             if SupabaseService.isAuthError(error) {
                 await signOut()
             }
+        }
+    }
+
+    /// Returning users with a finished pet should land on home, even if a leftover
+    /// first-pet onboarding draft is still on device.
+    private func markOnboardingCompleteIfAccountAlreadyHasAPet() {
+        let draft = OnboardingDraftStore.load()
+        let pendingFirstPetId = draft?.context == .firstPet ? draft?.pendingPetId : nil
+        let hasFinishedPet = pets.contains { pet in
+            pet.id != pendingFirstPetId
+        }
+        guard hasFinishedPet else { return }
+
+        if draft?.context == .firstPet {
+            OnboardingDraftStore.clear()
+        }
+        if hasCompletedSignUp || hasCompletedOnboarding {
+            setHasCompletedOnboarding(true)
         }
     }
 

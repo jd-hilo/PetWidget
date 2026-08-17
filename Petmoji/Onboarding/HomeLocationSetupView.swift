@@ -23,6 +23,11 @@ struct HomeLocationSetupView: View {
         pet ?? appState.currentPet ?? appState.availablePets.first
     }
 
+    private var displayPetName: String {
+        let trimmed = resolvedPet?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? "your pet" : trimmed
+    }
+
     private func demoMaxHeight(in availableHeight: CGFloat) -> CGFloat {
         let subtextAndTop: CGFloat = 48
         return max(140, availableHeight - subtextAndTop - 8)
@@ -39,7 +44,7 @@ struct HomeLocationSetupView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Spacer(minLength: 0)
 
-                    Text("want me to message when you leave home?")
+                    Text("want \(displayPetName) to notice when you leave?")
                         .font(.titleL)
                         .foregroundStyle(palette.accentDark)
                         .multilineTextAlignment(.center)
@@ -52,7 +57,7 @@ struct HomeLocationSetupView: View {
                             }
                         )
 
-                    Text("turn on location and notifications for the best experience")
+                    Text("I'll use your home location so \(displayPetName) can check in after you walk out the door.")
                         .font(.bodyS)
                         .foregroundStyle(palette.textSecondary)
                         .multilineTextAlignment(.center)
@@ -60,7 +65,8 @@ struct HomeLocationSetupView: View {
                         .padding(.bottom, 20)
 
                     LocationNotificationDemoMockup(
-                        petName: resolvedPet?.name ?? "Mochi",
+                        petName: displayPetName == "your pet" ? "Mochi" : displayPetName,
+                        kind: .leaveHome,
                         maxWidth: contentWidth,
                         maxHeight: demoMaxHeight
                     )
@@ -93,7 +99,7 @@ struct HomeLocationSetupView: View {
                 )
                 .disabled(isSettingUp || isSavingHome || resolvedPet == nil || homeSaved)
 
-                Button("Skip for now") {
+                Button("not now") {
                     skippedHome = true
                     homeError = nil
                     onDone()
@@ -128,7 +134,7 @@ struct HomeLocationSetupView: View {
         if isSettingUp { return "setting up location…" }
         if isSavingHome { return "saving home…" }
         if homeSaved { return "home location saved" }
-        return "turn on location tracking"
+        return "yes, tell me when I leave"
     }
 
     private var locationButtonSubtitle: String? {
@@ -146,7 +152,7 @@ struct HomeLocationSetupView: View {
         Task {
             defer { isSettingUp = false }
             do {
-                try await locationService.requestOnboardingLocationThenNotifications()
+                try await locationService.requestOnboardingWhenInUsePermission()
 
                 let status = locationService.authorizationStatus
                 guard status == .authorizedWhenInUse || status == .authorizedAlways else {
@@ -184,6 +190,7 @@ struct HomeLocationSetupView: View {
                 }
                 homeSaved = true
                 homeError = nil
+                locationService.requestAlwaysPermissionIfNeeded()
                 try? await Task.sleep(nanoseconds: 500_000_000)
                 onDone()
             } catch let error as HomeLocationError {

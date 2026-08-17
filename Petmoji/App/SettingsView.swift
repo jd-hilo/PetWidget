@@ -1,10 +1,12 @@
 import SwiftUI
+import UserNotifications
 
 // MARK: - Settings View
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.petmojiPalette) private var palette
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var petName: String = ""
     @State private var committedPetName: String = ""
@@ -14,6 +16,7 @@ struct SettingsView: View {
     @State private var petNameError: String?
     @FocusState private var isPetNameFocused: Bool
     @State private var notificationsEnabled = UserDefaults.standard.object(forKey: "notifications_enabled") as? Bool ?? true
+    @State private var notificationAuthStatus: UNAuthorizationStatus = .notDetermined
     @State private var isRegenerating = false
     @State private var regenerateError: String?
     @State private var regenerateSuccess = false
@@ -64,6 +67,13 @@ struct SettingsView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
+    private var notificationSettingsFooter: String {
+        if notificationAuthStatus == .denied {
+            return "Notifications are off for Petmoji in iOS Settings. Check-ins still appear in chat and on the widget."
+        }
+        return "When on, your pet sends occasional check-in messages throughout the day as push notifications. New messages also show up in chat and on your home screen."
+    }
+
     var body: some View {
         ZStack {
             PMSageScreenBackdrop()
@@ -109,6 +119,7 @@ struct SettingsView: View {
         .onAppear {
             syncPetNameFieldsFromCurrentPet()
             Task {
+                notificationAuthStatus = await MessageScheduler.shared.notificationAuthorizationStatus()
                 await appState.refreshProfileIfNeeded()
                 if let profile = try? await SupabaseService.shared.fetchProfile() {
                     notificationsEnabled = profile.notificationsEnabled
@@ -118,6 +129,12 @@ struct SettingsView: View {
         }
         .onChange(of: appState.currentPet?.id) { _, _ in
             syncPetNameFieldsFromCurrentPet()
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task {
+                notificationAuthStatus = await MessageScheduler.shared.notificationAuthorizationStatus()
+            }
         }
         .alert("Delete \(pet?.name ?? "this pet")?", isPresented: $showDeletePetConfirm) {
             Button("Delete", role: .destructive) {
@@ -394,18 +411,42 @@ struct SettingsView: View {
 
         SettingsSageSection(
             title: "notifications",
-            footer: "When on, your pet sends occasional check-in messages throughout the day as push notifications. New messages also show up in chat and on your home screen."
+            footer: notificationSettingsFooter
         ) {
-            Toggle("scheduled messages", isOn: $notificationsEnabled)
-                .font(.bodyM)
-                .foregroundStyle(palette.textPrimary)
-                .tint(palette.accent)
-                .onChange(of: notificationsEnabled) { _, enabled in
-                    UserDefaults.standard.set(enabled, forKey: "notifications_enabled")
-                    Task {
-                        try? await SupabaseService.shared.updateNotificationsEnabled(enabled)
+            if notificationAuthStatus == .denied {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
                     }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "bell.slash")
+                        Text("turn on in iOS Settings")
+                    }
+                    .font(.bodyL)
+                    .foregroundStyle(palette.accentDark)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+            } else {
+                Toggle("scheduled messages", isOn: $notificationsEnabled)
+                    .font(.bodyM)
+                    .foregroundStyle(palette.textPrimary)
+                    .tint(palette.accent)
+                    .onChange(of: notificationsEnabled) { _, enabled in
+                        UserDefaults.standard.set(enabled, forKey: "notifications_enabled")
+                        Task {
+                            if enabled, notificationAuthStatus == .notDetermined {
+                                let granted = await MessageScheduler.shared.requestNotificationPermission()
+                                notificationAuthStatus = await MessageScheduler.shared.notificationAuthorizationStatus()
+                                if !granted {
+                                    notificationsEnabled = false
+                                    UserDefaults.standard.set(false, forKey: "notifications_enabled")
+                                }
+                            }
+                            try? await SupabaseService.shared.updateNotificationsEnabled(notificationsEnabled)
+                        }
+                    }
+            }
         }
 
         VStack(alignment: .leading, spacing: 10) {

@@ -7,10 +7,19 @@ struct WidgetSetupView: View {
 
     let onNext: () -> Void
     var onCancel: (() -> Void)?
+    var petName: String = ""
     /// Primary button label. Defaults to the onboarding wording; settings passes its own.
-    var ctaTitle: String = "next: location tracking →"
+    var ctaTitle: String = "I added the widget"
     /// Helper line under the CTA. Pass `nil` to hide (e.g. when shown from settings).
-    var subtitle: String? = "You can always add this later from settings"
+    var subtitle: String? = "you can always add this later from settings"
+    /// Extra skip under the CTA. Hidden from Settings, where this screen is a how-to sheet.
+    var showsLaterOption: Bool = false
+
+    private var screenTitle: String {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "put them on your Home Screen" }
+        return "put \(trimmed) on your Home Screen"
+    }
 
     private let steps: [WidgetSetupStep] = [
         WidgetSetupStep(
@@ -81,7 +90,15 @@ struct WidgetSetupView: View {
                     action: onNext
                 )
 
-                if let subtitle {
+                if showsLaterOption {
+                    Button("I'll add it later") {
+                        AnalyticsService.capture(AnalyticsEvent.widgetSetupSkipped)
+                        onNext()
+                    }
+                    .font(.bodyM)
+                    .foregroundStyle(palette.textSecondary)
+                    .frame(maxWidth: .infinity)
+                } else if let subtitle {
                     Text(subtitle)
                         .font(.bodyS)
                         .foregroundStyle(palette.textSecondary)
@@ -97,7 +114,7 @@ struct WidgetSetupView: View {
             .padding(.bottom, 10)
             .background(Color.clear)
         }
-        .pmOnboardingScreenTitle("set up the widget")
+        .pmOnboardingScreenTitle(screenTitle)
     }
 }
 

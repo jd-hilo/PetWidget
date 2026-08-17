@@ -2,8 +2,14 @@ import SwiftUI
 
 // MARK: - Location notification demo mockup
 
+enum NotificationDemoKind {
+    case checkIn
+    case leaveHome
+}
+
 struct LocationNotificationDemoMockup: View {
     let petName: String
+    var kind: NotificationDemoKind = .leaveHome
     let maxWidth: CGFloat
     let maxHeight: CGFloat
 
@@ -20,11 +26,20 @@ struct LocationNotificationDemoMockup: View {
     @State private var animationTask: Task<Void, Never>?
 
     private var notifications: [DemoNotification] {
-        [
-            DemoNotification(timestamp: "now", message: "wait… you're leaving me??"),
-            DemoNotification(timestamp: "1h ago", message: "it's been an hour. just saying."),
-            DemoNotification(timestamp: "3h ago", message: "ok so you're NEVER coming back"),
-        ]
+        switch kind {
+        case .checkIn:
+            [
+                DemoNotification(timestamp: "now", message: "just checking in. you good?"),
+                DemoNotification(timestamp: "2h ago", message: "thinking about you. obviously."),
+                DemoNotification(timestamp: "5h ago", message: "ok wow, radio silence. noted."),
+            ]
+        case .leaveHome:
+            [
+                DemoNotification(timestamp: "now", message: "wait… you're leaving me??"),
+                DemoNotification(timestamp: "1h ago", message: "it's been an hour. just saying."),
+                DemoNotification(timestamp: "3h ago", message: "ok so you're NEVER coming back"),
+            ]
+        }
     }
 
     private var fittedSize: CGSize {
@@ -56,7 +71,9 @@ struct LocationNotificationDemoMockup: View {
         .frame(maxWidth: .infinity)
         .shadow(color: .black.opacity(0.18), radius: 18, x: 0, y: 10)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Preview of Petmoji notifications when you leave home")
+        .accessibilityLabel(kind == .leaveHome
+            ? "Preview of Petmoji notifications when you leave home"
+            : "Preview of Petmoji check-in notifications")
         .onAppear { startAnimationLoop() }
         .onDisappear { stopAnimationLoop() }
     }

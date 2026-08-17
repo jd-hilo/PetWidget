@@ -46,14 +46,15 @@
 		F7BRAND012F9E8D7C006EDD01 /* BrandLandingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */; };
 		F7DEBUG012F9E8D7C006EDD01 /* DebugLaunchArgs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DEBUG002F9E8D7C006EDD01 /* DebugLaunchArgs.swift */; };
 		F7DELIV012F9E8D7C006EDD01 /* PetMessageDelivery.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */; };
+		F7DEMO012F9E8D7C006EDD01 /* AppReviewDemoAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */; };
 		F7E8D902234567890ABCDEF /* WidgetSnapshotSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */; };
 		F7E8D903234567890ABCDEF /* PetmojiWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0BCC364089E9E0E371180AB5 /* PetmojiWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */; };
 		F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */; };
+		F7NOTIF022F9E8D7C006EDD01 /* NotificationPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7NOTIF012F9E8D7C006EDD01 /* NotificationPermissionView.swift */; };
 		F7ODFT012F9E8D7C006EDD01 /* OnboardingDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */; };
 		F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */; };
 		F7OTP012F9E8D7C006EDD01 /* EmailOTPFieldView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */; };
-		F7DEMO012F9E8D7C006EDD01 /* AppReviewDemoAccount.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */; };
 		F7PAYW022F9E8D7C006EDD01 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */; };
 		F7PH0032F9E8D7C006EDD01 /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = F7PH0022F9E8D7C006EDD01 /* PostHog */; };
 		F7PROF012F9E8D7C006EDD01 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */; };
@@ -139,13 +140,14 @@
 		F7BRAND002F9E8D7C006EDD01 /* BrandLandingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandLandingView.swift; sourceTree = "<group>"; };
 		F7DEBUG002F9E8D7C006EDD01 /* DebugLaunchArgs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLaunchArgs.swift; sourceTree = "<group>"; };
 		F7DELIV002F9E8D7C006EDD01 /* PetMessageDelivery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetMessageDelivery.swift; sourceTree = "<group>"; };
+		F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewDemoAccount.swift; sourceTree = "<group>"; };
 		F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshotSync.swift; sourceTree = "<group>"; };
 		F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationSetupView.swift; sourceTree = "<group>"; };
 		F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationNotificationDemoMockup.swift; sourceTree = "<group>"; };
+		F7NOTIF012F9E8D7C006EDD01 /* NotificationPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationPermissionView.swift; sourceTree = "<group>"; };
 		F7ODFT002F9E8D7C006EDD01 /* OnboardingDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingDraftStore.swift; sourceTree = "<group>"; };
 		F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingLoopingVideoPlayer.swift; sourceTree = "<group>"; };
 		F7OTP002F9E8D7C006EDD01 /* EmailOTPFieldView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailOTPFieldView.swift; sourceTree = "<group>"; };
-		F7DEMO002F9E8D7C006EDD01 /* AppReviewDemoAccount.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReviewDemoAccount.swift; sourceTree = "<group>"; };
 		F7PAYW012F9E8D7C006EDD01 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
 		F7PROF002F9E8D7C006EDD01 /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		F7PUSH002F9E8D7C006EDD01 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 				F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */,
 				F7HOMELO012F9E8D7C006EDD01 /* HomeLocationSetupView.swift */,
 				F7LOCNOT012F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift */,
+				F7NOTIF012F9E8D7C006EDD01 /* NotificationPermissionView.swift */,
 				F7ONVIDEO012F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift */,
 				ACA2C55AD17A0BBE19CE99AD /* OnboardingCoordinator.swift */,
 				0E5716A41FBAB3167741473B /* PersonalityBuilderView.swift */,
@@ -490,6 +493,7 @@
 				F7ADDR022F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift in Sources */,
 				F7HOMELO022F9E8D7C006EDD01 /* HomeLocationSetupView.swift in Sources */,
 				F7LOCNOT022F9E8D7C006EDD01 /* LocationNotificationDemoMockup.swift in Sources */,
+				F7NOTIF022F9E8D7C006EDD01 /* NotificationPermissionView.swift in Sources */,
 				F7ONVIDEO022F9E8D7C006EDD01 /* OnboardingLoopingVideoPlayer.swift in Sources */,
 				ED2CAAD3DF80D855BC59D437 /* LocationService.swift in Sources */,
 				F7BGONE012F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift in Sources */,
@@ -540,7 +544,7 @@
 				CODE_SIGN_ENTITLEMENTS = PetmojiWidget/PetmojiWidget.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = PetmojiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -559,7 +563,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = PetmojiWidget/PetmojiWidget.entitlements;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = PetmojiWidget/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -580,7 +584,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Petmoji/Petmoji.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
 				INFOPLIST_KEY_ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";
@@ -638,7 +642,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -704,7 +708,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -737,7 +741,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Petmoji/Petmoji-Release.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 11;
 				DEVELOPMENT_TEAM = N8SACG5845;
 				INFOPLIST_FILE = Petmoji/Info.plist;
 				INFOPLIST_KEY_ONESIGNAL_APP_ID = "50232d9c-b355-4208-86ba-d36d7da3dee7";

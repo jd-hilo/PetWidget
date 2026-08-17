@@ -35,6 +35,14 @@ final class MessageScheduler {
         return granted
     }
 
+    func notificationAuthorizationStatus() async -> UNAuthorizationStatus {
+        await center.notificationSettings().authorizationStatus
+    }
+
+    func isNotificationAuthorized() async -> Bool {
+        await notificationAuthorizationStatus() == .authorized
+    }
+
     /// Registers with APNs / OneSignal when the user has already authorized notifications.
     /// Safe to call on every foreground — tokens can rotate.
     func registerForPushIfAuthorized() async {

@@ -50,6 +50,10 @@ enum AnalyticsEvent {
     static let trialStarted = "trial_started"
     static let trialConverted = "trial_converted"
     static let locationTrackingEnabled = "location_tracking_enabled"
+    static let notificationPermissionGranted = "notification_permission_granted"
+    static let notificationPermissionDenied = "notification_permission_denied"
+    static let notificationPermissionSkipped = "notification_permission_skipped"
+    static let widgetSetupSkipped = "widget_setup_skipped"
 }
 
 // MARK: - Service

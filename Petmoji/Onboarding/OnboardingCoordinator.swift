@@ -41,6 +41,7 @@ struct OnboardingCoordinator: View {
         case personality
         case spriteReveal
         case widgetSetup
+        case notificationPermission
         case locationTracking
         case paywall
     }
@@ -123,20 +124,30 @@ struct OnboardingCoordinator: View {
                 case .widgetSetup:
                     WidgetSetupView(
                         onNext: {
-                            // Ask for notifications here so users who later skip location
-                            // tracking still get prompted (idempotent — the location step's
-                            // request becomes a no-op once permission is determined).
-                            Task {
-                                _ = await MessageScheduler.shared.requestNotificationPermission()
-                                path.append(.locationTracking)
-                                persistProgress(topStep: .locationTracking)
-                            }
+                            path.append(.notificationPermission)
+                            persistProgress(topStep: .notificationPermission)
+                        },
+                        onCancel: additionalPetCancelAction,
+                        petName: draft.completedPet?.name ?? persistedPetName,
+                        showsLaterOption: true
+                    )
+                    .navigationBarBackButtonHidden(true)
+                    .onAppear {
+                        persistProgress(topStep: .widgetSetup)
+                    }
+
+                case .notificationPermission:
+                    NotificationPermissionView(
+                        petName: draft.completedPet?.name ?? persistedPetName,
+                        onNext: {
+                            path.append(.locationTracking)
+                            persistProgress(topStep: .locationTracking)
                         },
                         onCancel: additionalPetCancelAction
                     )
                     .navigationBarBackButtonHidden(true)
                     .onAppear {
-                        persistProgress(topStep: .widgetSetup)
+                        persistProgress(topStep: .notificationPermission)
                     }
 
                 case .locationTracking:

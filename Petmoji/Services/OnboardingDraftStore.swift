@@ -13,6 +13,7 @@ enum PersistedOnboardingTopStep: String, Codable {
     case personality
     case spriteReveal
     case widgetSetup
+    case notificationPermission
     case locationTracking
     case paywall
 }
@@ -79,7 +80,7 @@ struct PersistedOnboardingProgress: Codable {
         personalityIsReview = try container.decode(Bool.self, forKey: .personalityIsReview)
         species = try container.decode(Species.self, forKey: .species)
         gender = try container.decode(PetGender.self, forKey: .gender)
-        selectedTraits = try container.decode([PersonalityTrait].self, forKey: .selectedTraits)
+        selectedTraits = try PersonalityTrait.decodeLossyList(from: container, forKey: .selectedTraits)
         energyLevel = try container.decode(Double.self, forKey: .energyLevel)
         selectedTriggers = try container.decode([PetTrigger].self, forKey: .selectedTriggers)
         customTrigger = try container.decode(String.self, forKey: .customTrigger)
@@ -192,10 +193,12 @@ enum OnboardingDraftStore {
             return [.personality, .spriteReveal]
         case .widgetSetup:
             return [.personality, .spriteReveal, .widgetSetup]
+        case .notificationPermission:
+            return [.personality, .spriteReveal, .widgetSetup, .notificationPermission]
         case .locationTracking:
-            return [.personality, .spriteReveal, .widgetSetup, .locationTracking]
+            return [.personality, .spriteReveal, .widgetSetup, .notificationPermission, .locationTracking]
         case .paywall:
-            return [.personality, .spriteReveal, .widgetSetup, .locationTracking, .paywall]
+            return [.personality, .spriteReveal, .widgetSetup, .notificationPermission, .locationTracking, .paywall]
         }
     }
 

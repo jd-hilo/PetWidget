@@ -106,6 +106,8 @@ struct SettingsView: View {
                         .foregroundStyle(palette.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.top, 4)
+
+                    PMLegalLinksRow()
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
@@ -249,6 +251,10 @@ struct SettingsView: View {
 
             SignOutPillButton(showConfirm: $showSignOutConfirm) {
                 Task { await appState.signOut() }
+            }
+
+            SettingsSageSection(title: "legal") {
+                SettingsLegalLinks()
             }
 
             SettingsSageSection(title: "danger zone", titleColor: .red) {
@@ -694,6 +700,43 @@ private struct ClassicDarkModeToggleRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Dark Mode")
         .accessibilityValue(appState.isDarkModeEnabled ? "On" : "Off")
+    }
+}
+
+// MARK: - Legal
+
+private struct SettingsLegalLinks: View {
+    @Environment(\.petmojiPalette) private var palette
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            if let url = AppLegalLinks.privacyURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Text("privacy policy")
+                        .font(.bodyL)
+                        .foregroundStyle(palette.accentDark)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Privacy Policy")
+            }
+
+            if let url = AppLegalLinks.termsURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Text("terms of use")
+                        .font(.bodyL)
+                        .foregroundStyle(palette.accentDark)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Terms of Use")
+            }
+        }
     }
 }
 

@@ -1021,3 +1021,39 @@ struct WidgetGradientBackground: View {
         .ignoresSafeArea()
     }
 }
+
+// MARK: - Privacy / Terms (reachable without an account)
+
+enum AppLegalLinks {
+    static var termsURL: URL? { url(forInfoDictionaryKey: "PETMOJI_TERMS_URL") }
+    static var privacyURL: URL? { url(forInfoDictionaryKey: "PETMOJI_PRIVACY_URL") }
+
+    private static func url(forInfoDictionaryKey key: String) -> URL? {
+        guard let raw = Bundle.main.object(forInfoDictionaryKey: key) as? String,
+              !raw.isEmpty,
+              !raw.hasPrefix("$("),
+              let url = URL(string: raw) else { return nil }
+        return url
+    }
+}
+
+struct PMLegalLinksRow: View {
+    @Environment(\.petmojiPalette) private var palette
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        HStack(spacing: 20) {
+            if let termsURL = AppLegalLinks.termsURL {
+                Button("Terms") { openURL(termsURL) }
+            }
+            if let privacyURL = AppLegalLinks.privacyURL {
+                Button("Privacy") { openURL(privacyURL) }
+            }
+        }
+        .font(.bodyS)
+        .foregroundStyle(palette.textSecondary)
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .contain)
+    }
+}

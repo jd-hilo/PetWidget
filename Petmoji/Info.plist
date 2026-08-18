@@ -69,10 +69,8 @@
 	<string>$(PETMOJI_PRIVACY_URL)</string>
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>location</string>
 		<string>remote-notification</string>
 		<string>fetch</string>
-		<string>processing</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string></string>

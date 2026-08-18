@@ -79,12 +79,10 @@ final class LocationService: NSObject, ObservableObject {
     private func applyLocationTrackingState() {
         if isLocationTrackingEnabled {
             restoreHomeRegion()
-            configureBackgroundLocationIfAuthorized()
         } else {
             stopHomeMonitoring()
             sharedDefaults?.removeObject(forKey: "departure_time")
             MessageScheduler.shared.cancelBeenGoneNotifications()
-            manager.allowsBackgroundLocationUpdates = false
         }
     }
 
@@ -162,7 +160,6 @@ final class LocationService: NSObject, ObservableObject {
                 requestAlwaysPermission()
             }
         }
-        configureBackgroundLocationIfAuthorized()
     }
 
     /// Reverse-geocodes the device's current GPS into a display address + coordinates for editable prefill.
@@ -203,7 +200,6 @@ final class LocationService: NSObject, ObservableObject {
             setHomeLocation(lat: lat, lng: lng)
         }
         MessageScheduler.shared.savePetMetadata(name: petName, petId: petId.uuidString)
-        configureBackgroundLocationIfAuthorized()
     }
 
     func setHomeLocation(lat: Double, lng: Double) {
@@ -226,7 +222,6 @@ final class LocationService: NSObject, ObservableObject {
 
         guard isLocationTrackingEnabled else { return }
         manager.startMonitoring(for: region)
-        configureBackgroundLocationIfAuthorized()
     }
 
     // MARK: - Private
@@ -269,14 +264,6 @@ final class LocationService: NSObject, ObservableObject {
         }
     }
 
-    private func configureBackgroundLocationIfAuthorized() {
-        guard isLocationTrackingEnabled, authorizationStatus == .authorizedAlways else {
-            manager.allowsBackgroundLocationUpdates = false
-            return
-        }
-        manager.allowsBackgroundLocationUpdates = true
-    }
-
     private func restoreHomeRegion() {
         guard isLocationTrackingEnabled,
               let lat = sharedDefaults?.double(forKey: "home_lat"),
@@ -297,7 +284,6 @@ final class LocationService: NSObject, ObservableObject {
         region.notifyOnExit = true
         homeRegion = region
         manager.startMonitoring(for: region)
-        configureBackgroundLocationIfAuthorized()
     }
 
     var hasHomeLocation: Bool {
@@ -319,7 +305,6 @@ extension LocationService: CLLocationManagerDelegate {
         let status = manager.authorizationStatus
         Task { @MainActor in
             authorizationStatus = status
-            configureBackgroundLocationIfAuthorized()
         }
     }
 

@@ -16,27 +16,6 @@ enum PaywallPlan: String, CaseIterable, Identifiable {
         }
     }
 
-    var fallbackPriceLabel: String {
-        switch self {
-        case .monthly: return "$4.99/mo"
-        case .lifetime: return "$29.99"
-        }
-    }
-
-    var compareAtPrice: String? {
-        switch self {
-        case .monthly: return nil
-        case .lifetime: return "$39.99"
-        }
-    }
-
-    var subtitle: String? {
-        switch self {
-        case .monthly: return "Includes 3-day free trial"
-        case .lifetime: return nil
-        }
-    }
-
     var badge: String? {
         switch self {
         case .monthly: return nil
@@ -94,20 +73,9 @@ struct PaywallView: View {
         ),
     ]
 
-    private var termsURL: URL? {
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "PETMOJI_TERMS_URL") as? String,
-              !raw.isEmpty,
-              !raw.hasPrefix("$("),
-              let url = URL(string: raw) else { return nil }
-        return url
-    }
-
-    private var privacyURL: URL? {
-        guard let raw = Bundle.main.object(forInfoDictionaryKey: "PETMOJI_PRIVACY_URL") as? String,
-              !raw.isEmpty,
-              !raw.hasPrefix("$("),
-              let url = URL(string: raw) else { return nil }
-        return url
+    private var selectedPackage: Package? {
+        guard let offerings else { return nil }
+        return SubscriptionService.package(for: selectedPlan, offerings: offerings)
     }
 
     var body: some View {
@@ -206,7 +174,7 @@ struct PaywallView: View {
             PMSageCTAButton(
                 title: "continue →",
                 action: { Task { await purchaseSelected() } },
-                isEnabled: !isPurchasing && !isLoadingOfferings
+                isEnabled: !isPurchasing && !isLoadingOfferings && selectedPackage != nil
             )
 
             HStack(spacing: 20) {
@@ -214,13 +182,20 @@ struct PaywallView: View {
                     Task { await restore() }
                 }
                 footerLink("Terms") {
-                    if let termsURL { openURL(termsURL) }
+                    if let url = AppLegalLinks.termsURL { openURL(url) }
                 }
                 footerLink("Privacy") {
-                    if let privacyURL { openURL(privacyURL) }
+                    if let url = AppLegalLinks.privacyURL { openURL(url) }
                 }
             }
             .padding(.top, 2)
+
+            Text(subscriptionLegalCopy)
+                .font(.bodyS)
+                .foregroundStyle(palette.textSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
         }
         .padding(.horizontal, 24)
         .padding(.top, 8)
@@ -256,30 +231,23 @@ struct PaywallView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(plan.title)
+                    Text(planDisplayTitle(for: plan))
                         .font(.bodyL)
                         .foregroundStyle(palette.textPrimary)
-                    if let subtitle = plan.subtitle {
+                    if let subtitle = planSubtitle(for: plan) {
                         Text(subtitle)
                             .font(.bodyS)
                             .foregroundStyle(palette.textSecondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.85)
                     }
                 }
 
                 Spacer(minLength: 8)
 
-                HStack(spacing: 6) {
-                    if let compareAtPrice = plan.compareAtPrice {
-                        Text(compareAtPrice)
-                            .font(.bodyM)
-                            .foregroundStyle(palette.textSecondary)
-                            .strikethrough(true, color: palette.textSecondary)
-                    }
-                    Text(priceLabel)
-                        .font(.bodyL)
-                        .foregroundStyle(palette.textPrimary)
-                }
+                Text(priceLabel)
+                    .font(.bodyL)
+                    .foregroundStyle(palette.textPrimary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -315,18 +283,93 @@ struct PaywallView: View {
             .disabled(isPurchasing)
     }
 
+    private func storeProduct(for plan: PaywallPlan) -> StoreProduct? {
+        guard let offerings else { return nil }
+        return SubscriptionService.package(for: plan, offerings: offerings)?.storeProduct
+    }
+
+    private func planDisplayTitle(for plan: PaywallPlan) -> String {
+        let title = storeProduct(for: plan)?.localizedTitle.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return title.isEmpty ? plan.title : title
+    }
+
+    private func planSubtitle(for plan: PaywallPlan) -> String? {
+        guard let product = storeProduct(for: plan) else { return nil }
+        if let trial = freeTrialPhrase(for: product) {
+            return trial
+        }
+        if let period = product.subscriptionPeriod {
+            return "Auto-renews every \(periodPhrase(period))"
+        }
+        return "One-time purchase"
+    }
+
     private func livePriceLabel(for plan: PaywallPlan) -> String {
-        guard let offerings,
-              let package = SubscriptionService.package(for: plan, offerings: offerings) else {
-            return plan.fallbackPriceLabel
+        guard let product = storeProduct(for: plan) else { return "—" }
+        let price = product.localizedPriceString
+        if let period = product.subscriptionPeriod {
+            return "\(price)/\(periodUnitSuffix(period))"
         }
-        let price = package.storeProduct.localizedPriceString
-        switch plan {
-        case .monthly:
-            return "\(price)/mo"
-        case .lifetime:
-            return price
+        return price
+    }
+
+    private var subscriptionLegalCopy: String {
+        var lines: [String] = []
+
+        if let monthly = storeProduct(for: .monthly) {
+            let title = monthly.localizedTitle.isEmpty ? "Petmoji Pro Monthly" : monthly.localizedTitle
+            let price = monthly.localizedPriceString
+            let term = monthly.subscriptionPeriod.map(periodPhrase) ?? "month"
+            var line = "\(title) is an auto-renewable subscription. Price: \(price) per \(term)."
+            if let trial = freeTrialPhrase(for: monthly) {
+                line += " \(trial)."
+            }
+            lines.append(line)
         }
+
+        if let lifetime = storeProduct(for: .lifetime) {
+            let title = lifetime.localizedTitle.isEmpty ? "Petmoji Pro Lifetime" : lifetime.localizedTitle
+            lines.append("\(title) is a one-time purchase of \(lifetime.localizedPriceString) and does not auto-renew.")
+        }
+
+        lines.append(
+            "Payment is charged to your Apple ID account at confirmation of purchase. Auto-renewable subscriptions renew unless canceled at least 24 hours before the end of the current period. Your account is charged for renewal within 24 hours prior to the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions."
+        )
+        return lines.joined(separator: "\n\n")
+    }
+
+    private func freeTrialPhrase(for product: StoreProduct) -> String? {
+        guard let intro = product.introductoryDiscount, intro.paymentMode == .freeTrial else {
+            return nil
+        }
+        let totalUnits = intro.subscriptionPeriod.value * intro.numberOfPeriods
+        return "Includes a \(countPhrase(totalUnits, unit: intro.subscriptionPeriod.unit)) free trial"
+    }
+
+    private func periodPhrase(_ period: SubscriptionPeriod) -> String {
+        countPhrase(period.value, unit: period.unit)
+    }
+
+    private func periodUnitSuffix(_ period: SubscriptionPeriod) -> String {
+        switch period.unit {
+        case .day: return period.value == 1 ? "day" : "\(period.value)d"
+        case .week: return period.value == 1 ? "wk" : "\(period.value)wk"
+        case .month: return period.value == 1 ? "mo" : "\(period.value)mo"
+        case .year: return period.value == 1 ? "yr" : "\(period.value)yr"
+        @unknown default: return "mo"
+        }
+    }
+
+    private func countPhrase(_ value: Int, unit: SubscriptionPeriod.Unit) -> String {
+        let name: String
+        switch unit {
+        case .day: name = value == 1 ? "day" : "days"
+        case .week: name = value == 1 ? "week" : "weeks"
+        case .month: name = value == 1 ? "month" : "months"
+        case .year: name = value == 1 ? "year" : "years"
+        @unknown default: name = "month"
+        }
+        return "\(value) \(name)"
     }
 
     private func loadOfferings() async {

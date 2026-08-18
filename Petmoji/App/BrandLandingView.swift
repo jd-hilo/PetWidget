@@ -38,9 +38,12 @@ struct BrandLandingView: View {
         .pmSageScreenBackground()
         .safeAreaInset(edge: .bottom) {
             if mode == .welcome, let onGetStarted {
-                PMSageCTAButton(title: "get started", action: onGetStarted)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 8)
+                VStack(spacing: 12) {
+                    PMSageCTAButton(title: "get started", action: onGetStarted)
+                    PMLegalLinksRow()
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 8)
             }
         }
     }

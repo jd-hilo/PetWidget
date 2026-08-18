@@ -78,6 +78,9 @@ struct SignInView: View {
 
                     signUpLink
 
+                    PMLegalLinksRow()
+                        .padding(.top, 4)
+
                     Spacer(minLength: 120)
                 }
                 .padding(.top, 8)

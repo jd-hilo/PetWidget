@@ -69,7 +69,6 @@ targets:
         NSLocationWhenInUseUsageDescription: "So your pet can react when you leave and come back home, and so you can optionally prefill your home address"
         UIBackgroundModes:
           - fetch
-          - location
           - remote-notification
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: false

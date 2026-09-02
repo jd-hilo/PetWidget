@@ -40,6 +40,7 @@
 		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
 		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
 		F7ANAL022F9E8D7C006EDD01 /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ANAL012F9E8D7C006EDD01 /* AnalyticsService.swift */; };
+		F7SKAN022F9E8D7C006EDD01 /* SKAdNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SKAN012F9E8D7C006EDD01 /* SKAdNetworkService.swift */; };
 		F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */; };
 		F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */; };
 		F7BGONE012F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BGONE002F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift */; };
@@ -134,6 +135,7 @@
 		F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatHistoryStore.swift; sourceTree = "<group>"; };
 		F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockUserSettings.swift; sourceTree = "<group>"; };
 		F7ANAL012F9E8D7C006EDD01 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
+		F7SKAN012F9E8D7C006EDD01 /* SKAdNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SKAdNetworkService.swift; sourceTree = "<group>"; };
 		F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthCoordinator.swift; sourceTree = "<group>"; };
 		F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		F7BGONE002F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeenGoneBackgroundScheduler.swift; sourceTree = "<group>"; };
@@ -282,6 +284,7 @@
 				F7PUSH032F9E8D7C006EDD01 /* PushNotificationHandler.swift */,
 				F7SUBS012F9E8D7C006EDD01 /* SubscriptionService.swift */,
 				F7ANAL012F9E8D7C006EDD01 /* AnalyticsService.swift */,
+				F7SKAN012F9E8D7C006EDD01 /* SKAdNetworkService.swift */,
 				F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */,
 			);
 			path = Services;
@@ -512,6 +515,7 @@
 				F7PAYW022F9E8D7C006EDD01 /* PaywallView.swift in Sources */,
 				F7SUBS022F9E8D7C006EDD01 /* SubscriptionService.swift in Sources */,
 				F7ANAL022F9E8D7C006EDD01 /* AnalyticsService.swift in Sources */,
+				F7SKAN022F9E8D7C006EDD01 /* SKAdNetworkService.swift in Sources */,
 				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
 				F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */,
 				F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */,

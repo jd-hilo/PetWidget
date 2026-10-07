@@ -40,6 +40,10 @@
 		F7AEF0242F9D58E9006EDD07 /* ChatHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0232F9D58E9006EDD07 /* ChatHistoryStore.swift */; };
 		F7AEF0412F9D5A01006EDD07 /* MockUserSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AEF0402F9D5A01006EDD07 /* MockUserSettings.swift */; };
 		F7ANAL022F9E8D7C006EDD01 /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7ANAL012F9E8D7C006EDD01 /* AnalyticsService.swift */; };
+		F7SING022F9E8D7C006EDD01 /* SingularService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7SING012F9E8D7C006EDD01 /* SingularService.swift */; };
+		F7SINGFRM2F9E8D7C006EDD01 /* Singular in Frameworks */ = {isa = PBXBuildFile; productRef = F7SINGPRD2F9E8D7C006EDD01 /* Singular */; };
+		F7ADSVC02F9E8D7C006EDD01 /* AdServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7ADSVC01F9E8D7C006EDD01 /* AdServices.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		F7ATTFRM02F9E8D7C006EDD01 /* AppTrackingTransparency.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F7ATTFRM01F9E8D7C006EDD01 /* AppTrackingTransparency.framework */; };
 		F7AUTH012F9E8D7C006EDD01 /* AuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH002F9E8D7C006EDD01 /* AuthCoordinator.swift */; };
 		F7AUTH022F9E8D7C006EDD01 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7AUTH032F9E8D7C006EDD01 /* SignInView.swift */; };
 		F7BGONE012F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7BGONE002F9E8D7C006EDD01 /* BeenGoneBackgroundScheduler.swift */; };
@@ -124,6 +128,9 @@
 		E367B57172A90687CF9B9982 /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		ECAC105A00465289B0DF46CE /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
 		F77FAA243007D900003AC483 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		F7ADSVC01F9E8D7C006EDD01 /* AdServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdServices.framework; path = System/Library/Frameworks/AdServices.framework; sourceTree = SDKROOT; };
+		F7ATTFRM01F9E8D7C006EDD01 /* AppTrackingTransparency.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppTrackingTransparency.framework; path = System/Library/Frameworks/AppTrackingTransparency.framework; sourceTree = SDKROOT; };
+		F7SING012F9E8D7C006EDD01 /* SingularService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingularService.swift; sourceTree = "<group>"; };
 		F7ADDR012F9E8D7C006EDD01 /* HomeAddressSearchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeAddressSearchSheet.swift; sourceTree = "<group>"; };
 		F7AEEFD12F9D451B006EDD07 /* tester_happy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_happy.png; sourceTree = "<group>"; };
 		F7AEEFD32F9D4595006EDD07 /* tester_sleepy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = tester_sleepy.png; sourceTree = "<group>"; };
@@ -175,10 +182,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				F77FAA253007D900003AC483 /* StoreKit.framework in Frameworks */,
+				F7ADSVC02F9E8D7C006EDD01 /* AdServices.framework in Frameworks */,
+				F7ATTFRM02F9E8D7C006EDD01 /* AppTrackingTransparency.framework in Frameworks */,
 				F7PUSH042F9E8D7C006EDD01 /* OneSignalFramework in Frameworks */,
 				7DBB2DE5757F2983C69CE3ED /* Supabase in Frameworks */,
 				F7RC0032F9E8D7C006EDD01 /* RevenueCat in Frameworks */,
 				F7PH0032F9E8D7C006EDD01 /* PostHog in Frameworks */,
+				F7SINGFRM2F9E8D7C006EDD01 /* Singular in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -282,6 +292,7 @@
 				F7PUSH032F9E8D7C006EDD01 /* PushNotificationHandler.swift */,
 				F7SUBS012F9E8D7C006EDD01 /* SubscriptionService.swift */,
 				F7ANAL012F9E8D7C006EDD01 /* AnalyticsService.swift */,
+				F7SING012F9E8D7C006EDD01 /* SingularService.swift */,
 				F7E8D901234567890ABCDEF /* WidgetSnapshotSync.swift */,
 			);
 			path = Services;
@@ -340,6 +351,8 @@
 			isa = PBXGroup;
 			children = (
 				F77FAA243007D900003AC483 /* StoreKit.framework */,
+				F7ADSVC01F9E8D7C006EDD01 /* AdServices.framework */,
+				F7ATTFRM01F9E8D7C006EDD01 /* AppTrackingTransparency.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -390,6 +403,7 @@
 				C3D4E5F6A7890123456789AB /* OneSignalFramework */,
 				F7RC0022F9E8D7C006EDD01 /* RevenueCat */,
 				F7PH0022F9E8D7C006EDD01 /* PostHog */,
+				F7SINGPRD2F9E8D7C006EDD01 /* Singular */,
 			);
 			productName = Petmoji;
 			productReference = E2C31EB3D182749A40DD6A1F /* Petmoji.app */;
@@ -436,6 +450,7 @@
 				B2C3D4E5F6A7890123456789 /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */,
 				F7RC0012F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 				F7PH0012F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "posthog-ios" */,
+				F7SINGPKG2F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */,
 			);
 			projectDirPath = "";
 			projectRoot = "";
@@ -512,6 +527,7 @@
 				F7PAYW022F9E8D7C006EDD01 /* PaywallView.swift in Sources */,
 				F7SUBS022F9E8D7C006EDD01 /* SubscriptionService.swift in Sources */,
 				F7ANAL022F9E8D7C006EDD01 /* AnalyticsService.swift in Sources */,
+				F7SING022F9E8D7C006EDD01 /* SingularService.swift in Sources */,
 				581FA577A3522618713A071D /* SettingsView.swift in Sources */,
 				F7SIGN012F9E8D7C006EDD01 /* SignUpCoordinator.swift in Sources */,
 				F7SIGN022F9E8D7C006EDD01 /* SignUpDraft.swift in Sources */,
@@ -600,6 +616,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.hilollc.petmoji.app;
 				REVENUECAT_API_KEY = appl_KNkxOvHKIUCwPiPynHTmmapKVzz;
 				SDKROOT = iphoneos;
+				SINGULAR_SDK_KEY = hilo_2df29d75;
+				SINGULAR_SDK_SECRET = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -758,6 +776,8 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				REVENUECAT_API_KEY = appl_KNkxOvHKIUCwPiPynHTmmapKVzz;
 				SDKROOT = iphoneos;
+				SINGULAR_SDK_KEY = hilo_2df29d75;
+				SINGULAR_SDK_SECRET = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -831,6 +851,14 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		F7SINGPKG2F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/singular-labs/Singular-iOS-SDK";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -853,6 +881,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F7RC0012F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "purchases-ios" */;
 			productName = RevenueCat;
+		};
+		F7SINGPRD2F9E8D7C006EDD01 /* Singular */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F7SINGPKG2F9E8D7C006EDD01 /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */;
+			productName = Singular;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

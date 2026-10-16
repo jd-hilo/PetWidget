@@ -42,6 +42,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
         AnalyticsService.configure()
         SingularService.configure(launchOptions: launchOptions)
         BeenGoneBackgroundScheduler.registerHandlers()
+        // Register SKAN install conversion early (async completion; does not block UI).
+        SKAdNetworkService.registerInstallConversionIfNeeded()
         return true
     }
 

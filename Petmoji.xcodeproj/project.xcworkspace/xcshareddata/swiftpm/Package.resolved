@@ -29,6 +29,15 @@
       }
     },
     {
+      "identity" : "singular-ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/singular-labs/Singular-iOS-SDK",
+      "state" : {
+        "revision" : "c6ad9bce8fafe9e29a367dee41107127f1856500",
+        "version" : "12.14.2"
+      }
+    },
+    {
       "identity" : "supabase-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/supabase/supabase-swift",

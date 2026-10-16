@@ -11,6 +11,7 @@ struct PetmojiApp: App {
             RootView()
                 .environmentObject(appState)
                 .onOpenURL { url in
+                    SingularService.handleOpenURL(url)
                     guard url.scheme?.lowercased() == "petmoji" else { return }
                     if url.host?.lowercased() == "chat" {
                         let petId = URLComponents(url: url, resolvingAgainstBaseURL: false)?
@@ -20,6 +21,9 @@ struct PetmojiApp: App {
                             .flatMap(UUID.init(uuidString:))
                         appState.pendingWidgetDeepLink = .openChat(petId: petId)
                     }
+                }
+                .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+                    SingularService.handleUserActivity(userActivity)
                 }
         }
     }
@@ -36,6 +40,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, @MainActor UNUserNotificatio
         PushNotificationService.configure(launchOptions: launchOptions)
         SubscriptionService.configure()
         AnalyticsService.configure()
+        SingularService.configure(launchOptions: launchOptions)
         BeenGoneBackgroundScheduler.registerHandlers()
         // Register SKAN install conversion early (async completion; does not block UI).
         SKAdNetworkService.registerInstallConversionIfNeeded()
@@ -155,12 +160,27 @@ struct RootView: View {
 #endif
     }
 
+    /// ATT after a meaningful screen, not the loading splash: welcome "get started"
+    /// (hasSeenWelcome) or any authenticated surface (home / onboarding / paywall).
+    private var shouldPromptForTracking: Bool {
+        guard !appState.isBootstrapping, !appState.isLoading else { return false }
+        return appState.hasSeenWelcome || appState.isAuthenticated
+    }
+
     var body: some View {
         Group {
             rootRoutingContent
         }
         .environment(\.petmojiPalette, PetmojiPalette.palette(for: appState.visualStyle))
         .preferredColorScheme(appState.visualStyle == .widgetGlass ? .dark : .light)
+        .task(id: shouldPromptForTracking) {
+            guard shouldPromptForTracking else { return }
+            // Let the first real screen paint (welcome, home, auth, onboarding)
+            // before the system ATT dialog. Do not prompt on the loading splash.
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            await SingularService.requestTrackingAuthorizationIfNeeded()
+        }
         .task {
             let skipNormalBootstrap = shouldSkipOnboardingToReveal
                 || shouldSkipOnboardingToWidgetSetup
@@ -692,6 +712,7 @@ final class AppState: ObservableObject {
                 email: userEmail.isEmpty ? nil : userEmail,
                 name: userDisplayName.isEmpty ? nil : userDisplayName
             )
+            SingularService.setCustomUserId(userId)
         }
         await refreshSubscriptionStatus()
     }
@@ -750,6 +771,7 @@ final class AppState: ObservableObject {
             PushNotificationService.login(userId: userId)
             await SubscriptionService.logIn(userId: userId)
             AnalyticsService.identify(userId: userId, email: email, name: name)
+            SingularService.setCustomUserId(userId)
         }
         AnalyticsService.capture(AnalyticsEvent.signUpCompleted)
         await refreshSubscriptionStatus()
@@ -960,6 +982,7 @@ final class AppState: ObservableObject {
         await SubscriptionService.logOut()
         AnalyticsService.capture(AnalyticsEvent.signOut)
         AnalyticsService.reset()
+        SingularService.unsetCustomUserId()
         try? await SupabaseService.shared.client.auth.signOut(scope: .global)
         clearAllPersistedUserData()
         applyUnauthenticatedState()
@@ -973,6 +996,7 @@ final class AppState: ObservableObject {
         PushNotificationService.logout()
         await SubscriptionService.logOut()
         AnalyticsService.reset()
+        SingularService.unsetCustomUserId()
         try await supabase.deleteAccount()
         for petId in petIds {
             ChatHistoryStore.clearHistory(for: petId)

@@ -6,24 +6,20 @@ from __future__ import annotations
 from collections import deque
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 
 ROOT = Path(__file__).resolve().parent
-REPO = ROOT.parents[1]
 SRC = ROOT / "sprites"
 OUT = ROOT / "sprites_knockout"
-REPO_SPRITES = [
-    REPO / "tester_happy.png",
-    REPO / "tester_sleepy.png",
-    REPO / "tester_mad.png",
-    REPO / "tester_excited.png",
-    REPO / "tester_judging.png",
-    REPO / "tester_misses_you.png",
-]
+CLAY_SOURCES = {
+    "pet-sleepy.jpg": Path("/opt/cursor/artifacts/assets/pet-sleepy.jpg"),
+    "pet-missesyou.jpg": Path("/opt/cursor/artifacts/assets/pet-missesyou.jpg"),
+    "pet-mad.jpg": Path("/opt/cursor/artifacts/assets/pet-mad.jpg"),
+}
+WALLPAPER_SRC = Path("/opt/cursor/artifacts/assets/homescreen-wallpaper-blur.jpg")
 
 
 def knockout_edge_white(im: Image.Image, matte_threshold: float = 0.93, softness: float = 0.11, max_chroma: float = 0.065) -> Image.Image:
-    """Mirrors UIImage.knockingOutEdgeConnectedMatte."""
     rgba = im.convert("RGBA")
     w, h = rgba.size
     px = rgba.load()
@@ -70,28 +66,7 @@ def knockout_edge_white(im: Image.Image, matte_threshold: float = 0.93, softness
     return rgba
 
 
-def knockout_near_black(im: Image.Image, threshold: float = 0.08, softness: float = 0.06) -> Image.Image:
-    """Mirrors UIImage.knockingOutNearBlack."""
-    rgba = im.convert("RGBA")
-    w, h = rgba.size
-    px = rgba.load()
-    upper = min(1.0, threshold + max(softness, 0.0001))
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            max_c = max(r, g, b) / 255.0
-            if max_c >= upper:
-                continue
-            if max_c <= threshold:
-                fade = 0.0
-            else:
-                fade = (max_c - threshold) / (upper - threshold)
-            px[x, y] = (r, g, b, int(max(0, min(1, (a / 255.0) * fade)) * 255.0))
-    return rgba
-
-
-def content_fit_scale(im: Image.Image, target_max_fill: float = 0.84) -> float:
-    """Mirrors UIImage.widgetContentFitScale."""
+def content_fit_scale(im: Image.Image, target_max_fill: float = 0.92) -> float:
     rgba = im.convert("RGBA")
     w, h = rgba.size
     px = rgba.load()
@@ -117,24 +92,29 @@ def content_fit_scale(im: Image.Image, target_max_fill: float = 0.84) -> float:
 
 def main() -> None:
     SRC.mkdir(parents=True, exist_ok=True)
-    for repo_sprite in REPO_SPRITES:
-        if repo_sprite.exists():
-            dest = SRC / repo_sprite.name
-            dest.write_bytes(repo_sprite.read_bytes())
     OUT.mkdir(parents=True, exist_ok=True)
     scales = {}
-    for src in sorted(SRC.glob("tester_*.png")):
-        im = Image.open(src)
-        knocked = knockout_edge_white(im)
-        knocked = knockout_near_black(knocked)
-        dest = OUT / src.name
-        knocked.save(dest)
-        scales[src.name] = round(content_fit_scale(knocked), 4)
-        print(f"{src.name}: fitScale={scales[src.name]} size={knocked.size}")
+    for name, src in CLAY_SOURCES.items():
+        if not src.exists():
+            raise SystemExit(f"missing clay sprite {src}")
+        dest = SRC / name
+        dest.write_bytes(src.read_bytes())
+        im = Image.open(dest)
+        knocked = knockout_edge_white(im, matte_threshold=0.94, softness=0.10, max_chroma=0.08)
+        out = OUT / (Path(name).stem + ".png")
+        knocked.save(out)
+        scales[out.name] = round(content_fit_scale(knocked), 4)
+        print(f"{out.name}: fitScale={scales[out.name]} size={knocked.size}")
 
-    wallpaper = Image.open(ROOT / "wallpaper.jpg").convert("RGB")
+    if not WALLPAPER_SRC.exists():
+        raise SystemExit(f"missing wallpaper {WALLPAPER_SRC}")
+    wallpaper = Image.open(WALLPAPER_SRC).convert("RGB")
     wallpaper = wallpaper.resize((1080, 1920), Image.Resampling.LANCZOS)
-    wallpaper.save(ROOT / "wallpaper-1080x1920.jpg", quality=92)
+    wallpaper = ImageEnhance.Color(wallpaper).enhance(0.55)
+    wallpaper = ImageEnhance.Contrast(wallpaper).enhance(0.82)
+    wallpaper = ImageEnhance.Brightness(wallpaper).enhance(0.92)
+    wallpaper = wallpaper.filter(ImageFilter.GaussianBlur(radius=6))
+    wallpaper.save(ROOT / "wallpaper-1080x1920.jpg", quality=90)
     print("wallpaper-1080x1920.jpg", wallpaper.size)
     (ROOT / "sprite-fit-scales.json").write_text(
         __import__("json").dumps(scales, indent=2) + "\n"

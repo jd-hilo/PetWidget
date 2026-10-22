@@ -3,20 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=1080, height=1920, initial-scale=1" />
-  <title>Petmoji lock screen export</title>
+  <title>Petmoji home screen export</title>
   <style>
-    @font-face { font-family: Inter; src: url("fonts/Inter-Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; }
-    @font-face { font-family: Inter; src: url("fonts/Inter-ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; }
     @font-face { font-family: Inter; src: url("fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
     @font-face { font-family: Inter; src: url("fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; }
     @font-face { font-family: Inter; src: url("fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; }
-    @font-face { font-family: InterDisplay; src: url("fonts/InterDisplay-Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; }
-    @font-face { font-family: InterDisplay; src: url("fonts/InterDisplay-ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; }
     @font-face { font-family: Nunito; src: url("fonts/Nunito-Variable.ttf") format("truetype"); font-weight: 100 900; font-style: normal; }
 
     :root {
-      --pt: 2.748091603053435px; /* 1080 / 393 */
-      --accent: #F2B8CB;
+      --pt: 2.748091603053435px;
+      --accent: #A8C4E0;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,12 +24,13 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    .lock {
+    .home {
       position: relative;
       width: 1080px;
       height: 1920px;
       overflow: hidden;
       color: #fff;
+      font-family: Inter, sans-serif;
     }
 
     .wallpaper {
@@ -42,187 +39,126 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 40%;
-    }
-
-    .wash {
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.08) 22%, rgba(0,0,0,0.00) 40%, rgba(0,0,0,0.18) 78%, rgba(0,0,0,0.42) 100%);
+      filter: saturate(0.7) contrast(0.9);
     }
 
     .island {
       position: absolute;
-      top: calc(12 * var(--pt));
+      top: calc(11.5 * var(--pt));
       left: 50%;
       transform: translateX(-50%);
-      width: calc(126 * var(--pt));
-      height: calc(37.2 * var(--pt));
+      width: calc(125 * var(--pt));
+      height: calc(36.5 * var(--pt));
       background: #000;
       border-radius: 999px;
     }
 
-    .status {
+    .status-left, .status-right {
       position: absolute;
       top: calc(16.5 * var(--pt));
-      right: calc(22 * var(--pt));
-      height: calc(28 * var(--pt));
+      height: calc(26 * var(--pt));
       display: flex;
       align-items: center;
-      gap: calc(7 * var(--pt));
-      color: #fff;
     }
+    .status-left {
+      left: calc(28 * var(--pt));
+      gap: calc(6 * var(--pt));
+    }
+    .status-right {
+      right: calc(22 * var(--pt));
+      gap: calc(7 * var(--pt));
+    }
+    .time {
+      font-size: calc(16.6 * var(--pt));
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .loc {
+      width: calc(16 * var(--pt));
+      height: calc(16 * var(--pt));
+      border-radius: 50%;
+      background: #0A84FF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .loc svg { width: 62%; height: 62%; fill: #fff; }
 
     .bars {
       display: flex;
       align-items: flex-end;
-      gap: 2.6px;
-      height: calc(14.5 * var(--pt));
+      gap: 2.5px;
+      height: calc(13.5 * var(--pt));
     }
-    .bars i {
-      display: block;
-      width: 6.2px;
-      background: #fff;
-      border-radius: 1.5px;
-    }
-    .bars i:nth-child(1) { height: 35%; }
+    .bars i { display: block; width: 5.8px; background: #fff; border-radius: 1.3px; }
+    .bars i:nth-child(1) { height: 34%; }
     .bars i:nth-child(2) { height: 55%; }
-    .bars i:nth-child(3) { height: 75%; }
+    .bars i:nth-child(3) { height: 76%; }
     .bars i:nth-child(4) { height: 100%; }
+    .wifi { width: calc(16.5 * var(--pt)); height: calc(12.5 * var(--pt)); }
 
-    .wifi { width: calc(17 * var(--pt)); height: calc(13 * var(--pt)); }
-    .battery {
-      width: calc(27.5 * var(--pt));
-      height: calc(13.2 * var(--pt));
-      border: 1.7px solid rgba(255,255,255,0.62);
-      border-radius: 4.6px;
+    .battery-pill {
+      height: calc(14.4 * var(--pt));
+      min-width: calc(32 * var(--pt));
+      padding: 0 calc(7 * var(--pt));
+      border-radius: 999px;
+      background: #fff;
+      color: #111;
+      font-size: calc(11.2 * var(--pt));
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       position: relative;
-      box-sizing: content-box;
+      letter-spacing: -0.02em;
     }
-    .battery::after {
+    .battery-pill::after {
       content: "";
       position: absolute;
-      right: -4.6px;
+      right: -3.6px;
       top: 50%;
       transform: translateY(-50%);
-      width: 2.5px;
-      height: 6.6px;
-      background: rgba(255,255,255,0.62);
-      border-radius: 0 1.4px 1.4px 0;
+      width: 2.2px;
+      height: 6px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 0 1.2px 1.2px 0;
     }
-    .battery .fill {
+
+    /* Medium widget — matched to the real screenshot */
+    .widget-slot {
       position: absolute;
-      left: 2px;
-      top: 2px;
-      bottom: 2px;
-      width: 70%;
-      background: #fff;
-      border-radius: 2.2px;
-    }
-
-    .clock-block {
-      position: absolute;
-      top: calc(68 * var(--pt));
-      left: 0;
-      right: 0;
-      text-align: center;
-    }
-
-    .date {
-      font-family: Inter, sans-serif;
-      font-weight: 500;
-      font-size: calc(20.5 * var(--pt));
-      letter-spacing: 0.01em;
-      word-spacing: 0.12em;
-      color: rgba(255,255,255,0.94);
-      text-shadow: 0 2px 12px rgba(0,0,0,0.28);
-    }
-
-    .clock {
-      margin-top: calc(-6 * var(--pt));
-      font-family: InterDisplay, Inter, sans-serif;
-      font-weight: 100;
-      font-size: calc(92 * var(--pt));
-      line-height: 0.9;
-      letter-spacing: -0.04em;
-      color: #fff;
-      text-shadow: 0 8px 30px rgba(0,0,0,0.24);
-    }
-
-    .slot {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: calc(198 * var(--pt));
-      display: flex;
-      justify-content: center;
-    }
-
-    /* Widget chrome — matches WidgetTranslucentBackground + iOS widget shape */
-    .widget {
-      position: relative;
-      overflow: hidden;
-      border-radius: calc(22 * var(--pt));
-      background: rgba(22, 26, 34, 0.32);
-      -webkit-backdrop-filter: blur(48px) saturate(1.65);
-      backdrop-filter: blur(48px) saturate(1.65);
-      box-shadow:
-        inset 0 0.6px 0 rgba(255,255,255,0.28),
-        inset 0 0 0 0.7px rgba(255,255,255,0.12),
-        0 10px 28px rgba(0,0,0,0.22);
-      color: #fff;
-    }
-    .widget.small {
-      width: calc(158 * var(--pt));
-      height: calc(158 * var(--pt));
-    }
-    .widget.medium {
+      top: calc(62 * var(--pt));
+      left: calc(27.5 * var(--pt));
       width: calc(338 * var(--pt));
       height: calc(158 * var(--pt));
     }
-
+    .widget {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border-radius: calc(24 * var(--pt));
+      background: rgba(22, 22, 24, 0.94);
+      box-shadow:
+        inset 0 0.7px 0 rgba(255,255,255,0.22),
+        inset 0 0 0 0.65px rgba(255,255,255,0.14);
+    }
     .paws {
       position: absolute;
-      inset: -20px;
-      opacity: 0.018;
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><ellipse cx='12' cy='16.2' rx='5.2' ry='4.4' fill='white'/><circle cx='6.2' cy='10.2' r='2.15' fill='white'/><circle cx='10' cy='7.4' r='2.25' fill='white'/><circle cx='14.2' cy='7.4' r='2.25' fill='white'/><circle cx='17.8' cy='10.2' r='2.15' fill='white'/></svg>");
-      background-size: calc(38 * var(--pt)) calc(38 * var(--pt));
+      inset: -30px;
+      opacity: 0.055;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><ellipse cx='12' cy='16.4' rx='5.1' ry='4.3' fill='white'/><circle cx='6.1' cy='10.1' r='2.1' fill='white'/><circle cx='9.9' cy='7.3' r='2.2' fill='white'/><circle cx='14.2' cy='7.3' r='2.2' fill='white'/><circle cx='17.9' cy='10.1' r='2.1' fill='white'/></svg>");
+      background-size: calc(36 * var(--pt)) calc(36 * var(--pt));
       pointer-events: none;
     }
-
-    .small-inner {
-      position: relative;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .small-inner .sprite-slot {
-      margin-top: calc(2 * var(--pt));
-      width: calc(100 * var(--pt));
-      height: calc(100 * var(--pt));
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .small-inner .msg-row {
-      display: flex;
-      align-items: center;
-      gap: calc(6 * var(--pt));
-      width: 100%;
-      padding: calc(6 * var(--pt)) calc(8 * var(--pt)) calc(8 * var(--pt)) calc(6 * var(--pt));
-    }
-
-    .medium-inner {
+    .widget-inner {
       position: relative;
       height: 100%;
       display: flex;
       align-items: flex-start;
       gap: calc(6 * var(--pt));
     }
-    .medium-inner .sprite-slot {
+    .sprite-slot {
       margin: calc(2 * var(--pt)) 0 0 calc(4 * var(--pt));
       width: calc(136 * var(--pt));
       height: calc(136 * var(--pt));
@@ -232,237 +168,240 @@
       overflow: hidden;
       flex: 0 0 auto;
     }
-    .medium-copy {
-      flex: 1;
-      min-width: 0;
-      height: 100%;
-      padding: calc(6 * var(--pt)) calc(6 * var(--pt)) calc(6 * var(--pt)) 0;
-      display: flex;
-      flex-direction: column;
-      gap: calc(6 * var(--pt));
-    }
-
     .sprite {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      image-rendering: auto;
       transform-origin: center center;
     }
-
-    .bullet {
-      font-family: Nunito, ui-rounded, sans-serif;
-      font-weight: 700;
-      font-size: calc(26 * var(--pt));
-      line-height: 1;
-      color: var(--accent);
-      text-shadow:
-        0 0 calc(1 * var(--pt)) color-mix(in srgb, var(--accent) 45%, transparent),
-        0 0 calc(3 * var(--pt)) color-mix(in srgb, var(--accent) 28%, transparent),
-        0 0 calc(6 * var(--pt)) color-mix(in srgb, var(--accent) 16%, transparent);
-      flex: 0 0 auto;
+    .copy {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      padding: calc(8 * var(--pt)) calc(10 * var(--pt)) calc(8 * var(--pt)) 0;
+      display: flex;
+      flex-direction: column;
+      gap: calc(5 * var(--pt));
     }
     .emotion-row {
       display: flex;
-      align-items: baseline;
-      gap: calc(4 * var(--pt));
+      align-items: center;
+      gap: calc(7 * var(--pt));
+      flex: 0 0 auto;
     }
-    .emotion-row .bullet { transform: translateY(calc(3 * var(--pt))); }
+    .dot {
+      width: calc(10 * var(--pt));
+      height: calc(10 * var(--pt));
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow:
+        0 0 calc(3 * var(--pt)) color-mix(in srgb, var(--accent) 85%, white),
+        0 0 calc(8 * var(--pt)) color-mix(in srgb, var(--accent) 55%, transparent),
+        0 0 calc(14 * var(--pt)) color-mix(in srgb, var(--accent) 28%, transparent);
+      flex: 0 0 auto;
+    }
     .emotion-name {
       font-family: Nunito, Inter, ui-rounded, sans-serif;
-      font-weight: 700;
-      font-size: calc(18 * var(--pt));
-      letter-spacing: 0.4px;
-      word-spacing: 0.16em;
-      color: rgba(255,255,255,0.96);
+      font-weight: 800;
+      font-size: calc(22 * var(--pt));
+      letter-spacing: 0.2px;
+      color: rgba(255,255,255,0.98);
       white-space: nowrap;
       text-shadow:
-        0 0 calc(1 * var(--pt)) color-mix(in srgb, var(--accent) 38%, transparent),
-        0 0 calc(4 * var(--pt)) color-mix(in srgb, var(--accent) 22%, transparent);
+        0 0 calc(2 * var(--pt)) color-mix(in srgb, var(--accent) 30%, transparent);
     }
-
     .msg {
       font-family: Nunito, Inter, ui-rounded, sans-serif;
-      font-weight: 600;
-      color: rgba(255,255,255,0.93);
+      font-weight: 650;
+      font-size: calc(16.5 * var(--pt));
+      line-height: calc(21.5 * var(--pt));
+      color: rgba(255,255,255,0.96);
       text-align: left;
-      min-width: 0;
-      word-spacing: 0.18em;
-    }
-    .small-inner .msg {
-      font-size: calc(15 * var(--pt));
-      line-height: calc(17 * var(--pt));
-    }
-    .medium-copy .msg {
-      font-size: calc(16 * var(--pt));
-      line-height: calc(20 * var(--pt));
-      color: rgba(255,255,255,0.92);
+      word-spacing: 0.16em;
+      height: calc(4 * 21.5 * var(--pt));
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
 
-    .bottom {
+    .icons {
       position: absolute;
-      left: calc(26 * var(--pt));
-      right: calc(26 * var(--pt));
-      bottom: calc(18 * var(--pt));
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
+      left: calc(27.5 * var(--pt));
+      right: calc(27.5 * var(--pt));
+      top: calc(232 * var(--pt));
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      row-gap: calc(18 * var(--pt));
     }
-
-    .orb {
-      width: calc(50 * var(--pt));
-      height: calc(50 * var(--pt));
-      border-radius: 50%;
-      background: rgba(40, 44, 52, 0.42);
-      -webkit-backdrop-filter: blur(28px) saturate(1.3);
-      backdrop-filter: blur(28px) saturate(1.3);
-      box-shadow:
-        inset 0 0.6px 0 rgba(255,255,255,0.22),
-        inset 0 0 0 0.6px rgba(255,255,255,0.10);
+    .app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: calc(5 * var(--pt));
+    }
+    .squircle {
+      width: calc(60 * var(--pt));
+      height: calc(60 * var(--pt));
+      border-radius: calc(13.6 * var(--pt));
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
     }
-    .orb svg { width: 44%; height: 44%; fill: #fff; }
+    .squircle svg { width: 54%; height: 54%; }
+    .app-label {
+      font-size: calc(11.2 * var(--pt));
+      font-weight: 400;
+      color: #fff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.35);
+      letter-spacing: 0.01em;
+    }
 
-    .homebar-wrap {
+    .dots {
       position: absolute;
-      left: 0;
-      right: 0;
-      bottom: calc(7 * var(--pt));
+      left: 0; right: 0;
+      bottom: calc(128 * var(--pt));
       display: flex;
       justify-content: center;
+      gap: 7px;
     }
+    .dots i {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(255,255,255,0.32);
+    }
+    .dots i.on { background: #fff; }
+
+    .dock {
+      position: absolute;
+      left: calc(16 * var(--pt));
+      right: calc(16 * var(--pt));
+      bottom: calc(20 * var(--pt));
+      height: calc(96 * var(--pt));
+      border-radius: calc(32 * var(--pt));
+      background: rgba(255,255,255,0.28);
+      -webkit-backdrop-filter: blur(36px) saturate(1.4);
+      backdrop-filter: blur(36px) saturate(1.4);
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+      padding: 0 calc(10 * var(--pt));
+    }
+    .dock .app { gap: 0; }
+    .dock .app-label { display: none; }
+
     .homebar {
+      position: absolute;
+      left: 50%;
+      bottom: calc(6 * var(--pt));
+      transform: translateX(-50%);
       width: calc(140 * var(--pt));
       height: calc(5 * var(--pt));
       border-radius: 999px;
-      background: rgba(255,255,255,0.92);
+      background: #fff;
     }
-
-    .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="lock">
+  <div class="home">
     <img class="wallpaper" src="wallpaper-1080x1920.jpg" alt="" />
-    <div class="wash"></div>
     <div class="island"></div>
-    <div class="status">
-      <div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <svg class="wifi" viewBox="0 0 17 13" aria-hidden="true">
-        <path d="M8.5 12.2a1.15 1.15 0 1 0 0-2.3 1.15 1.15 0 0 0 0 2.3Zm0-3.55c1.22 0 2.34.48 3.17 1.26l-1.18 1.2A2.95 2.95 0 0 0 8.5 8.3c-.77 0-1.48.3-2 .8L5.33 7.9A4.35 4.35 0 0 1 8.5 8.65Zm0-3.35c2.16 0 4.12.86 5.55 2.26L12.9 8.7A6.05 6.05 0 0 0 8.5 6.9c-1.72 0-3.28.7-4.4 1.82L2.95 7.56A7.7 7.7 0 0 1 8.5 5.3Z" fill="#fff"/>
-      </svg>
-      <div class="battery"><div class="fill"></div></div>
-    </div>
-
-    <div class="clock-block">
-      <div class="date">Thursday, October 22</div>
-      <div class="clock">2:07</div>
-    </div>
-
-    <div class="slot">
-      <div id="widget-small" class="widget small">
-        <div class="paws"></div>
-        <div class="small-inner">
-          <div class="sprite-slot">
-            <img id="small-sprite" class="sprite" alt="" />
-          </div>
-          <div class="msg-row">
-            <span id="small-bullet" class="bullet">•</span>
-            <div id="small-msg" class="msg"></div>
-          </div>
-        </div>
+    <div class="status-left">
+      <div class="time">2:07</div>
+      <div class="loc" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2.4c-3.9 0-7.1 3.1-7.1 7.1 0 5.2 6.4 11.6 6.7 11.9.22.22.58.22.8 0 .3-.3 6.7-6.7 6.7-11.9 0-4-3.2-7.1-7.1-7.1Zm0 9.6a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
       </div>
+    </div>
+    <div class="status-right">
+      <div class="bars"><i></i><i></i><i></i><i></i></div>
+      <svg class="wifi" viewBox="0 0 17 13"><path d="M8.5 12.2a1.15 1.15 0 1 0 0-2.3 1.15 1.15 0 0 0 0 2.3Zm0-3.55c1.22 0 2.34.48 3.17 1.26l-1.18 1.2A2.95 2.95 0 0 0 8.5 8.3c-.77 0-1.48.3-2 .8L5.33 7.9A4.35 4.35 0 0 1 8.5 8.65Zm0-3.35c2.16 0 4.12.86 5.55 2.26L12.9 8.7A6.05 6.05 0 0 0 8.5 6.9c-1.72 0-3.28.7-4.4 1.82L2.95 7.56A7.7 7.7 0 0 1 8.5 5.3Z" fill="#fff"/></svg>
+      <div class="battery-pill">64</div>
+    </div>
 
-      <div id="widget-medium" class="widget medium hidden">
+    <div class="widget-slot">
+      <div class="widget">
         <div class="paws"></div>
-        <div class="medium-inner">
+        <div class="widget-inner">
           <div class="sprite-slot">
-            <img id="medium-sprite" class="sprite" alt="" />
+            <img id="sprite" class="sprite" alt="" />
           </div>
-          <div class="medium-copy">
+          <div class="copy">
             <div class="emotion-row">
-              <span id="medium-bullet" class="bullet">•</span>
-              <span id="medium-emotion" class="emotion-name"></span>
+              <span class="dot"></span>
+              <span id="emotion" class="emotion-name"></span>
             </div>
-            <div id="medium-msg" class="msg"></div>
+            <div id="msg" class="msg"></div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="bottom">
-      <div class="orb" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M8.6 3.1h6.8c.5 0 .9.4.9.9v2.2h.8c.45 0 .8.35.8.8v3.4c0 1.85-1.05 3.5-2.7 4.25l-.5.22v3.05c0 .6-.5 1.1-1.1 1.1H10c-.6 0-1.1-.5-1.1-1.1v-3.05l-.5-.22A4.75 4.75 0 0 1 5.7 10.4V7c0-.45.35-.8.8-.8h.8V4c0-.5.4-.9.9-.9Zm1.1 1.8v1.3h4.6V4.9H9.7Zm-.4 3.9v1.6c0 1.12.64 2.14 1.65 2.62l.85.4v3.2h2.4v-3.2l.85-.4c1.01-.48 1.65-1.5 1.65-2.62V8.8H9.3Z"/>
-        </svg>
-      </div>
-      <div class="orb" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M8.2 6.4h1.15l.7-1.35c.2-.4.6-.65 1.05-.65h1.8c.45 0 .85.25 1.05.65l.7 1.35H15.8c1.4 0 2.55 1.15 2.55 2.55v7.1c0 1.4-1.15 2.55-2.55 2.55H8.2c-1.4 0-2.55-1.15-2.55-2.55v-7.1c0-1.4 1.15-2.55 2.55-2.55Zm3.8 3.05A3.15 3.15 0 1 0 12 16.75a3.15 3.15 0 0 0 0-6.3Zm0 1.7a1.45 1.45 0 1 1 0 2.9 1.45 1.45 0 0 1 0-2.9Z"/>
-        </svg>
-      </div>
-    </div>
-    <div class="homebar-wrap"><div class="homebar"></div></div>
+    <div class="icons" id="icons"></div>
+    <div class="dots"><i class="on"></i><i></i><i></i></div>
+    <div class="dock" id="dock"></div>
+    <div class="homebar"></div>
   </div>
 
   <script>
+    const ICONS = [
+      { name: "Photos", bg: "linear-gradient(135deg,#ffd36a,#ff6b8a 45%,#6aa4ff)", ink: "#fff", path: "M4 7.2C4 6 5 5 6.2 5h11.6C19 5 20 6 20 7.2v9.6c0 1.2-1 2.2-2.2 2.2H6.2C5 19 4 18 4 16.8V7.2Zm8 8.1a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z" },
+      { name: "Calendar", bg: "#fff", ink: "#ff3b30", path: "M7 3.5h2v2h6v-2h2v2h1.5c.8 0 1.5.7 1.5 1.5v11c0 .8-.7 1.5-1.5 1.5h-13C4.7 19.5 4 18.8 4 18v-11c0-.8.7-1.5 1.5-1.5H7v-2Zm10 6.5H7v8h10v-8Z" },
+      { name: "Notes", bg: "#ffd60a", ink: "#7a5a00", path: "M6 4.5h12c.8 0 1.5.7 1.5 1.5v13l-3-2H6c-.8 0-1.5-.7-1.5-1.5v-10c0-.8.7-1.5 1.5-1.5Zm1.8 4v1.4h8.4V8.5H7.8Zm0 3.2v1.4h8.4v-1.4H7.8Z" },
+      { name: "Weather", bg: "linear-gradient(#4facfe,#00c6ff)", ink: "#fff", path: "M7.8 16.8a4.2 4.2 0 0 1-.2-8.4 5.1 5.1 0 0 1 9.8 1.5 3.6 3.6 0 0 1 .2 7H7.8Z" },
+      { name: "Maps", bg: "linear-gradient(#f4e2c6,#e8c48a)", ink: "#c45c26", path: "M12 3.5c3 0 5.5 2.4 5.5 5.4 0 4.1-5.5 11-5.5 11S6.5 13 6.5 8.9C6.5 5.9 9 3.5 12 3.5Zm0 7.4a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" },
+      { name: "Clock", bg: "#1c1c1e", ink: "#fff", path: "M12 3.4a8.6 8.6 0 1 1 0 17.2 8.6 8.6 0 0 1 0-17.2Zm.7 4.2h-1.6v5.1l3.8 2.3.8-1.3-3-1.8V7.6Z" },
+      { name: "Mail", bg: "linear-gradient(#5ac8fa,#007aff)", ink: "#fff", path: "M4.5 6.8h15c.8 0 1.5.7 1.5 1.5v8.4c0 .8-.7 1.5-1.5 1.5h-15c-.8 0-1.5-.7-1.5-1.5V8.3c0-.8.7-1.5 1.5-1.5Zm.6 1.7 6.9 4.6 6.9-4.6H5.1Z" },
+      { name: "Lists", bg: "#fff", ink: "#30d158", path: "M6 6.2h12v1.8H6V6.2Zm0 4.9h12v1.8H6v-1.8Zm0 4.9h12v1.8H6v-1.8ZM4 6.6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 4.9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm0 4.9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" },
+      { name: "Fitness", bg: "#111", ink: "#30d158", path: "M12 4.2a7.8 7.8 0 1 1 0 15.6 7.8 7.8 0 0 1 0-15.6Zm0 2.3a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Zm0 2.2a3.3 3.3 0 1 1 0 6.6 3.3 3.3 0 0 1 0-6.6Z" },
+      { name: "Wallet", bg: "#2c2c2e", ink: "#ffd60a", path: "M4.6 7.2h14.8c.8 0 1.4.6 1.4 1.4v8.8c0 .8-.6 1.4-1.4 1.4H4.6c-.8 0-1.4-.6-1.4-1.4V8.6c0-.8.6-1.4 1.4-1.4Zm10.6 5.2a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8Z" },
+      { name: "Files", bg: "linear-gradient(#5ac8fa,#0a84ff)", ink: "#fff", path: "M4.4 6.4h6.1l1.7 1.7h7.4c.8 0 1.4.6 1.4 1.4v8.3c0 .8-.6 1.4-1.4 1.4H4.4c-.8 0-1.4-.6-1.4-1.4V7.8c0-.8.6-1.4 1.4-1.4Z" },
+      { name: "Tools", bg: "#8e8e93", ink: "#fff", path: "M19 13.2a7 7 0 0 1-8.8 6.2l3.3-3.3a2.2 2.2 0 0 0-3.1-3.1L7 16.3A7 7 0 0 1 16.8 5l-2 2 3.2 3.2 2-2c.7 1.5.6 3.3 0 5Z" }
+    ];
+    const DOCK = [
+      { name: "Phone", bg: "#30d158", ink: "#fff", path: "M7.2 3.8h3.1c.6 0 1.1.5 1.2 1.1l.4 2.1c.1.5-.1 1-.6 1.3L9.6 9.5a11 11 0 0 0 4.9 4.9l1.2-1.7c.3-.5.8-.7 1.3-.6l2.1.4c.6.1 1.1.6 1.1 1.2v3.1c0 .7-.6 1.3-1.3 1.3C10.7 18.1 5.9 13.3 5.9 5.1c0-.7.6-1.3 1.3-1.3Z" },
+      { name: "Browser", bg: "linear-gradient(#d7eeff,#4fa3ff)", ink: "#0a5bd3", path: "M12 3.4a8.6 8.6 0 1 1 0 17.2 8.6 8.6 0 0 1 0-17.2Zm0 1.7a6.9 6.9 0 0 0 0 13.8V5.1Z" },
+      { name: "Chat", bg: "#30d158", ink: "#fff", path: "M5.2 5.2h13.6c.8 0 1.4.6 1.4 1.4v8.2c0 .8-.6 1.4-1.4 1.4H9.6L5 19.2V6.6c0-.8.6-1.4 1.4-1.4H5.2Z" },
+      { name: "Music", bg: "linear-gradient(#ff375f,#ff2d55)", ink: "#fff", path: "M9.2 5v9.1a2.8 2.8 0 1 1-1.7-2.6V7.2l9-1.6v7.3a2.8 2.8 0 1 1-1.7-2.6V4.1L9.2 5Z" }
+    ];
+
+    function iconHTML(item) {
+      return `<div class="app"><div class="squircle" style="background:${item.bg}"><svg viewBox="0 0 24 24"><path d="${item.path}" fill="${item.ink}"/></svg></div><div class="app-label">${item.name}</div></div>`;
+    }
+    document.getElementById("icons").innerHTML = ICONS.map(iconHTML).join("");
+    document.getElementById("dock").innerHTML = DOCK.map(iconHTML).join("");
+
     const STATES = {
       missesyou: {
-        family: "small",
         expression: "Misses You",
         accent: "#F2B8CB",
-        message: "you left me. i've been staring at the door.",
-        sprite: "sprites_knockout/tester_misses_you.png",
-        scale: 0.9078
-      },
-      happy: {
-        family: "small",
-        expression: "Happy",
-        accent: "#FFE566",
-        message: "ok i forgive you. snacks would help.",
-        sprite: "sprites_knockout/tester_happy.png",
-        scale: 0.8771
+        message: "where did you go. i've been sitting here staring at the door like a dummy. come home already.",
+        sprite: "sprites_knockout/pet-missesyou.png",
+        scale: 0.96
       },
       hungry: {
-        family: "medium",
         expression: "Mad",
         accent: "#FF8A7A",
-        message: "i haven't eaten in forever. this is a crisis.",
-        sprite: "sprites_knockout/tester_mad.png",
-        scale: 0.9516
+        message: "i haven't eaten in forever. this is a hostage situation. snacks. now. i'm not kidding around.",
+        sprite: "sprites_knockout/pet-mad.png",
+        scale: 0.96
+      },
+      sleepy: {
+        expression: "Sleepy",
+        accent: "#A8C4E0",
+        message: "honestly at this point i'm just a ghost haunting this empty bowl. wake me when food.",
+        sprite: "sprites_knockout/pet-sleepy.png",
+        scale: 0.96
       }
     };
 
-    const params = new URLSearchParams(location.search);
-    const key = params.get("state") || "missesyou";
-    const state = STATES[key] || STATES.missesyou;
+    const key = new URLSearchParams(location.search).get("state") || "sleepy";
+    const state = STATES[key] || STATES.sleepy;
     document.documentElement.style.setProperty("--accent", state.accent);
-
-    const small = document.getElementById("widget-small");
-    const medium = document.getElementById("widget-medium");
-    if (state.family === "medium") {
-      small.classList.add("hidden");
-      medium.classList.remove("hidden");
-      const img = document.getElementById("medium-sprite");
-      img.src = state.sprite;
-      img.style.transform = `scale(${state.scale})`;
-      document.getElementById("medium-msg").textContent = state.message;
-      document.getElementById("medium-emotion").textContent = state.expression + "!";
-    } else {
-      medium.classList.add("hidden");
-      small.classList.remove("hidden");
-      const img = document.getElementById("small-sprite");
-      img.src = state.sprite;
-      img.style.transform = `scale(${state.scale})`;
-      document.getElementById("small-msg").textContent = state.message;
-    }
-
-    document.fonts.ready.then(() => {
-      document.documentElement.dataset.ready = "1";
-    });
+    const img = document.getElementById("sprite");
+    img.src = state.sprite;
+    img.style.transform = `scale(${state.scale})`;
+    document.getElementById("emotion").textContent = state.expression + "!";
+    document.getElementById("msg").textContent = state.message;
+    document.fonts.ready.then(() => { document.documentElement.dataset.ready = "1"; });
   </script>
 </body>
 </html>

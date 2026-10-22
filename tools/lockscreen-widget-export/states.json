@@ -1,0 +1,47 @@
+{
+  "canvas": "1080x1920",
+  "render": "HTML/CSS recreation of PetWidgetEntryView (no Mac / WidgetKit snapshot available)",
+  "pet": "Mochi (placeholder name from PetWidgetEntry; name is not shown in either widget family)",
+  "lockScreen": {
+    "style": "iOS 18 screenshot: Dynamic Island, status icons, date, large thin clock, widget slot below clock, flashlight/camera orbs, home indicator",
+    "time": "2:07",
+    "date": "Thursday, October 22",
+    "wallpaper": "Generated dim bedroom (moon window, fairy lights, empty bed). No faces, no app branding."
+  },
+  "widgetsFromCode": {
+    "supportedFamilies": ["systemSmall", "systemMedium"],
+    "accessoryFamilies": [],
+    "note": "PetmojiWidget has no lock-screen accessoryCircular / accessoryRectangular / accessoryInline families. Slides place the real home-screen widget views in the lock-screen widget area below the clock, at WidgetKit point sizes (158×158 and 338×158) scaled to a 393pt-wide iPhone."
+  },
+  "slides": [
+    {
+      "file": "lockscreen-missesyou.png",
+      "family": "systemSmall",
+      "expression": "missesYou",
+      "accentHex": "#F2B8CB",
+      "message": "you left me. i've been staring at the door.",
+      "sprite": "tester_misses_you.png",
+      "showsEmotionLabel": false
+    },
+    {
+      "file": "lockscreen-happy.png",
+      "family": "systemSmall",
+      "expression": "happy",
+      "accentHex": "#FFE566",
+      "message": "ok i forgive you. snacks would help.",
+      "sprite": "tester_happy.png",
+      "showsEmotionLabel": false
+    },
+    {
+      "file": "lockscreen-hungry.png",
+      "family": "systemMedium",
+      "expression": "mad",
+      "accentHex": "#FF8A7A",
+      "message": "i haven't eaten in forever. this is a crisis.",
+      "sprite": "tester_mad.png",
+      "showsEmotionLabel": true,
+      "emotionLabel": "Mad!",
+      "note": "Hungry is not a WidgetExpression. Used mad (closest needy/food-crisis state) so the medium widget can show the real 'Mad!' label + colored bullet."
+    }
+  ]
+}

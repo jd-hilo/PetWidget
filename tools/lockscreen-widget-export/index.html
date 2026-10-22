@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1080, height=1920, initial-scale=1" />
+  <title>Petmoji lock screen export</title>
+  <style>
+    @font-face { font-family: Inter; src: url("fonts/Inter-Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; }
+    @font-face { font-family: Inter; src: url("fonts/Inter-ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; }
+    @font-face { font-family: Inter; src: url("fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
+    @font-face { font-family: Inter; src: url("fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; }
+    @font-face { font-family: Inter; src: url("fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; }
+    @font-face { font-family: Nunito; src: url("fonts/Nunito-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; }
+    @font-face { font-family: Nunito; src: url("fonts/Nunito-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; }
+
+    :root {
+      --pt: 2.748091603053435px; /* 1080 / 393 */
+      --accent: #F2B8CB;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      background: #000;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .lock {
+      position: relative;
+      width: 1080px;
+      height: 1920px;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    .wallpaper {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 40%;
+    }
+
+    .wash {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.08) 22%, rgba(0,0,0,0.00) 40%, rgba(0,0,0,0.18) 78%, rgba(0,0,0,0.42) 100%);
+    }
+
+    .island {
+      position: absolute;
+      top: calc(12 * var(--pt));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(126 * var(--pt));
+      height: calc(37.2 * var(--pt));
+      background: #000;
+      border-radius: 999px;
+    }
+
+    .status {
+      position: absolute;
+      top: calc(16.5 * var(--pt));
+      right: calc(22 * var(--pt));
+      height: calc(28 * var(--pt));
+      display: flex;
+      align-items: center;
+      gap: calc(7 * var(--pt));
+      color: #fff;
+    }
+
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 2.2px;
+      height: calc(13 * var(--pt));
+    }
+    .bars i {
+      display: block;
+      width: 5.4px;
+      background: #fff;
+      border-radius: 1.4px;
+    }
+    .bars i:nth-child(1) { height: 35%; }
+    .bars i:nth-child(2) { height: 55%; }
+    .bars i:nth-child(3) { height: 75%; }
+    .bars i:nth-child(4) { height: 100%; }
+
+    .wifi { width: calc(17 * var(--pt)); height: calc(13 * var(--pt)); }
+    .battery {
+      width: calc(27.5 * var(--pt));
+      height: calc(13.2 * var(--pt));
+      border: 1.6px solid rgba(255,255,255,0.55);
+      border-radius: 4.5px;
+      position: relative;
+      padding: 1.6px;
+    }
+    .battery::after {
+      content: "";
+      position: absolute;
+      right: -4.4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2.4px;
+      height: 6.4px;
+      background: rgba(255,255,255,0.55);
+      border-radius: 0 1.4px 1.4px 0;
+    }
+    .battery .fill {
+      height: 100%;
+      width: 73%;
+      background: #fff;
+      border-radius: 2.2px;
+    }
+
+    .clock-block {
+      position: absolute;
+      top: calc(68 * var(--pt));
+      left: 0;
+      right: 0;
+      text-align: center;
+    }
+
+    .date {
+      font-family: Inter, sans-serif;
+      font-weight: 500;
+      font-size: calc(20.5 * var(--pt));
+      letter-spacing: 0.01em;
+      color: rgba(255,255,255,0.94);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.28);
+    }
+
+    .clock {
+      margin-top: calc(-4 * var(--pt));
+      font-family: Inter, sans-serif;
+      font-weight: 100;
+      font-size: calc(84 * var(--pt));
+      line-height: 0.92;
+      letter-spacing: -0.045em;
+      color: #fff;
+      text-shadow: 0 6px 28px rgba(0,0,0,0.22);
+    }
+
+    .slot {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(188 * var(--pt));
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Widget chrome — matches WidgetTranslucentBackground + iOS widget shape */
+    .widget {
+      position: relative;
+      overflow: hidden;
+      border-radius: calc(22 * var(--pt));
+      background: rgba(28, 32, 40, 0.38);
+      -webkit-backdrop-filter: blur(42px) saturate(1.55);
+      backdrop-filter: blur(42px) saturate(1.55);
+      box-shadow:
+        inset 0 0.6px 0 rgba(255,255,255,0.28),
+        inset 0 0 0 0.7px rgba(255,255,255,0.12),
+        0 10px 28px rgba(0,0,0,0.22);
+      color: #fff;
+    }
+    .widget.small {
+      width: calc(158 * var(--pt));
+      height: calc(158 * var(--pt));
+    }
+    .widget.medium {
+      width: calc(338 * var(--pt));
+      height: calc(158 * var(--pt));
+    }
+
+    .paws {
+      position: absolute;
+      inset: -20px;
+      opacity: 0.032;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><ellipse cx='12' cy='16.2' rx='5.2' ry='4.4' fill='white'/><circle cx='6.2' cy='10.2' r='2.15' fill='white'/><circle cx='10' cy='7.4' r='2.25' fill='white'/><circle cx='14.2' cy='7.4' r='2.25' fill='white'/><circle cx='17.8' cy='10.2' r='2.15' fill='white'/></svg>");
+      background-size: calc(38 * var(--pt)) calc(38 * var(--pt));
+      pointer-events: none;
+    }
+
+    .small-inner {
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .small-inner .sprite-slot {
+      margin-top: calc(2 * var(--pt));
+      width: calc(100 * var(--pt));
+      height: calc(100 * var(--pt));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .small-inner .msg-row {
+      display: flex;
+      align-items: center;
+      gap: calc(6 * var(--pt));
+      width: 100%;
+      padding: calc(6 * var(--pt)) calc(8 * var(--pt)) calc(8 * var(--pt)) calc(6 * var(--pt));
+    }
+
+    .medium-inner {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: flex-start;
+      gap: calc(6 * var(--pt));
+    }
+    .medium-inner .sprite-slot {
+      margin: calc(2 * var(--pt)) 0 0 calc(4 * var(--pt));
+      width: calc(136 * var(--pt));
+      height: calc(136 * var(--pt));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+    .medium-copy {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      padding: calc(6 * var(--pt)) calc(6 * var(--pt)) calc(6 * var(--pt)) 0;
+      display: flex;
+      flex-direction: column;
+      gap: calc(6 * var(--pt));
+    }
+
+    .sprite {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: auto;
+      transform-origin: center center;
+    }
+
+    .bullet {
+      font-family: Nunito, ui-rounded, sans-serif;
+      font-weight: 700;
+      font-size: calc(26 * var(--pt));
+      line-height: 1;
+      color: var(--accent);
+      text-shadow:
+        0 0 calc(1 * var(--pt)) color-mix(in srgb, var(--accent) 45%, transparent),
+        0 0 calc(3 * var(--pt)) color-mix(in srgb, var(--accent) 28%, transparent),
+        0 0 calc(6 * var(--pt)) color-mix(in srgb, var(--accent) 16%, transparent);
+      flex: 0 0 auto;
+    }
+    .emotion-row {
+      display: flex;
+      align-items: baseline;
+      gap: calc(4 * var(--pt));
+    }
+    .emotion-row .bullet { transform: translateY(calc(3 * var(--pt))); }
+    .emotion-name {
+      font-family: Nunito, ui-rounded, sans-serif;
+      font-weight: 700;
+      font-size: calc(18 * var(--pt));
+      letter-spacing: 0.4px;
+      color: rgba(255,255,255,0.96);
+      white-space: nowrap;
+      text-shadow:
+        0 0 calc(1 * var(--pt)) color-mix(in srgb, var(--accent) 38%, transparent),
+        0 0 calc(4 * var(--pt)) color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
+    .msg {
+      font-family: Nunito, ui-rounded, sans-serif;
+      font-weight: 600;
+      color: rgba(255,255,255,0.93);
+      text-align: left;
+      min-width: 0;
+    }
+    .small-inner .msg {
+      font-size: calc(15 * var(--pt));
+      line-height: calc(17 * var(--pt));
+    }
+    .medium-copy .msg {
+      font-size: calc(16 * var(--pt));
+      line-height: calc(20 * var(--pt));
+      color: rgba(255,255,255,0.92);
+    }
+
+    .bottom {
+      position: absolute;
+      left: calc(26 * var(--pt));
+      right: calc(26 * var(--pt));
+      bottom: calc(18 * var(--pt));
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .orb {
+      width: calc(50 * var(--pt));
+      height: calc(50 * var(--pt));
+      border-radius: 50%;
+      background: rgba(40, 44, 52, 0.42);
+      -webkit-backdrop-filter: blur(28px) saturate(1.3);
+      backdrop-filter: blur(28px) saturate(1.3);
+      box-shadow:
+        inset 0 0.6px 0 rgba(255,255,255,0.22),
+        inset 0 0 0 0.6px rgba(255,255,255,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+    .orb svg { width: 44%; height: 44%; fill: #fff; }
+
+    .homebar-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: calc(7 * var(--pt));
+      display: flex;
+      justify-content: center;
+    }
+    .homebar {
+      width: calc(140 * var(--pt));
+      height: calc(5 * var(--pt));
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="lock">
+    <img class="wallpaper" src="wallpaper-1080x1920.jpg" alt="" />
+    <div class="wash"></div>
+    <div class="island"></div>
+    <div class="status">
+      <div class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <svg class="wifi" viewBox="0 0 17 13" aria-hidden="true">
+        <path d="M8.5 12.2a1.15 1.15 0 1 0 0-2.3 1.15 1.15 0 0 0 0 2.3Zm0-3.55c1.22 0 2.34.48 3.17 1.26l-1.18 1.2A2.95 2.95 0 0 0 8.5 8.3c-.77 0-1.48.3-2 .8L5.33 7.9A4.35 4.35 0 0 1 8.5 8.65Zm0-3.35c2.16 0 4.12.86 5.55 2.26L12.9 8.7A6.05 6.05 0 0 0 8.5 6.9c-1.72 0-3.28.7-4.4 1.82L2.95 7.56A7.7 7.7 0 0 1 8.5 5.3Z" fill="#fff"/>
+      </svg>
+      <div class="battery"><div class="fill"></div></div>
+    </div>
+
+    <div class="clock-block">
+      <div class="date">Thursday, October 22</div>
+      <div class="clock">2:07</div>
+    </div>
+
+    <div class="slot">
+      <div id="widget-small" class="widget small">
+        <div class="paws"></div>
+        <div class="small-inner">
+          <div class="sprite-slot">
+            <img id="small-sprite" class="sprite" alt="" />
+          </div>
+          <div class="msg-row">
+            <span id="small-bullet" class="bullet">•</span>
+            <div id="small-msg" class="msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="widget-medium" class="widget medium hidden">
+        <div class="paws"></div>
+        <div class="medium-inner">
+          <div class="sprite-slot">
+            <img id="medium-sprite" class="sprite" alt="" />
+          </div>
+          <div class="medium-copy">
+            <div class="emotion-row">
+              <span id="medium-bullet" class="bullet">•</span>
+              <span id="medium-emotion" class="emotion-name"></span>
+            </div>
+            <div id="medium-msg" class="msg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom">
+      <div class="orb" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M9.2 2.7h5.6c.6 0 1.1.5 1.1 1.1v2.2h.9c.6 0 1.1.5 1.1 1.1v4.05c0 1.7-.9 3.25-2.35 4.1l-.55.32v2.33c0 .192.168.1.4.9h-6.8c-.5 0-.9-.4-.9-.9v-2.33l-.55-.32A4.7 4.7 0 0 1 6.1 11.15V7.1c0-.6.5-1.1 1.1-1.1h.9V3.8c0-.6.5-1.1 1.1-1.1Zm1.1 2.2v1.1h3.4V4.9h-3.4Zm4.05 10.55.7-.4A2.9 2.9 0 0 0 16.7 11.15V8.2H7.3v2.95c0 1.08.58 2.07 1.52 2.6l.7.4v2.3h4.83v-2.3Z"/>
+        </svg>
+      </div>
+      <div class="orb" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M8.2 6.4h1.15l.7-1.35c.2-.4.6-.65 1.05-.65h1.8c.45 0 .85.25 1.05.65l.7 1.35H15.8c1.4 0 2.55 1.15 2.55 2.55v7.1c0 1.4-1.15 2.55-2.55 2.55H8.2c-1.4 0-2.55-1.15-2.55-2.55v-7.1c0-1.4 1.15-2.55 2.55-2.55Zm3.8 3.05A3.15 3.15 0 1 0 12 16.75a3.15 3.15 0 0 0 0-6.3Zm0 1.7a1.45 1.45 0 1 1 0 2.9 1.45 1.45 0 0 1 0-2.9Z"/>
+        </svg>
+      </div>
+    </div>
+    <div class="homebar-wrap"><div class="homebar"></div></div>
+  </div>
+
+  <script>
+    const STATES = {
+      missesyou: {
+        family: "small",
+        expression: "Misses You",
+        accent: "#F2B8CB",
+        message: "you left me. i've been staring at the door.",
+        sprite: "sprites_knockout/tester_misses_you.png",
+        scale: 1
+      },
+      happy: {
+        family: "small",
+        expression: "Happy",
+        accent: "#FFE566",
+        message: "ok i forgive you. snacks would help.",
+        sprite: "sprites_knockout/tester_happy.png",
+        scale: 1
+      },
+      hungry: {
+        family: "medium",
+        expression: "Mad",
+        accent: "#FF8A7A",
+        message: "i haven't eaten in forever. this is a crisis.",
+        sprite: "sprites_knockout/tester_mad.png",
+        scale: 1
+      }
+    };
+
+    const params = new URLSearchParams(location.search);
+    const key = params.get("state") || "missesyou";
+    const state = STATES[key] || STATES.missesyou;
+    document.documentElement.style.setProperty("--accent", state.accent);
+
+    const small = document.getElementById("widget-small");
+    const medium = document.getElementById("widget-medium");
+    if (state.family === "medium") {
+      small.classList.add("hidden");
+      medium.classList.remove("hidden");
+      const img = document.getElementById("medium-sprite");
+      img.src = state.sprite;
+      img.style.transform = `scale(${state.scale})`;
+      document.getElementById("medium-msg").textContent = state.message;
+      document.getElementById("medium-emotion").textContent = state.expression + "!";
+    } else {
+      medium.classList.add("hidden");
+      small.classList.remove("hidden");
+      const img = document.getElementById("small-sprite");
+      img.src = state.sprite;
+      img.style.transform = `scale(${state.scale})`;
+      document.getElementById("small-msg").textContent = state.message;
+    }
+
+    document.fonts.ready.then(() => {
+      document.documentElement.dataset.ready = "1";
+    });
+  </script>
+</body>
+</html>

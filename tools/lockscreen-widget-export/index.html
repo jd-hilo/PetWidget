@@ -10,8 +10,9 @@
     @font-face { font-family: Inter; src: url("fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; }
     @font-face { font-family: Inter; src: url("fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; }
     @font-face { font-family: Inter; src: url("fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; }
-    @font-face { font-family: Nunito; src: url("fonts/Nunito-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; }
-    @font-face { font-family: Nunito; src: url("fonts/Nunito-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; }
+    @font-face { font-family: InterDisplay; src: url("fonts/InterDisplay-Thin.ttf") format("truetype"); font-weight: 100; font-style: normal; }
+    @font-face { font-family: InterDisplay; src: url("fonts/InterDisplay-ExtraLight.ttf") format("truetype"); font-weight: 200; font-style: normal; }
+    @font-face { font-family: Nunito; src: url("fonts/Nunito-Variable.ttf") format("truetype"); font-weight: 100 900; font-style: normal; }
 
     :root {
       --pt: 2.748091603053435px; /* 1080 / 393 */
@@ -76,14 +77,14 @@
     .bars {
       display: flex;
       align-items: flex-end;
-      gap: 2.2px;
-      height: calc(13 * var(--pt));
+      gap: 2.6px;
+      height: calc(14.5 * var(--pt));
     }
     .bars i {
       display: block;
-      width: 5.4px;
+      width: 6.2px;
       background: #fff;
-      border-radius: 1.4px;
+      border-radius: 1.5px;
     }
     .bars i:nth-child(1) { height: 35%; }
     .bars i:nth-child(2) { height: 55%; }
@@ -94,25 +95,28 @@
     .battery {
       width: calc(27.5 * var(--pt));
       height: calc(13.2 * var(--pt));
-      border: 1.6px solid rgba(255,255,255,0.55);
-      border-radius: 4.5px;
+      border: 1.7px solid rgba(255,255,255,0.62);
+      border-radius: 4.6px;
       position: relative;
-      padding: 1.6px;
+      box-sizing: content-box;
     }
     .battery::after {
       content: "";
       position: absolute;
-      right: -4.4px;
+      right: -4.6px;
       top: 50%;
       transform: translateY(-50%);
-      width: 2.4px;
-      height: 6.4px;
-      background: rgba(255,255,255,0.55);
+      width: 2.5px;
+      height: 6.6px;
+      background: rgba(255,255,255,0.62);
       border-radius: 0 1.4px 1.4px 0;
     }
     .battery .fill {
-      height: 100%;
-      width: 73%;
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      bottom: 2px;
+      width: 70%;
       background: #fff;
       border-radius: 2.2px;
     }
@@ -130,26 +134,27 @@
       font-weight: 500;
       font-size: calc(20.5 * var(--pt));
       letter-spacing: 0.01em;
+      word-spacing: 0.12em;
       color: rgba(255,255,255,0.94);
       text-shadow: 0 2px 12px rgba(0,0,0,0.28);
     }
 
     .clock {
-      margin-top: calc(-4 * var(--pt));
-      font-family: Inter, sans-serif;
+      margin-top: calc(-6 * var(--pt));
+      font-family: InterDisplay, Inter, sans-serif;
       font-weight: 100;
-      font-size: calc(84 * var(--pt));
-      line-height: 0.92;
-      letter-spacing: -0.045em;
+      font-size: calc(92 * var(--pt));
+      line-height: 0.9;
+      letter-spacing: -0.04em;
       color: #fff;
-      text-shadow: 0 6px 28px rgba(0,0,0,0.22);
+      text-shadow: 0 8px 30px rgba(0,0,0,0.24);
     }
 
     .slot {
       position: absolute;
       left: 0;
       right: 0;
-      top: calc(188 * var(--pt));
+      top: calc(198 * var(--pt));
       display: flex;
       justify-content: center;
     }
@@ -159,9 +164,9 @@
       position: relative;
       overflow: hidden;
       border-radius: calc(22 * var(--pt));
-      background: rgba(28, 32, 40, 0.38);
-      -webkit-backdrop-filter: blur(42px) saturate(1.55);
-      backdrop-filter: blur(42px) saturate(1.55);
+      background: rgba(22, 26, 34, 0.32);
+      -webkit-backdrop-filter: blur(48px) saturate(1.65);
+      backdrop-filter: blur(48px) saturate(1.65);
       box-shadow:
         inset 0 0.6px 0 rgba(255,255,255,0.28),
         inset 0 0 0 0.7px rgba(255,255,255,0.12),
@@ -180,7 +185,7 @@
     .paws {
       position: absolute;
       inset: -20px;
-      opacity: 0.032;
+      opacity: 0.018;
       background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><ellipse cx='12' cy='16.2' rx='5.2' ry='4.4' fill='white'/><circle cx='6.2' cy='10.2' r='2.15' fill='white'/><circle cx='10' cy='7.4' r='2.25' fill='white'/><circle cx='14.2' cy='7.4' r='2.25' fill='white'/><circle cx='17.8' cy='10.2' r='2.15' fill='white'/></svg>");
       background-size: calc(38 * var(--pt)) calc(38 * var(--pt));
       pointer-events: none;
@@ -264,10 +269,11 @@
     }
     .emotion-row .bullet { transform: translateY(calc(3 * var(--pt))); }
     .emotion-name {
-      font-family: Nunito, ui-rounded, sans-serif;
+      font-family: Nunito, Inter, ui-rounded, sans-serif;
       font-weight: 700;
       font-size: calc(18 * var(--pt));
       letter-spacing: 0.4px;
+      word-spacing: 0.16em;
       color: rgba(255,255,255,0.96);
       white-space: nowrap;
       text-shadow:
@@ -276,11 +282,12 @@
     }
 
     .msg {
-      font-family: Nunito, ui-rounded, sans-serif;
+      font-family: Nunito, Inter, ui-rounded, sans-serif;
       font-weight: 600;
       color: rgba(255,255,255,0.93);
       text-align: left;
       min-width: 0;
+      word-spacing: 0.18em;
     }
     .small-inner .msg {
       font-size: calc(15 * var(--pt));
@@ -389,7 +396,7 @@
     <div class="bottom">
       <div class="orb" aria-hidden="true">
         <svg viewBox="0 0 24 24">
-          <path d="M9.2 2.7h5.6c.6 0 1.1.5 1.1 1.1v2.2h.9c.6 0 1.1.5 1.1 1.1v4.05c0 1.7-.9 3.25-2.35 4.1l-.55.32v2.33c0 .192.168.1.4.9h-6.8c-.5 0-.9-.4-.9-.9v-2.33l-.55-.32A4.7 4.7 0 0 1 6.1 11.15V7.1c0-.6.5-1.1 1.1-1.1h.9V3.8c0-.6.5-1.1 1.1-1.1Zm1.1 2.2v1.1h3.4V4.9h-3.4Zm4.05 10.55.7-.4A2.9 2.9 0 0 0 16.7 11.15V8.2H7.3v2.95c0 1.08.58 2.07 1.52 2.6l.7.4v2.3h4.83v-2.3Z"/>
+          <path d="M8.6 3.1h6.8c.5 0 .9.4.9.9v2.2h.8c.45 0 .8.35.8.8v3.4c0 1.85-1.05 3.5-2.7 4.25l-.5.22v3.05c0 .6-.5 1.1-1.1 1.1H10c-.6 0-1.1-.5-1.1-1.1v-3.05l-.5-.22A4.75 4.75 0 0 1 5.7 10.4V7c0-.45.35-.8.8-.8h.8V4c0-.5.4-.9.9-.9Zm1.1 1.8v1.3h4.6V4.9H9.7Zm-.4 3.9v1.6c0 1.12.64 2.14 1.65 2.62l.85.4v3.2h2.4v-3.2l.85-.4c1.01-.48 1.65-1.5 1.65-2.62V8.8H9.3Z"/>
         </svg>
       </div>
       <div class="orb" aria-hidden="true">
@@ -409,7 +416,7 @@
         accent: "#F2B8CB",
         message: "you left me. i've been staring at the door.",
         sprite: "sprites_knockout/tester_misses_you.png",
-        scale: 1
+        scale: 0.9078
       },
       happy: {
         family: "small",
@@ -417,7 +424,7 @@
         accent: "#FFE566",
         message: "ok i forgive you. snacks would help.",
         sprite: "sprites_knockout/tester_happy.png",
-        scale: 1
+        scale: 0.8771
       },
       hungry: {
         family: "medium",
@@ -425,7 +432,7 @@
         accent: "#FF8A7A",
         message: "i haven't eaten in forever. this is a crisis.",
         sprite: "sprites_knockout/tester_mad.png",
-        scale: 1
+        scale: 0.9516
       }
     };
 

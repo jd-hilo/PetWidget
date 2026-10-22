@@ -8,14 +8,21 @@ mkdir -p "$OUT_DIR" "$REPO_OUT" "$ART_OUT"
 
 FONT_DIR="$ROOT/fonts"
 mkdir -p "$FONT_DIR"
-if [[ ! -f "$FONT_DIR/Inter-Thin.ttf" ]]; then
-  curl -fsSL -o "$FONT_DIR/Inter-Thin.ttf" "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyeMZg.ttf"
-  curl -fsSL -o "$FONT_DIR/Inter-ExtraLight.ttf" "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuDyfMZg.ttf"
-  curl -fsSL -o "$FONT_DIR/Inter-Regular.ttf" "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZg.ttf"
-  curl -fsSL -o "$FONT_DIR/Inter-Medium.ttf" "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuI6fMZg.ttf"
-  curl -fsSL -o "$FONT_DIR/Inter-SemiBold.ttf" "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuGKYMZg.ttf"
-  curl -fsSL -o "$FONT_DIR/Nunito-SemiBold.ttf" "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDGUmRTM.ttf"
-  curl -fsSL -o "$FONT_DIR/Nunito-Bold.ttf" "https://fonts.gstatic.com/s/nunito/v32/XRXI3I6Li01BKofiOc5wtlZ2di8HDFwmRTM.ttf"
+if [[ ! -f "$FONT_DIR/InterDisplay-Thin.ttf" || ! -f "$FONT_DIR/Nunito-Variable.ttf" ]]; then
+  zip="/tmp/Inter-4.1.zip"
+  if [[ ! -f "$zip" ]]; then
+    curl -fsSL -o "$zip" "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip"
+  fi
+  unzip -qo -j "$zip" \
+    extras/ttf/Inter-Thin.ttf \
+    extras/ttf/Inter-ExtraLight.ttf \
+    extras/ttf/Inter-Regular.ttf \
+    extras/ttf/Inter-Medium.ttf \
+    extras/ttf/Inter-SemiBold.ttf \
+    extras/ttf/InterDisplay-Thin.ttf \
+    extras/ttf/InterDisplay-ExtraLight.ttf \
+    -d "$FONT_DIR"
+  curl -fsSL -o "$FONT_DIR/Nunito-Variable.ttf" "https://github.com/google/fonts/raw/main/ofl/nunito/Nunito%5Bwght%5D.ttf"
 fi
 
 python3 "$ROOT/process_sprites.py"

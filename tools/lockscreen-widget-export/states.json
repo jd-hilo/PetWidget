@@ -21,6 +21,7 @@
       "accentHex": "#F2B8CB",
       "message": "you left me. i've been staring at the door.",
       "sprite": "tester_misses_you.png",
+      "spriteFitScale": 0.9078,
       "showsEmotionLabel": false
     },
     {
@@ -30,6 +31,7 @@
       "accentHex": "#FFE566",
       "message": "ok i forgive you. snacks would help.",
       "sprite": "tester_happy.png",
+      "spriteFitScale": 0.8771,
       "showsEmotionLabel": false
     },
     {
@@ -39,6 +41,7 @@
       "accentHex": "#FF8A7A",
       "message": "i haven't eaten in forever. this is a crisis.",
       "sprite": "tester_mad.png",
+      "spriteFitScale": 0.9516,
       "showsEmotionLabel": true,
       "emotionLabel": "Mad!",
       "note": "Hungry is not a WidgetExpression. Used mad (closest needy/food-crisis state) so the medium widget can show the real 'Mad!' label + colored bullet."

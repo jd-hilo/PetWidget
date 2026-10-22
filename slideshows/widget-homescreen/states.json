@@ -1,0 +1,37 @@
+{
+  "canvas": "1080x1920",
+  "render": "HTML/CSS recreation of PetWidget medium family on an iOS 18 home screen. Not a pixel-true WidgetKit snapshot (no Mac/simulator).",
+  "screen": "iOS 18 home screen: time + location arrow, signal, wifi, battery pill, Dynamic Island, medium widget near top, generic unbranded icon grid, page dots, dock, home indicator.",
+  "wallpaper": "Soft blurred gray-green landscape, muted to match the real widget screenshot.",
+  "widget": {
+    "family": "systemMedium",
+    "chrome": "Dark charcoal rounded card, light rim, faint paw pattern, 3D clay pet head left, glowing accent dot + bold label, 4-line clipped message with no ellipsis."
+  },
+  "slides": [
+    {
+      "file": "homescreen-missesyou.png",
+      "expression": "missesYou",
+      "accentHex": "#F2B8CB",
+      "label": "Misses You!",
+      "message": "where did you go. i've been sitting here staring at the door like a dummy. come home already.",
+      "sprite": "pet-missesyou (generated clay Memoji-style head)"
+    },
+    {
+      "file": "homescreen-hungry.png",
+      "expression": "mad",
+      "accentHex": "#FF8A7A",
+      "label": "Mad!",
+      "message": "i haven't eaten in forever. this is a hostage situation. snacks. now. i'm not kidding around.",
+      "sprite": "pet-mad (generated clay Memoji-style head)",
+      "note": "Hungry is not a WidgetExpression; mad is the food-crisis state."
+    },
+    {
+      "file": "homescreen-sleepy.png",
+      "expression": "sleepy",
+      "accentHex": "#A8C4E0",
+      "label": "Sleepy!",
+      "message": "honestly at this point i'm just a ghost haunting this empty bowl. wake me when food.",
+      "sprite": "pet-sleepy (generated clay Memoji-style head)"
+    }
+  ]
+}

@@ -66,6 +66,32 @@ def knockout_edge_white(im: Image.Image, matte_threshold: float = 0.93, softness
     return rgba
 
 
+def crop_to_content(im: Image.Image, pad: float = 0.06) -> Image.Image:
+    rgba = im.convert("RGBA")
+    w, h = rgba.size
+    px = rgba.load()
+    min_x, min_y, max_x, max_y = w, h, 0, 0
+    found = False
+    for y in range(h):
+        for x in range(w):
+            if px[x, y][3] > 20:
+                found = True
+                min_x = min(min_x, x)
+                min_y = min(min_y, y)
+                max_x = max(max_x, x)
+                max_y = max(max_y, y)
+    if not found:
+        return rgba
+    bw = max_x - min_x + 1
+    bh = max_y - min_y + 1
+    pad_px = int(max(bw, bh) * pad)
+    left = max(0, min_x - pad_px)
+    top = max(0, min_y - pad_px)
+    right = min(w, max_x + 1 + pad_px)
+    bottom = min(h, max_y + 1 + pad_px)
+    return rgba.crop((left, top, right, bottom))
+
+
 def content_fit_scale(im: Image.Image, target_max_fill: float = 0.92) -> float:
     rgba = im.convert("RGBA")
     w, h = rgba.size
@@ -101,6 +127,7 @@ def main() -> None:
         dest.write_bytes(src.read_bytes())
         im = Image.open(dest)
         knocked = knockout_edge_white(im, matte_threshold=0.94, softness=0.10, max_chroma=0.08)
+        knocked = crop_to_content(knocked, pad=0.06)
         out = OUT / (Path(name).stem + ".png")
         knocked.save(out)
         scales[out.name] = round(content_fit_scale(knocked), 4)
